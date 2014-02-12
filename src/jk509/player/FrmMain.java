@@ -31,7 +31,7 @@ import javax.swing.ListSelectionModel;
 public class FrmMain  implements MouseListener, MouseMotionListener {
 
 	private JFrame frmMusicPlayer;
-	private String filename = "C:\\Users\\James\\Music\\iTunes\\iTunes Media\\Music\\Muse\\Absolution\\08 Hysteria.mp3";
+	private String filename = "E:\\Users\\James\\Music\\iTunes\\iTunes Media\\Music\\Muse\\Absolution\\08 Hysteria.mp3";
 	JButton btnPlay;
 	JLayerPlayerPausable play;
 	SoundJLayer player;
