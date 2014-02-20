@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -25,24 +24,17 @@ import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.SwingConstants;
-import javax.swing.UIManager;
-import javax.swing.border.EtchedBorder;
-import javax.swing.plaf.basic.BasicBorders.RadioButtonBorder;
-import javax.swing.table.DefaultTableModel;
-
-import jk509.player.LibraryParser.Playlist;
-import jk509.player.LibraryParser.Song;
-
-import javax.swing.border.TitledBorder;
-import javax.swing.border.SoftBevelBorder;
-import javax.swing.border.BevelBorder;
 import javax.swing.ListSelectionModel;
-import javax.swing.JRadioButton;
+import javax.swing.SwingConstants;
+import javax.swing.border.BevelBorder;
+import javax.swing.border.EtchedBorder;
+import javax.swing.border.SoftBevelBorder;
+import javax.swing.table.DefaultTableModel;
 
 public class Setup extends JDialog {
 	/**
@@ -97,7 +89,7 @@ public class Setup extends JDialog {
 	private JButton btnPrevious6;
 	private JButton btnFinish;
 	
-	private static Setup dialog;
+	private JDialog dialog;
 	private int stage = 1; // which screen, 1-6, we are on
 	private List<Song> tracks;
 	private List<Playlist> playlists;
@@ -176,31 +168,10 @@ public class Setup extends JDialog {
 	private JLabel lblClickHereTo;
 
 	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		try {
-			UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
-		} catch (Throwable e) {
-			e.printStackTrace();
-		}
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					dialog = new Setup();
-					dialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-					dialog.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
-
-	/**
 	 * Create the dialog.
 	 */
-	public Setup() {
+	public Setup(Library library) {
+		dialog = this;
 		addWindowListener(new ThisWindowListener());
 		setResizable(false);
 		setTitle("Music Player Setup");
@@ -459,6 +430,10 @@ public class Setup extends JDialog {
 		list.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		list.setBorder(new SoftBevelBorder(BevelBorder.LOWERED, Color.LIGHT_GRAY, Color.GRAY, null, null));
 		list.setModel(new AbstractListModel() {
+			/**
+			 * 
+			 */
+			private static final long serialVersionUID = 1L;
 			String[] values = new String[] {"By track name", "By artist, then album", "By artist, then track name", "By genre, then artist", "By year, then artist"};
 			public int getSize() {
 				return values.length;

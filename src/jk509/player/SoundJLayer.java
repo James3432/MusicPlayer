@@ -54,6 +54,14 @@ public class SoundJLayer implements Runnable{
 		}
 	}
 
+	public boolean isPaused(){
+		return this.player.isPaused();
+	}
+	
+	public boolean isStopped(){
+		return this.player.isStopped();
+	}
+	
 	public void stop(){
 		if (this.player != null){
 			this.player.stop();

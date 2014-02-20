@@ -58,7 +58,7 @@ public class JLayerPlayerPausable {
 	public JLayerPlayerPausable(String audioPath) throws JavaLayerException {
 		this.audioPath = audioPath;
 	}
-
+	
 	public void setPlaybackListener(PlaybackListener newPlaybackListener) {
 		if (newPlaybackListener != null) {
 			this.listener = newPlaybackListener;

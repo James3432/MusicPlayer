@@ -33,7 +33,7 @@ public class FrmMain  implements MouseListener, MouseMotionListener {
 	private JFrame frmMusicPlayer;
 	private String filename = "E:\\Users\\James\\Music\\iTunes\\iTunes Media\\Music\\Muse\\Absolution\\08 Hysteria.mp3";
 	JButton btnPlay;
-	JLayerPlayerPausable play;
+	//JLayerPlayerPausable play;
 	SoundJLayer player;
 	private boolean paused = true;
 	private JButton btnExit;
@@ -287,7 +287,7 @@ public class FrmMain  implements MouseListener, MouseMotionListener {
 	}
 
 	public void mousePressed(MouseEvent e) {
-	start = e.getPoint();
+		start = e.getPoint();
 	}
 
 	public void mouseReleased(MouseEvent e) {
@@ -300,10 +300,10 @@ public class FrmMain  implements MouseListener, MouseMotionListener {
 	}
 
 	public void mouseDragged(MouseEvent e) {
-	Point p = e.getLocationOnScreen();
-	Component c = e.getComponent();
-	c.setLocation((int)(p.getX() - start.getX()), (int)(p.getY() - start.getY()));
-	c.repaint();
+		Point p = e.getLocationOnScreen();
+		Component c = e.getComponent();
+		c.setLocation((int)(p.getX() - start.getX()), (int)(p.getY() - start.getY()));
+		c.repaint();
 	}
 
 	public void mouseMoved(MouseEvent e) {
