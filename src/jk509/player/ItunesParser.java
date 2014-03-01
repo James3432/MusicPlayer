@@ -1,6 +1,8 @@
 package jk509.player;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -113,15 +115,16 @@ public class ItunesParser extends DefaultHandler implements LibraryParser {
 
     @Override
     public void characters(char[] ch, int start, int length) throws SAXException {
-        tempVal = new String(ch,start,length);
+        // Append rather than replace: this is the secret to allowing HTML entities to parse correctly
+    	tempVal += new String(ch,start,length);
     }
-
+    
     @Override
     public void endElement(String uri, String localName, String qName) throws SAXException {
         if (foundTracks) {
             if (previousTagVal.equalsIgnoreCase("Name") && qName.equals("string"))
             {
-                    tempTrack.setName(tempVal);
+            	tempTrack.setName(tempVal);
             }
             else if (previousTagVal.equalsIgnoreCase("Artist") && qName.equals("string"))
             {
@@ -136,6 +139,16 @@ public class ItunesParser extends DefaultHandler implements LibraryParser {
                     Integer value = Integer.parseInt(tempVal);
                     tempTrack.setPlayCount(value.intValue());
             }
+            else if (previousTagVal.equalsIgnoreCase("Track Number") && qName.equals("integer"))
+            {
+                    Integer value = Integer.parseInt(tempVal);
+                    tempTrack.setTrackNumber(value.intValue());
+            }
+            else if (previousTagVal.equalsIgnoreCase("Total Time") && qName.equals("integer"))
+            {
+                    Integer value = Integer.parseInt(tempVal);
+                    tempTrack.setLength(value.intValue() / 1000); // it's in milliseconds
+            }
             else if (previousTagVal.equalsIgnoreCase("Genre") && qName.equals("string"))
             {
                     tempTrack.setGenre(tempVal);
@@ -146,7 +159,13 @@ public class ItunesParser extends DefaultHandler implements LibraryParser {
             }
             else if (previousTagVal.equalsIgnoreCase("Location") && qName.equals("string"))
             {
-                    tempTrack.setLocation(tempVal);
+            	String loc = tempVal.replaceAll("file://localhost/", "");
+        		try {
+        			loc = URLDecoder.decode(loc, "UTF-8");
+        		} catch (UnsupportedEncodingException e) {
+        			e.printStackTrace();
+        		}
+                tempTrack.setLocation(loc);
             }
             else if (previousTagVal.equalsIgnoreCase("Track ID") && qName.equals("integer"))
             {
@@ -176,8 +195,9 @@ public class ItunesParser extends DefaultHandler implements LibraryParser {
     
     private void prune(){
     	// Remove non-audio entries from list
+    	// TODO: add support at least for WAV
     	for(int i = 0; i< tracks.size(); ++i){
-	    	if(! tracks.get(i).getType().toLowerCase().endsWith("audio file")){
+	    	if(! tracks.get(i).getType().toLowerCase().equals("mpeg audio file")){
 	    		tracks.remove(i);
 	    		i--; // indicies have been shifted left
 	    	}

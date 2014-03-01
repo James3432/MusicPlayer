@@ -224,7 +224,7 @@ public class FrmMain  implements MouseListener, MouseMotionListener {
 		panel_3.setBounds(12, 421, 676, 19);
 		frmMusicPlayer.getContentPane().add(panel_3);
 		
-		player = new SoundJLayer(filename);
+		player = new SoundJLayer(filename, null);
 		
 	}
 	
@@ -235,7 +235,8 @@ public class FrmMain  implements MouseListener, MouseMotionListener {
 				// paused
 				paused = false;
 				player.play();
-				btnPlay.setIcon(new ImageIcon(this.getClass().getResource("/jk509/player/res/pause.png")));
+				btnPlay.setIcon(new ImageIcon(this.getClass().getResource(
+						"/jk509/player/res/pause.png")));
 			}else{
 				// playing
 				paused = true;

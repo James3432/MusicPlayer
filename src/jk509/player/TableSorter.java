@@ -415,7 +415,7 @@ public class TableSorter extends AbstractTableModel {
             TableColumnModel columnModel = h.getColumnModel();
             int viewColumn = h.columnAtPoint(e.getPoint());
             int column = columnModel.getColumn(viewColumn).getModelIndex();
-            if (column != -1) {
+            if (column > 1) {
                 int status = getSortingStatus(column);
                 if (!e.isControlDown()) {
                     cancelSorting();

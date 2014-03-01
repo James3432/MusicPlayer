@@ -1,4 +1,5 @@
 package jk509.player;
+
 /* *-----------------------------------------------------------------------
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU Library General Public License as published
@@ -58,7 +59,7 @@ public class JLayerPlayerPausable {
 	public JLayerPlayerPausable(String audioPath) throws JavaLayerException {
 		this.audioPath = audioPath;
 	}
-	
+
 	public void setPlaybackListener(PlaybackListener newPlaybackListener) {
 		if (newPlaybackListener != null) {
 			this.listener = newPlaybackListener;
@@ -129,6 +130,7 @@ public class JLayerPlayerPausable {
 				}
 			} else {
 				shouldContinueReadingFrames = this.decodeFrame();
+
 				this.frameIndexCurrent++;
 			}
 		}
@@ -153,8 +155,7 @@ public class JLayerPlayerPausable {
 					// this.getClass() + " is NULL");
 				}
 				PlaybackEvent playbackEvent = new PlaybackEvent(this,
-						PlaybackEvent.EventType.Stopped,
-						audioDevicePosition);
+						PlaybackEvent.EventType.Stopped, audioDevicePosition);
 				this.listener.playbackFinished(playbackEvent);
 			}
 		}
@@ -191,17 +192,16 @@ public class JLayerPlayerPausable {
 		/*
 		 * Fix NullPointer
 		 */
-		
-		if(bitstream == null)
+
+		if (bitstream == null)
 			throw new JavaLayerException("Could not open Stream");
-		
+
 		try {
 			if (this.audioDevice != null) {
 				Header header = this.bitstream.readFrame();
 				if (header != null) {
 					// sample buffer set when decoder constructed
-					SampleBuffer output = (SampleBuffer) this.decoder
-							.decodeFrame(header, this.bitstream);
+					SampleBuffer output = (SampleBuffer) this.decoder.decodeFrame(header, this.bitstream);
 
 					synchronized (this) {
 						if (this.audioDevice != null) {
@@ -212,7 +212,9 @@ public class JLayerPlayerPausable {
 
 					this.bitstream.closeFrame();
 					if (listener != null)
-						listener.frameDecoded(new PlaybackEvent(this, PlaybackEvent.EventType.FrameDecoded, audioDevice.getPosition()));
+						listener.frameDecoded(new PlaybackEvent(this,
+								PlaybackEvent.EventType.FrameDecoded,
+								audioDevice.getPosition()));
 					returnValue = true;
 				} else {
 					System.out.println("End of file"); // end of file
@@ -220,7 +222,10 @@ public class JLayerPlayerPausable {
 				}
 			}
 		} catch (RuntimeException ex) {
-			throw new JavaLayerException("Exception decoding audio frame", ex);
+			//TODO: this could be dangerous, but only way to overcome the 1% decoding errors
+			//throw new JavaLayerException("Exception decoding audio frame", ex);
+			this.bitstream.closeFrame();
+			returnValue = true;
 		}
 		return returnValue;
 	}
@@ -230,8 +235,8 @@ public class JLayerPlayerPausable {
 			paused = true;
 			if (listener != null) {
 				listener.playbackPaused(new PlaybackEvent(this,
-						PlaybackEvent.EventType.Paused,
-						this.audioDevice.getPosition()));
+						PlaybackEvent.EventType.Paused, this.audioDevice
+								.getPosition()));
 			}
 			this.close();
 		}
@@ -253,16 +258,16 @@ public class JLayerPlayerPausable {
 		if (!this.stopped) {
 			if (!this.closed) {
 				this.listener.playbackFinished(new PlaybackEvent(this,
-						PlaybackEvent.EventType.Stopped,
-						this.audioDevice.getPosition()));
+						PlaybackEvent.EventType.Stopped, this.audioDevice
+								.getPosition()));
 				this.close();
 			} else if (this.paused) {
 				int audioDevicePosition = -1; // this.audioDevice.getPosition(),
 												// audioDevice is null
-				if(this.listener != null) //m.berger fix
+				if (this.listener != null) // m.berger fix
 					this.listener.playbackFinished(new PlaybackEvent(this,
-						PlaybackEvent.EventType.Stopped,
-						audioDevicePosition));
+							PlaybackEvent.EventType.Stopped,
+							audioDevicePosition));
 			}
 			this.stopped = true;
 		}
@@ -296,15 +301,16 @@ public class JLayerPlayerPausable {
 		return stopped;
 	}
 
-
-
 	// inner classes
 	public static class PlaybackEvent {
 		public JLayerPlayerPausable source;
 		public EventType eventType;
 		public int frameIndex;
-		public static enum EventType{Started, Stopped, Paused, FrameDecoded};
-		
+
+		public static enum EventType {
+			Started, Stopped, Paused, FrameDecoded
+		};
+
 		public PlaybackEvent(JLayerPlayerPausable source, EventType eventType, int frameIndex) {
 			this.source = source;
 			this.eventType = eventType;
@@ -315,22 +321,22 @@ public class JLayerPlayerPausable {
 	public static class PlaybackAdapter implements PlaybackListener {
 		@Override
 		public void playbackStarted(PlaybackEvent event) {
-			System.err.println("Playback started");
+			//System.err.println("Playback started");
 		}
 
 		@Override
 		public void playbackPaused(PlaybackEvent event) {
-			System.err.println("Playback paused");
+			//System.err.println("Playback paused");
 		}
 
 		@Override
 		public void playbackFinished(PlaybackEvent event) {
-			System.err.println("Playback stopped");
+			//System.err.println("Playback stopped");
 		}
 
 		@Override
 		public void frameDecoded(PlaybackEvent event) {
-			System.err.println("Frame Decoded: " + event.frameIndex);
+			//System.err.println("Frame Decoded: " + event.frameIndex);
 		}
 	}
 
@@ -340,7 +346,7 @@ public class JLayerPlayerPausable {
 		public void playbackPaused(PlaybackEvent event);
 
 		public void playbackFinished(PlaybackEvent event);
-		
+
 		public void frameDecoded(PlaybackEvent event);
 	}
 }
