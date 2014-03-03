@@ -146,7 +146,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private boolean mouseIsDown = false;
 	private int seconds = 0; // seconds through current track
 	private float milliseconds = 0; // just like seconds but in millis
-	private int timing_offset = 0; // The time through the song (in ms) which we were before last restart (after pause or skip)
+	private int timing_offset = 0; // The time through the song (in ms) which we
+									// were before last restart (after pause or
+									// skip)
 
 	// DEBUG FLAGS
 	boolean HIDE_SETUP_DIALOG = true;
@@ -325,9 +327,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				// update time label
 				lbl_time.setText(Song.SecondsToString((int) (((double) value * library.getTracks().get(rowPlaying).getLengthS()) / (double) slider.getMaximum())));
 			}
-			
+
 			@Override
-			public void mouseReleased(MouseEvent e){
+			public void mouseReleased(MouseEvent e) {
 				mouseIsDown = false;
 				Point p = e.getPoint();
 				int value = ui.valueForXPosition(p.x);
@@ -574,7 +576,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 
 	private void startup() {
-		if (HIDE_SETUP_DIALOG){
+		if (HIDE_SETUP_DIALOG) {
 			library = new Library();
 			return;
 		}
@@ -862,48 +864,49 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}
 
 	}
-	
-	private void playAt(/*int row,*/ int ms) {
-		//try {
-		//	if (row >= 0 && row <= tabMain.getModel().getRowCount() - 1) {
-			//	String loc = library.get(row).getLocation();
-			//	if (loc == null || loc.equals(""))
-			//		return;
 
-			//	if (new File(loc).exists()) {
-					if (player != null && !player.isStopped() && !player.isPaused())
-						try {
-							Thread.sleep(THREAD_SLEEP);
-							player.pause();
-						} catch (NullPointerException e) {
-							// track had just finished
-						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					//player = new SoundJLayer(loc, playbackListener);
-					player.play(ms);
-					btnPlay.setIcon(new ImageIcon(this.getClass().getResource("/jk509/player/res/pause.png")));
-			//		rowPlaying = row;
-					//RefreshMainList();
-					//UpdateTrackDisplay();
-		//		}
-		//	}
-		//} catch (Exception e) {
-		//	e.printStackTrace();
-		//}
+	private void playAt(/* int row, */int ms) {
+		// try {
+		// if (row >= 0 && row <= tabMain.getModel().getRowCount() - 1) {
+		// String loc = library.get(row).getLocation();
+		// if (loc == null || loc.equals(""))
+		// return;
+
+		// if (new File(loc).exists()) {
+		if (player != null && !player.isStopped() && !player.isPaused())
+			try {
+				Thread.sleep(THREAD_SLEEP);
+				player.pause();
+			} catch (NullPointerException e) {
+				// track had just finished
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		// player = new SoundJLayer(loc, playbackListener);
+		player.play(ms);
+		btnPlay.setIcon(new ImageIcon(this.getClass().getResource("/jk509/player/res/pause.png")));
+		// rowPlaying = row;
+		// RefreshMainList();
+		// UpdateTrackDisplay();
+		// }
+		// }
+		// } catch (Exception e) {
+		// e.printStackTrace();
+		// }
 
 	}
-	
-	private void SkipTo(double s){
+
+	private void SkipTo(double s) {
 		// s = time in track to skip to
-		//boolean paused = player.isPaused();
-		
-		//play(rowPlaying);
-		
+		// boolean paused = player.isPaused();
+
+		// play(rowPlaying);
+
 		try {
 			if (rowPlaying >= 0 && rowPlaying <= tabMain.getModel().getRowCount() - 1) {
-				// String loc = (String) tabMain.getModel().getValueAt(rowPlaying, 8);
+				// String loc = (String)
+				// tabMain.getModel().getValueAt(rowPlaying, 8);
 				String loc = library.get(rowPlaying).getLocation();
 				if (loc == null || loc.equals(""))
 					return;
@@ -924,27 +927,26 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		try {
 			Thread.sleep(THREAD_SLEEP);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		// This is the line that actually does the jump - all the above is just to make sure the track has played a little bit so that a header frame has been read (to establish frames/ms)
-		playAt(/*tabMain.getSelectedRow(),*/ (int) (s*1000));
-		
-		/*if (paused) {
-			try {
-				Thread.sleep(THREAD_SLEEP);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 
-			TogglePause();
-		}*/
+		// This is the line that actually does the jump - all the above is just
+		// to make sure the track has played a little bit so that a header frame
+		// has been read (to establish frames/ms)
+		playAt(/* tabMain.getSelectedRow(), */(int) (s * 1000));
+
+		/*
+		 * if (paused) { try { Thread.sleep(THREAD_SLEEP); } catch
+		 * (InterruptedException e) { // TODO Auto-generated catch block
+		 * e.printStackTrace(); }
+		 * 
+		 * TogglePause(); }
+		 */
 	}
 
 	private void UpdateTrackDisplay() {
@@ -990,24 +992,24 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			// System.err.println("PlaybackStopped()");
 			playNext();
 		}
-		
+
 		@Override
 		public void frameDecoded(JLayerPlayerPausable.DecodeEvent event) {
 			milliseconds = event.position;
-			//if(s > seconds){
-			if(milliseconds > (seconds+1) * 1000){
-				seconds = (int) Math.floor( milliseconds / 1000.0);
-				if(!mouseIsDown){
-					lbl_time.setText(Song.SecondsToString(seconds + (int)(timing_offset / 1000.0)));
-					slider.setValue((int) ( (double) slider.getMaximum() * ((double) seconds + (timing_offset / 1000.0)) / (double) library.getTracks().get(rowPlaying).getLengthS()));
+			// if(s > seconds){
+			if (milliseconds > (seconds + 1) * 1000) {
+				seconds = (int) Math.floor(milliseconds / 1000.0);
+				if (!mouseIsDown) {
+					lbl_time.setText(Song.SecondsToString(seconds + (int) (timing_offset / 1000.0)));
+					slider.setValue((int) ((double) slider.getMaximum() * ((double) seconds + (timing_offset / 1000.0)) / (double) library.getTracks().get(rowPlaying).getLengthS()));
 				}
-			}else{
+			} else {
 				System.out.println(milliseconds);
 				System.out.println(seconds * 1000);
 			}
 		}
 	}
-	
+
 	private void RefreshMainList() {
 		tabMain.invalidate();
 		tabMain.repaint();
