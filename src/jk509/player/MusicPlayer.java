@@ -14,7 +14,6 @@ import java.awt.Insets;
 import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -245,10 +244,45 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		pnlTrackInfo.add(btnTrackInfo);
 
 		slider = new JSlider();
+		slider.setValue(0);
+		slider.setMaximum(240);
 		slider.addChangeListener(new SliderChangeListener());
 		slider.setFocusable(false);
 		slider.setOpaque(false);
-		slider.setUI(new CustomSlider(slider));
+		final CustomSlider ui = new CustomSlider(slider);
+		slider.setUI(ui);
+		MouseListener[] listeners = slider.getMouseListeners();
+		MouseMotionListener[] mmls = slider.getMouseMotionListeners();
+        for (MouseListener l : listeners)
+            slider.removeMouseListener(l); // remove UI-installed TrackListener
+        for (MouseMotionListener l : mmls)
+            slider.removeMouseMotionListener(l); // remove UI-installed TrackListener
+        BasicSliderUI.TrackListener tl = ui.new TrackListener() {
+            // this is where we jump to absolute value of click
+            @Override public void mousePressed(MouseEvent e) {
+                Point p = e.getPoint();
+                int value = ui.valueForXPosition(p.x);
+                slider.setValue(value);
+            }
+            // disable check that will invoke scrollDueToClickInTrack
+            @Override public boolean shouldScroll(int dir) {
+                return false;
+            }
+        };
+        slider.addMouseListener(tl);
+        BasicSliderUI.TrackListener mml = ui.new TrackListener() {
+            // this is where we jump to absolute value of click
+            @Override public void mouseDragged(MouseEvent e) {
+                Point p = e.getPoint();
+                int value = ui.valueForXPosition(p.x);
+                slider.setValue(value);
+            }
+            // disable check that will invoke scrollDueToClickInTrack
+            @Override public boolean shouldScroll(int dir) {
+                return false;
+            }
+        };
+        slider.addMouseMotionListener(mml);
 
 		pnlTrackInfo.add(slider);
 
@@ -620,9 +654,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 						else
 							((JLabel) cell).setIcon((Icon) new ImageIcon(this.getClass().getResource("/jk509/player/res/playing_s.png")));
 					else if (player.isPaused())
-						((JLabel) cell).setIcon((Icon) new ImageIcon(this.getClass().getResource("/jk509/player/res/paused3.png")));
+						((JLabel) cell).setIcon((Icon) new ImageIcon(this.getClass().getResource("/jk509/player/res/paused.png")));
 					else
-						((JLabel) cell).setIcon((Icon) new ImageIcon(this.getClass().getResource("/jk509/player/res/playing2.png")));
+						((JLabel) cell).setIcon((Icon) new ImageIcon(this.getClass().getResource("/jk509/player/res/playing.png")));
 				} else
 					((JLabel) cell).setIcon((Icon) null);
 
@@ -882,8 +916,18 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}
 
 		public void paintThumb(Graphics g) {
-			g.drawImage(this.knobImage, thumbRect.x, thumbRect.y, 17, 17, null);
+			g.drawImage(this.knobImage, thumbRect.x+3, thumbRect.y+3, 6, 13, null);
 		}
+		
+		/*@Override
+		protected void scrollDueToClickInTrack(int direction) {
+	        // this is the default behaviour, let's comment that out
+	        //scrollByBlock(direction);
+
+	        int value = slider.getValue(); 
+            value = this.valueForXPosition(slider.getMousePosition().x);
+	        slider.setValue(value);
+	    }*/
 
 	};
 

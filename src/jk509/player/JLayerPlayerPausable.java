@@ -48,6 +48,7 @@ public class JLayerPlayerPausable {
 	private boolean stopped;
 	private PlaybackListener listener;
 	private int frameIndexCurrent;
+	private long streamsize;
 	private final int lostFrames = 20; // some fraction of a second of the sound
 										// gets "lost" after every pause. 52 in
 										// original code
@@ -70,7 +71,9 @@ public class JLayerPlayerPausable {
 
 	private InputStream getAudioInputStream() throws IOException {
 		if (this.audioPath != null) {
-			return new FileInputStream(this.audioPath);
+			FileInputStream stream = new FileInputStream(this.audioPath);
+			streamsize = stream.getChannel().size();
+			return stream;
 		} else if (this.urlToStreamFrom != null) {
 			return this.urlToStreamFrom.openStream();
 		}
@@ -85,8 +88,7 @@ public class JLayerPlayerPausable {
 		return this.play(frameIndexStart, -1, lostFrames);
 	}
 
-	public boolean play(int frameIndexStart, int frameIndexFinal,
-			int correctionFactorInFrames) throws JavaLayerException {
+	public boolean play(int frameIndexStart, int frameIndexFinal, int correctionFactorInFrames) throws JavaLayerException {
 		try {
 			this.bitstream = new Bitstream(this.getAudioInputStream());
 		} catch (IOException e) {
@@ -102,25 +104,20 @@ public class JLayerPlayerPausable {
 		this.stopped = false;
 		this.frameIndexCurrent = 0;
 
-		while (shouldContinueReadingFrames == true
-				&& this.frameIndexCurrent < frameIndexStart
-						- correctionFactorInFrames) {
+		while (shouldContinueReadingFrames == true && this.frameIndexCurrent < frameIndexStart - correctionFactorInFrames) {
 			shouldContinueReadingFrames = this.skipFrame();
 			this.frameIndexCurrent++;
 		}
 
 		if (this.listener != null) {
-			this.listener.playbackStarted(new PlaybackEvent(this,
-					PlaybackEvent.EventType.Started, this.audioDevice
-							.getPosition()));
+			this.listener.playbackStarted(new PlaybackEvent(this, PlaybackEvent.EventType.Started, this.audioDevice.getPosition()));
 		}
 
 		if (frameIndexFinal < 0) {
 			frameIndexFinal = Integer.MAX_VALUE;
 		}
 
-		while (shouldContinueReadingFrames == true
-				&& this.frameIndexCurrent < frameIndexFinal) {
+		while (shouldContinueReadingFrames == true && this.frameIndexCurrent < frameIndexFinal) {
 			if (this.paused || this.stopped) {
 				shouldContinueReadingFrames = false;
 				try {
@@ -154,8 +151,7 @@ public class JLayerPlayerPausable {
 					// NullPointerException("attribute audioDevice in " +
 					// this.getClass() + " is NULL");
 				}
-				PlaybackEvent playbackEvent = new PlaybackEvent(this,
-						PlaybackEvent.EventType.Stopped, audioDevicePosition);
+				PlaybackEvent playbackEvent = new PlaybackEvent(this, PlaybackEvent.EventType.Stopped, audioDevicePosition);
 				this.listener.playbackFinished(playbackEvent);
 			}
 		}
@@ -205,25 +201,24 @@ public class JLayerPlayerPausable {
 
 					synchronized (this) {
 						if (this.audioDevice != null) {
-							this.audioDevice.write(output.getBuffer(), 0,
-									output.getBufferLength());
+							this.audioDevice.write(output.getBuffer(), 0, output.getBufferLength());
 						}
 					}
 
 					this.bitstream.closeFrame();
 					if (listener != null)
-						listener.frameDecoded(new PlaybackEvent(this,
-								PlaybackEvent.EventType.FrameDecoded,
-								audioDevice.getPosition()));
+						listener.frameDecoded(new DecodeEvent(this, audioDevice.getPosition(),audioDevice.getPosition(), header.ms_per_frame(), header.total_ms((int) streamsize)));
 					returnValue = true;
 				} else {
-					System.out.println("End of file"); // end of file
+					// System.out.println("End of file"); // end of file
 					returnValue = false;
 				}
 			}
 		} catch (RuntimeException ex) {
-			//TODO: this could be dangerous, but only way to overcome the 1% decoding errors
-			//throw new JavaLayerException("Exception decoding audio frame", ex);
+			// TODO: this could be dangerous, but only way to overcome the 1%
+			// decoding errors
+			// throw new JavaLayerException("Exception decoding audio frame",
+			// ex);
 			this.bitstream.closeFrame();
 			returnValue = true;
 		}
@@ -234,9 +229,7 @@ public class JLayerPlayerPausable {
 		if (!stopped) {
 			paused = true;
 			if (listener != null) {
-				listener.playbackPaused(new PlaybackEvent(this,
-						PlaybackEvent.EventType.Paused, this.audioDevice
-								.getPosition()));
+				listener.playbackPaused(new PlaybackEvent(this, PlaybackEvent.EventType.Paused, this.audioDevice.getPosition()));
 			}
 			this.close();
 		}
@@ -257,17 +250,13 @@ public class JLayerPlayerPausable {
 	public void stop() {
 		if (!this.stopped) {
 			if (!this.closed) {
-				this.listener.playbackFinished(new PlaybackEvent(this,
-						PlaybackEvent.EventType.Stopped, this.audioDevice
-								.getPosition()));
+				this.listener.playbackFinished(new PlaybackEvent(this, PlaybackEvent.EventType.Stopped, this.audioDevice.getPosition()));
 				this.close();
 			} else if (this.paused) {
 				int audioDevicePosition = -1; // this.audioDevice.getPosition(),
 												// audioDevice is null
 				if (this.listener != null) // m.berger fix
-					this.listener.playbackFinished(new PlaybackEvent(this,
-							PlaybackEvent.EventType.Stopped,
-							audioDevicePosition));
+					this.listener.playbackFinished(new PlaybackEvent(this, PlaybackEvent.EventType.Stopped, audioDevicePosition));
 			}
 			this.stopped = true;
 		}
@@ -305,7 +294,7 @@ public class JLayerPlayerPausable {
 	public static class PlaybackEvent {
 		public JLayerPlayerPausable source;
 		public EventType eventType;
-		public int frameIndex;
+		public int frameIndex; //int
 
 		public static enum EventType {
 			Started, Stopped, Paused, FrameDecoded
@@ -317,26 +306,58 @@ public class JLayerPlayerPausable {
 			this.frameIndex = frameIndex;
 		}
 	}
+	
+	// inner classes
+		public static class DecodeEvent {
+			public JLayerPlayerPausable source;
+			public int frameIndex; //int
+			public float position; //ms
+			public float ms_per_frame;//ms
+			public float total_ms; //ms
+			public double frame_per_s; //double
+
+			public DecodeEvent(JLayerPlayerPausable source, int frameIndex, float position, float ms_per_frame, float total_ms) {
+				this.source = source;
+				this.frameIndex = frameIndex;
+				this.position = position;
+				this.ms_per_frame = ms_per_frame;
+				this.total_ms = total_ms;
+				this.frame_per_s = 1000 / ms_per_frame;
+			}
+		}
 
 	public static class PlaybackAdapter implements PlaybackListener {
 		@Override
 		public void playbackStarted(PlaybackEvent event) {
-			//System.err.println("Playback started");
+			// System.err.println("Playback started");
 		}
 
 		@Override
 		public void playbackPaused(PlaybackEvent event) {
-			//System.err.println("Playback paused");
+			// System.err.println("Playback paused");
 		}
 
 		@Override
 		public void playbackFinished(PlaybackEvent event) {
-			//System.err.println("Playback stopped");
+			// System.err.println("Playback stopped");
 		}
 
 		@Override
-		public void frameDecoded(PlaybackEvent event) {
-			//System.err.println("Frame Decoded: " + event.frameIndex);
+		public void frameDecoded(DecodeEvent event) {
+			// System.err.println("Frame Decoded: " + event.frameIndex);
+			
+			/*System.out.println("fps: "+event.frame_per_s);
+			System.out.println("index/ms: "+event.frameIndex);
+			System.out.println("ms/f: "+event.ms_per_frame);
+			System.out.println("tot ms: "+event.total_ms);
+			System.out.println("------------------------------------");*/
+			
+			if(event.frameIndex % 1000 < 50)
+				System.out.println("Second: "+event.frameIndex / 1000);
+			
+			//tot. time is from id3 data (or if empty then  total_ms(streamsize), but this is unstable during frame 0)
+			//audioDevice.getPosition() or ms_per_frame for logging current position
+			//ms_per_frame needed for converting time -> frame
 		}
 	}
 
@@ -347,6 +368,6 @@ public class JLayerPlayerPausable {
 
 		public void playbackFinished(PlaybackEvent event);
 
-		public void frameDecoded(PlaybackEvent event);
+		public void frameDecoded(DecodeEvent event);
 	}
 }

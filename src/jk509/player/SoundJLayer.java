@@ -7,15 +7,15 @@ public class SoundJLayer implements Runnable {
 	private JLayerPlayerPausable player;
 	private Thread playerThread;
 	private String namePlayerThread = "AudioPlayerThread";
-	private FormTest.PlaybackListener pl;
+	private MusicPlayer.PlaybackListener pl;
 	//private PlaybackListener playbackListener = new PlaybackListener();
 
-	public SoundJLayer(String filePath, FormTest.PlaybackListener pl) {
+	public SoundJLayer(String filePath, MusicPlayer.PlaybackListener pl) {
 		this.filePath = filePath;
 		this.pl = pl;
 	}
 
-	public SoundJLayer(String filePath, String namePlayerThread, FormTest.PlaybackListener pl) {
+	public SoundJLayer(String filePath, String namePlayerThread, MusicPlayer.PlaybackListener pl) {
 		this.filePath = filePath;
 		this.namePlayerThread = namePlayerThread;
 		this.pl = pl;
@@ -54,6 +54,10 @@ public class SoundJLayer implements Runnable {
 			}
 		}
 	}
+	
+	public void reset(String filePath){
+		this.filePath = filePath;
+	}
 
 	public boolean isPaused() {
 		return this.player.isPaused();
@@ -82,7 +86,7 @@ public class SoundJLayer implements Runnable {
 	 * this.player.setPlaybackListener(this.playbackListener); } catch
 	 * (JavaLayerException e){ e.printStackTrace(); } }
 	 */
-	private void playerInitialize(FormTest.PlaybackListener pl) {
+	private void playerInitialize(MusicPlayer.PlaybackListener pl) {
 		try {
 			this.player = new JLayerPlayerPausable(this.filePath);
 			this.player.setPlaybackListener(pl);
