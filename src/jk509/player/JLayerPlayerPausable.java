@@ -48,6 +48,8 @@ public class JLayerPlayerPausable {
 	private boolean stopped;
 	private PlaybackListener listener;
 	private int frameIndexCurrent;
+	private int startTime;
+	private float ms_per_frame;
 	private long streamsize;
 	private final int lostFrames = 20; // some fraction of a second of the sound
 										// gets "lost" after every pause. 52 in
@@ -108,6 +110,8 @@ public class JLayerPlayerPausable {
 			shouldContinueReadingFrames = this.skipFrame();
 			this.frameIndexCurrent++;
 		}
+		
+		startTime = frameIndexStart;
 
 		if (this.listener != null) {
 			this.listener.playbackStarted(new PlaybackEvent(this, PlaybackEvent.EventType.Started, this.audioDevice.getPosition()));
@@ -206,8 +210,10 @@ public class JLayerPlayerPausable {
 					}
 
 					this.bitstream.closeFrame();
-					if (listener != null)
-						listener.frameDecoded(new DecodeEvent(this, audioDevice.getPosition(),audioDevice.getPosition(), header.ms_per_frame(), header.total_ms((int) streamsize)));
+					if (listener != null){
+						ms_per_frame = header.ms_per_frame();
+						listener.frameDecoded(new DecodeEvent(this, audioDevice.getPosition(), header.ms_per_frame(), header.total_ms((int) streamsize)));
+					}
 					returnValue = true;
 				} else {
 					// System.out.println("End of file"); // end of file
@@ -289,12 +295,20 @@ public class JLayerPlayerPausable {
 	public boolean isStopped() {
 		return stopped;
 	}
+	
+	public float getMsPerFrame(){
+		return ms_per_frame;
+	}
+	
+	public int getStartTime(){
+		return startTime;
+	}
 
 	// inner classes
 	public static class PlaybackEvent {
 		public JLayerPlayerPausable source;
 		public EventType eventType;
-		public int frameIndex; //int
+		public int frameIndex; // int
 
 		public static enum EventType {
 			Started, Stopped, Paused, FrameDecoded
@@ -306,25 +320,23 @@ public class JLayerPlayerPausable {
 			this.frameIndex = frameIndex;
 		}
 	}
-	
-	// inner classes
-		public static class DecodeEvent {
-			public JLayerPlayerPausable source;
-			public int frameIndex; //int
-			public float position; //ms
-			public float ms_per_frame;//ms
-			public float total_ms; //ms
-			public double frame_per_s; //double
 
-			public DecodeEvent(JLayerPlayerPausable source, int frameIndex, float position, float ms_per_frame, float total_ms) {
-				this.source = source;
-				this.frameIndex = frameIndex;
-				this.position = position;
-				this.ms_per_frame = ms_per_frame;
-				this.total_ms = total_ms;
-				this.frame_per_s = 1000 / ms_per_frame;
-			}
+	// inner classes
+	public static class DecodeEvent {
+		public JLayerPlayerPausable source;
+		public float position; // ms
+		public float ms_per_frame;// ms
+		public float total_ms; // ms
+		public double frame_per_s; // double
+
+		public DecodeEvent(JLayerPlayerPausable source, float position, float ms_per_frame, float total_ms) {
+			this.source = source;
+			this.position = position;
+			this.ms_per_frame = ms_per_frame;
+			this.total_ms = total_ms;
+			this.frame_per_s = 1000 / ms_per_frame;
 		}
+	}
 
 	public static class PlaybackAdapter implements PlaybackListener {
 		@Override
@@ -345,19 +357,23 @@ public class JLayerPlayerPausable {
 		@Override
 		public void frameDecoded(DecodeEvent event) {
 			// System.err.println("Frame Decoded: " + event.frameIndex);
+
+			/*
+			 * System.out.println("fps: "+event.frame_per_s);
+			 * System.out.println("index/ms: "+event.frameIndex);
+			 * System.out.println("ms/f: "+event.ms_per_frame);
+			 * System.out.println("tot ms: "+event.total_ms);
+			 * System.out.println("------------------------------------");
+			 */
+
+			//if (event.frameIndex % 1000 < 50)
+			//	System.out.println("Second: " + event.frameIndex / 1000);
 			
-			/*System.out.println("fps: "+event.frame_per_s);
-			System.out.println("index/ms: "+event.frameIndex);
-			System.out.println("ms/f: "+event.ms_per_frame);
-			System.out.println("tot ms: "+event.total_ms);
-			System.out.println("------------------------------------");*/
-			
-			if(event.frameIndex % 1000 < 50)
-				System.out.println("Second: "+event.frameIndex / 1000);
-			
-			//tot. time is from id3 data (or if empty then  total_ms(streamsize), but this is unstable during frame 0)
-			//audioDevice.getPosition() or ms_per_frame for logging current position
-			//ms_per_frame needed for converting time -> frame
+			// tot. time is from id3 data (or if empty then
+			// total_ms(streamsize), but this is unstable during frame 0)
+			// audioDevice.getPosition() or ms_per_frame for logging current
+			// position
+			// ms_per_frame needed for converting time -> frame
 		}
 	}
 

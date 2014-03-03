@@ -8,19 +8,23 @@ public class SoundJLayer implements Runnable {
 	private Thread playerThread;
 	private String namePlayerThread = "AudioPlayerThread";
 	private MusicPlayer.PlaybackListener pl;
-	//private PlaybackListener playbackListener = new PlaybackListener();
+	private int startIndex;
+
+	// private PlaybackListener playbackListener = new PlaybackListener();
 
 	public SoundJLayer(String filePath, MusicPlayer.PlaybackListener pl) {
 		this.filePath = filePath;
 		this.pl = pl;
+		startIndex = -1;
 	}
 
 	public SoundJLayer(String filePath, String namePlayerThread, MusicPlayer.PlaybackListener pl) {
 		this.filePath = filePath;
 		this.namePlayerThread = namePlayerThread;
 		this.pl = pl;
+		startIndex = -1;
 	}
-
+	
 	public void play() {
 		if (this.player == null) {
 			this.playerInitialize(pl);
@@ -28,10 +32,30 @@ public class SoundJLayer implements Runnable {
 			this.stop();
 			this.playerInitialize(pl);
 		}
+		this.startIndex = -1;
 		this.playerThread = new Thread(this, namePlayerThread);
 		this.playerThread.setDaemon(true);
 
 		this.playerThread.start();
+	}
+
+	public void play(int ms) {
+		if (this.player == null) {
+			this.playerInitialize(pl);
+		} else if (!this.player.isPaused() || this.player.isComplete() || this.player.isStopped()) {
+			this.stop();
+			this.playerInitialize(pl);
+		}
+		this.startIndex = msToIndex(ms);
+		this.playerThread = new Thread(this, namePlayerThread);
+		this.playerThread.setDaemon(true);
+
+		this.playerThread.start();
+	}
+	
+	private int msToIndex(int ms){
+		// convert time in milliseconds to which frame is needed in the buffer
+		return (int) Math.floor((double) ms / (double) this.player.getMsPerFrame());
 	}
 
 	public void pause() {
@@ -54,8 +78,8 @@ public class SoundJLayer implements Runnable {
 			}
 		}
 	}
-	
-	public void reset(String filePath){
+
+	public void reset(String filePath) {
 		this.filePath = filePath;
 	}
 
@@ -94,7 +118,7 @@ public class SoundJLayer implements Runnable {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/*
 	 * public FloatControl getFloatControl() throws JavaLayerException{ return
 	 * player.getFloatControl(); }
@@ -103,27 +127,26 @@ public class SoundJLayer implements Runnable {
 	// IRunnable members
 	public void run() {
 		try {
-			this.player.resume();
+			if(startIndex != -1)
+				this.player.play(startIndex);
+			else
+				this.player.resume();
 		} catch (javazoom.jl.decoder.JavaLayerException ex) {
 			ex.printStackTrace();
 		}
 	}
 
-	/*private static class PlaybackListener extends JLayerPlayerPausable.PlaybackAdapter {
-		// PlaybackListener members
-		@Override
-		public void playbackStarted(JLayerPlayerPausable.PlaybackEvent playbackEvent) {
-			// System.err.println("PlaybackStarted()");
-		}
-
-		@Override
-		public void playbackPaused(JLayerPlayerPausable.PlaybackEvent playbackEvent) {
-			// System.err.println("PlaybackPaused()");
-		}
-
-		@Override
-		public void playbackFinished(JLayerPlayerPausable.PlaybackEvent playbackEvent) {
-			// System.err.println("PlaybackStopped()");
-		}
-	}*/
+	/*
+	 * private static class PlaybackListener extends
+	 * JLayerPlayerPausable.PlaybackAdapter { // PlaybackListener members
+	 * 
+	 * @Override public void playbackStarted(JLayerPlayerPausable.PlaybackEvent
+	 * playbackEvent) { // System.err.println("PlaybackStarted()"); }
+	 * 
+	 * @Override public void playbackPaused(JLayerPlayerPausable.PlaybackEvent
+	 * playbackEvent) { // System.err.println("PlaybackPaused()"); }
+	 * 
+	 * @Override public void playbackFinished(JLayerPlayerPausable.PlaybackEvent
+	 * playbackEvent) { // System.err.println("PlaybackStopped()"); } }
+	 */
 }

@@ -1,6 +1,8 @@
 package jk509.player;
 
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,13 +16,12 @@ public class Library {
 	private Map<String, BufferedImage> artwork;
 
 	public Library() {
-		tracks = null;
-		playlists = null;
-		artwork = null;
+		tracks = new ArrayList<Song>();
+		playlists = new ArrayList<Playlist>();
+		artwork = new HashMap<String, BufferedImage>();
 	}
 
-	public Library(List<Song> ts, List<Playlist> ps,
-			Map<String, BufferedImage> art) {
+	public Library(List<Song> ts, List<Playlist> ps, Map<String, BufferedImage> art) {
 		tracks = ts;
 		playlists = ps;
 		artwork = art;
@@ -38,8 +39,21 @@ public class Library {
 		return artwork;
 	}
 
+	public int size() {
+		return tracks.size();
+	}
+
+	public Song get(int i) {
+		return tracks.get(i);
+	}
+
 	public void addTrack(Song s) {
 		tracks.add(s);
+	}
+
+	public void addTracks(List<Song> list) {
+		// TODO: append
+		tracks = list;
 	}
 
 	public void addPlaylist(Playlist p) {

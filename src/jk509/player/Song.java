@@ -123,17 +123,25 @@ public class Song {
 	}
 
 	public String getLength() {
-		String s = Integer.toString(length % 60);
-		if(s.length() == 0)
-			s = "00";
-		if(s.length() == 1)
-			s = "0"+s;
-		if(s.length() > 2)
-			s = s.substring(0, 2);
-		return (length / 60 + ":" + s);
+		return SecondsToString(length);
+	}
+
+	public int getLengthS() {
+		return length;
 	}
 
 	public void setLength(int l) {
 		length = l;
+	}
+	
+	public static String SecondsToString(int length){
+		String s = Integer.toString(length % 60);
+		if (s.length() == 0)
+			s = "00";
+		if (s.length() == 1)
+			s = "0" + s;
+		if (s.length() > 2)
+			s = s.substring(0, 2);
+		return (length / 60 + ":" + s);
 	}
 }
