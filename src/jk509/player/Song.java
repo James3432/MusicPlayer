@@ -1,12 +1,15 @@
 package jk509.player;
 
+import java.io.Serializable;
 import java.util.Date;
 
 /**
  * A representation of audio tracks which may have data drawn from ID3 tags or
  * an iTunes database
  */
-public class Song {
+public class Song implements Serializable {
+
+	private static final long serialVersionUID = 516185787632474552L;
 
 	private String name;
 	private String album;

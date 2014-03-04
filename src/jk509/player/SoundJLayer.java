@@ -58,7 +58,7 @@ public class SoundJLayer implements Runnable {
 		return (int) Math.floor((double) ms / (double) this.player.getMsPerFrame());
 	}
 
-	public void pause() {
+	public void pause() throws NullPointerException {
 		if (this.player != null) {
 			this.player.pause();
 

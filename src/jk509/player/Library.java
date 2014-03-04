@@ -1,6 +1,7 @@
 package jk509.player;
 
 import java.awt.image.BufferedImage;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,8 +10,10 @@ import java.util.Map;
 /*
  *  Library format for save files
  */
-public class Library {
+public class Library implements Serializable {
 
+	private static final long serialVersionUID = 516185787632474552L;
+	
 	private List<Song> tracks;
 	private List<Playlist> playlists;
 	private Map<String, BufferedImage> artwork;

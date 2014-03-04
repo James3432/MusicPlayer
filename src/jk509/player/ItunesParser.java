@@ -38,6 +38,7 @@ public class ItunesParser extends DefaultHandler implements LibraryParser {
 
     private String previousTag;
     private String previousTagVal;
+    private boolean valid = false;
 
     public ItunesParser() {
         tracks = new ArrayList<Song>();
@@ -45,6 +46,11 @@ public class ItunesParser extends DefaultHandler implements LibraryParser {
     
     public ItunesParser(String loc) {
     	this();
+    	libraryPath = loc;
+    	valid = true;
+    }
+    
+    public void setPath (String loc) {
     	libraryPath = loc;
     }
 
@@ -216,6 +222,16 @@ public class ItunesParser extends DefaultHandler implements LibraryParser {
 	@Override
 	public int trackCount() {
 		return tracks.size();
+	}
+
+	@Override
+	public void setValid(boolean b) {
+		valid = b;
+	}
+
+	@Override
+	public boolean isValid() {
+		return valid;
 	}
 
 }

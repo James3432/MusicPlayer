@@ -25,6 +25,7 @@ public class FileScanner implements LibraryParser {
 	private List<Song> tracks;
 	private Map<String, BufferedImage> artwork;
 	
+	private boolean valid = false;
 	private Song tempTrack;
 	
 	public FileScanner(){
@@ -34,6 +35,11 @@ public class FileScanner implements LibraryParser {
 	
 	public FileScanner(String path){
 		this();
+		libraryPath = path;
+		valid = true;
+	}
+	
+	public void setPath(String path){
 		libraryPath = path;
 	}
 	
@@ -50,14 +56,16 @@ public class FileScanner implements LibraryParser {
 	private void scan(String p){
 		File f=new File(p);
 		File l[]=f.listFiles();
-		for(File x:l){
-		    if(x==null){return;}
-		    if(x.isHidden()||!x.canRead())
-		        continue;
-		    if(x.isDirectory())
-		        scan(x.getPath());
-		    else if(x.getName().toLowerCase().endsWith(".mp3"))
-		        AddSong(x);
+		if(l != null && l.length > 0){
+			for(File x:l){
+			    if(x==null){return;}
+			    if(x.isHidden()||!x.canRead())
+			        continue;
+			    if(x.isDirectory())
+			        scan(x.getPath());
+			    else if(x.getName().toLowerCase().endsWith(".mp3"))
+			        AddSong(x);
+			}
 		}
 	}
 	
@@ -182,5 +190,15 @@ public class FileScanner implements LibraryParser {
 	@Override
 	public int trackCount() {
 		return tracks.size();
+	}
+
+	@Override
+	public void setValid(boolean b) {
+		valid = b;
+	}
+
+	@Override
+	public boolean isValid() {
+		return valid;
 	}
 }

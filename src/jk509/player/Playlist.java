@@ -1,8 +1,12 @@
 package jk509.player;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class Playlist {
+public class Playlist implements Serializable {
+
+	private static final long serialVersionUID = 516185787632474552L;
+	
 	// lists of Songs, or lists of IDs?? (the latter currently)
 
 	private String name;

@@ -185,7 +185,7 @@ public class JLayerPlayerPausable {
 
 	protected boolean decodeFrame() throws JavaLayerException {
 		boolean returnValue = false;
-		if (this.stopped) { // nothing for decode
+		if (this.stopped || this.paused) { // nothing for decode
 			return false;
 		}
 
@@ -227,11 +227,12 @@ public class JLayerPlayerPausable {
 			// ex);
 			this.bitstream.closeFrame();
 			returnValue = true;
-		}
+		} 
+	
 		return returnValue;
 	}
 
-	public void pause() {
+	public void pause() throws NullPointerException {
 		if (!stopped) {
 			paused = true;
 			if (listener != null) {
