@@ -126,12 +126,26 @@ public class ParseDiskDialog extends JDialog {
 	private class BtnBrowseActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
 			JFileChooser chooser = new JFileChooser();
-			String homedir = System.getenv("user.home");
-			if (homedir == null)
-				homedir = System.getenv("USERPROFILE");
-			if (homedir == null || homedir.equals(""))
-				homedir = ".";
-			chooser.setCurrentDirectory(new java.io.File(homedir));
+			
+			String startat = "";
+			// choose initial folder (first check textfield, otherwise try user home dir)
+			try{
+				if((new File(txtPath.getText())).exists() && (new File(txtPath.getText())).isDirectory())
+					startat = (new File(txtPath.getText())).getPath();
+				else
+					startat = "";
+			}catch(Exception e){
+				startat = "";
+			}
+			
+			if(startat.equals("")){
+				startat = System.getenv("user.home");
+				if (startat == null || startat.equals(""))
+					startat = System.getenv("USERPROFILE");
+				if (startat == null || startat.equals(""))
+					startat = ".";
+			}
+			chooser.setCurrentDirectory(new java.io.File(startat));
 			chooser.setDialogTitle("Select music folder");
 			chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 

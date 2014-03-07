@@ -49,6 +49,10 @@ public class Library implements Serializable {
 	public Song get(int i) {
 		return tracks.get(i);
 	}
+	
+	public void remove(int i){
+		tracks.remove(i);
+	}
 
 	public void addTrack(Song s) {
 		tracks.add(s);

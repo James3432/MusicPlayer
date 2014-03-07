@@ -30,7 +30,7 @@ public class ParseItunesDialog extends JDialog {
 	private JButton btnOk;
 	private JButton btnCancel;
 	LibraryParser parser;
-	OpenFileChooser fc;
+	JFileChooser fc;
 
 	/**
 	 * Create the dialog.
@@ -174,9 +174,22 @@ public class ParseItunesDialog extends JDialog {
 	}
 	private class BtnBrowseActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
-			fc = new OpenFileChooser();
+			fc = new JFileChooser();
 			fc.setFileFilter(new OBJfilter());
-			fc.type = 1;
+			//fc.type = 1;
+			
+			String startat = "";
+			// choose initial folder (first check textfield, otherwise try user home dir)
+			try{
+				if(new File((new File(txtPath.getText())).getParent()).exists())
+					startat = (new File(txtPath.getText())).getParent();
+				else
+					startat = "";
+			}catch(Exception e){
+				startat = "";
+			}
+			
+			fc.setCurrentDirectory(new File(startat));
 
 			int returnVal = fc.showOpenDialog((Component) arg0.getSource());
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
