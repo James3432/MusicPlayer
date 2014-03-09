@@ -166,7 +166,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 												// to keep updated with current,
 												// or ignore if
 												// playlistPlaying==selectedPlaylist
-	private int rowSelected; // changes according to sort
+	//private int rowSelected; // changes according to sort
 	// private int playlistSelected = 0;
 	public static int FIXED_PLAYLIST_ELEMENTS = 3; // number of system-set
 													// playlists (ie. tracks,
@@ -1091,7 +1091,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			if (trackPlaying > -1 && playlistPlaying == listPlaylists.getSelectedIndex())
 				rowPlaying = playlistPlayingSorter.viewIndex(trackPlaying);
 				//rowPlaying = ((TableSorter) tabMain.getModel()).viewIndex(trackPlaying);
-			rowSelected = arg0.getModifiers();
+			int rowSelected = arg0.getModifiers();
 			tabMain.getSelectionModel().setSelectionInterval(rowSelected, rowSelected);
 			// force selection to be at top of screen
 			tabMain.scrollRectToVisible(tabMain.getCellRect(Math.min(rowSelected + 100, tabMain.getRowCount() - 1), 0, true));
@@ -1775,7 +1775,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}
 		@Override
 		public void mouseClicked(MouseEvent e) {
-			if(txtSearch.getText() != null && !txtSearch.getText().equals(""))
+			if(txtSearch.getText() != null && !txtSearch.getText().equals("") && !txtSearch.getText().equals(" Search"))
 				Search(txtSearch.getText());
 		}
 	}
@@ -1880,7 +1880,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 				@Override
 				public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException {
-					return library.get(rowSelected);
+					return library.get(((TableSorter)tabMain.getModel()).modelIndex(tabMain.getSelectedRow()));
 				}
 
 				@Override
