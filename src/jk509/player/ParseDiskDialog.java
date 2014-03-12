@@ -36,7 +36,6 @@ public class ParseDiskDialog extends JDialog {
 		setTitle("Import from Disk");
 		setResizable(false);
 		setModalityType(ModalityType.APPLICATION_MODAL);
-		setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 		setIconImage(Toolkit.getDefaultToolkit().getImage(MusicPlayer.class.getResource("/jk509/player/res/icon.png")));
 		setModal(true);
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);

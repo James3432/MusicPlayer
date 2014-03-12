@@ -110,7 +110,7 @@ public class JLayerPlayerPausable {
 			shouldContinueReadingFrames = this.skipFrame();
 			this.frameIndexCurrent++;
 		}
-		
+
 		startTime = frameIndexStart;
 
 		if (this.listener != null) {
@@ -210,9 +210,9 @@ public class JLayerPlayerPausable {
 					}
 
 					this.bitstream.closeFrame();
-					if (listener != null){
+					if (listener != null) {
 						ms_per_frame = header.ms_per_frame();
-						listener.frameDecoded(new DecodeEvent(this, audioDevice.getPosition(), header.ms_per_frame(), header.total_ms((int) streamsize)));
+						listener.frameDecoded(new DecodeEvent(this, audioDevice.getPosition(), header.ms_per_frame(), header.total_ms((int) streamsize), audioPath));
 					}
 					returnValue = true;
 				} else {
@@ -227,8 +227,8 @@ public class JLayerPlayerPausable {
 			// ex);
 			this.bitstream.closeFrame();
 			returnValue = true;
-		} 
-	
+		}
+
 		return returnValue;
 	}
 
@@ -296,13 +296,17 @@ public class JLayerPlayerPausable {
 	public boolean isStopped() {
 		return stopped;
 	}
-	
-	public float getMsPerFrame(){
+
+	public float getMsPerFrame() {
 		return ms_per_frame;
 	}
-	
-	public int getStartTime(){
+
+	public int getStartTime() {
 		return startTime;
+	}
+
+	public String getPath() {
+		return audioPath;
 	}
 
 	// inner classes
@@ -329,13 +333,15 @@ public class JLayerPlayerPausable {
 		public float ms_per_frame;// ms
 		public float total_ms; // ms
 		public double frame_per_s; // double
+		public String path;
 
-		public DecodeEvent(JLayerPlayerPausable source, float position, float ms_per_frame, float total_ms) {
+		public DecodeEvent(JLayerPlayerPausable source, float position, float ms_per_frame, float total_ms, String path) {
 			this.source = source;
 			this.position = position;
 			this.ms_per_frame = ms_per_frame;
 			this.total_ms = total_ms;
 			this.frame_per_s = 1000 / ms_per_frame;
+			this.path = path;
 		}
 	}
 
@@ -367,9 +373,9 @@ public class JLayerPlayerPausable {
 			 * System.out.println("------------------------------------");
 			 */
 
-			//if (event.frameIndex % 1000 < 50)
-			//	System.out.println("Second: " + event.frameIndex / 1000);
-			
+			// if (event.frameIndex % 1000 < 50)
+			// System.out.println("Second: " + event.frameIndex / 1000);
+
 			// tot. time is from id3 data (or if empty then
 			// total_ms(streamsize), but this is unstable during frame 0)
 			// audioDevice.getPosition() or ms_per_frame for logging current

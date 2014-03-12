@@ -24,7 +24,7 @@ public class SoundJLayer implements Runnable {
 		this.pl = pl;
 		startIndex = -1;
 	}
-	
+
 	public void play() {
 		if (this.player == null) {
 			this.playerInitialize(pl);
@@ -52,8 +52,8 @@ public class SoundJLayer implements Runnable {
 
 		this.playerThread.start();
 	}
-	
-	private int msToIndex(int ms){
+
+	private int msToIndex(int ms) {
 		// convert time in milliseconds to which frame is needed in the buffer
 		return (int) Math.floor((double) ms / (double) this.player.getMsPerFrame());
 	}
@@ -127,7 +127,7 @@ public class SoundJLayer implements Runnable {
 	// IRunnable members
 	public void run() {
 		try {
-			if(startIndex != -1)
+			if (startIndex != -1)
 				this.player.play(startIndex);
 			else
 				this.player.resume();

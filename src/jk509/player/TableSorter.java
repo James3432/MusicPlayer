@@ -142,7 +142,7 @@ public class TableSorter extends AbstractTableModel {
 		setTableHeader(tableHeader);
 		setTableModel(tableModel);
 	}
-	
+
 	public TableSorter(TableModel tableModel, JTableHeader tableHeader, TableRowSortedListener trsl, JTable table) {
 		this();
 		setTableHeader(tableHeader);
@@ -150,7 +150,7 @@ public class TableSorter extends AbstractTableModel {
 		setListener(trsl);
 		this.table = table;
 	}
-	
+
 	private void setListener(TableRowSortedListener trsl) {
 		changeListener = trsl;
 	}
@@ -286,7 +286,7 @@ public class TableSorter extends AbstractTableModel {
 	public int modelIndex(int viewIndex) {
 		return getViewToModel()[viewIndex].modelIndex;
 	}
-	
+
 	public int viewIndex(int modelIndex) {
 		return getModelToView()[modelIndex];
 	}
@@ -330,6 +330,20 @@ public class TableSorter extends AbstractTableModel {
 
 	public void setValueAt(Object aValue, int row, int column) {
 		tableModel.setValueAt(aValue, modelIndex(row), column);
+	}
+
+	public void clearListeners() {
+		try {
+			this.tableHeader.removeMouseListener(mouseListener);
+		} catch (Exception e) {
+		}
+		mouseListener = null;
+		try {
+			this.tableModel.removeTableModelListener(tableModelListener);
+		} catch (Exception e) {
+		}
+		tableModelListener = null;
+		changeListener = null;
 	}
 
 	// Helper classes
@@ -428,9 +442,9 @@ public class TableSorter extends AbstractTableModel {
 
 	private class MouseHandler extends MouseAdapter {
 		public void mouseClicked(MouseEvent e) {
-			try{
+			try {
 				selectedRow = modelIndex(table.getSelectedRow());
-			}catch(Exception arg0){
+			} catch (Exception arg0) {
 				selectedRow = -1;
 			}
 			JTableHeader h = (JTableHeader) e.getSource();

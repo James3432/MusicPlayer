@@ -9,9 +9,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.image.BufferedImage;
-import java.util.List;
-import java.util.Map;
+import java.io.File;
 
 import javax.swing.AbstractListModel;
 import javax.swing.ButtonGroup;
@@ -19,6 +17,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
@@ -27,14 +26,15 @@ import javax.swing.JProgressBar;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
-import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.BevelBorder;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.SoftBevelBorder;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.filechooser.FileFilter;
+import java.awt.Dialog.ModalityType;
 
 public class Setup extends JDialog {
 	/**
@@ -91,9 +91,7 @@ public class Setup extends JDialog {
 
 	private JDialog dialog;
 	private int stage = 1; // which screen, 1-6, we are on
-	private List<Song> tracks;
-	private List<Playlist> playlists;
-	private Map<String, BufferedImage> artwork;
+	private Library library;
 
 	private JLabel lblItLooksLike;
 	private JLabel lblHi;
@@ -107,13 +105,10 @@ public class Setup extends JDialog {
 	private JLabel lblNoAudioFiles;
 	private JLabel lblFoundItunesLibrary;
 	private JButton btnBrowseItunes;
-	private JLabel lblPleaseLcoateYour;
+	private JLabel lblItunesLocate;
 	private JTextField txtMusicRoot;
 	private JTextField txtMusicItunes;
-	private JTable tblItunes;
 	private JScrollPane scrlItunesTable;
-	private JLabel lblSelectOneOr;
-	private JLabel lblPlaylistsFound;
 	private JList listPlaylists;
 	private JScrollPane scrollPane_1;
 	private JButton btnSkipItunes;
@@ -132,7 +127,6 @@ public class Setup extends JDialog {
 	private JLabel lblPressDeleteTo;
 	private JButton btnImportItunes;
 	private JButton btnImportMusic;
-	private JLabel lblLoadMoreMusic;
 	private JLabel lblLoadMoreItunes;
 	private JPanel panel;
 	private JLabel lblListeningPreferences;
@@ -155,35 +149,45 @@ public class Setup extends JDialog {
 	private JRadioButton rdbtnRepeatNone;
 	private JPanel panel_1;
 	private JPanel panel_2;
-	private JLabel label_1;
+	private JLabel lblProcessingStart;
 	private JLabel lblOf;
-	private JLabel label_2;
-	private JLabel lbleyeOfThe;
+	private JLabel lblProcessingCount;
+	private JLabel lblProcessingName;
 	private JLabel lblTimeTaken;
 	private JLabel lblTimeRemaining;
-	private JLabel lblms;
-	private JLabel lblms_1;
+	private JLabel lblProcessingTime;
+	private JLabel lblProcessingTimeLeft;
 	private JLabel lblThisInformationWill;
 	private JLabel lblPreferencesHaveBeen;
 	private JLabel lblClickHereTo;
+	private JList listTracks;
+	private JLabel lblPlaylists;
+	private JLabel lblPreview;
+	private JLabel lblNoteThisWill;
+	private JLabel label_3;
+	private JLabel label_4;
+	private JList listTracksDisk;
+	private JLabel lblYouCanImport;
+	private JLabel label_6;
+	private JScrollPane scrollPane;
 
 	/**
 	 * Create the dialog.
 	 */
 	public Setup(Library library) {
+		setModalityType(ModalityType.APPLICATION_MODAL);
 		dialog = this;
+		this.library = library;
 		addWindowListener(new ThisWindowListener());
 		setResizable(false);
-		setTitle("Music Player Setup");
+		setTitle("Music Factory Setup");
 		setMinimumSize(new Dimension(800, 600));
-		setModalityType(ModalityType.APPLICATION_MODAL);
 		setModal(true);
 		// TODO: this needs setting by caller
 		setLocationRelativeTo(null);
 		setAlwaysOnTop(true);
 		setBounds(100, 100, 800, 600);
-		setIconImage((new ImageIcon(this.getClass().getResource(
-				"/jk509/player/res/icon.png"))).getImage());
+		setIconImage((new ImageIcon(this.getClass().getResource("/jk509/player/res/icon.png"))).getImage());
 
 		splitPane = new JSplitPane();
 		splitPane.setEnabled(false);
@@ -198,8 +202,7 @@ public class Setup extends JDialog {
 		pnlSidebar.setLayout(new BorderLayout(0, 0));
 
 		lblbg = new JLabel();
-		lblbg.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/setupbg.png")));
+		lblbg.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/setupbg.png")));
 		lblbg.setMinimumSize(new Dimension(100, 200));
 		pnlSidebar.add(lblbg, BorderLayout.SOUTH);
 
@@ -246,42 +249,36 @@ public class Setup extends JDialog {
 
 		blt5 = new JLabel();
 		blt5.setEnabled(false);
-		blt5.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/bullet.png")));
+		blt5.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/bullet.png")));
 		blt5.setBounds(20, 184, 22, 32);
 		pnlOverview.add(blt5);
 
 		blt2 = new JLabel();
 		blt2.setEnabled(false);
-		blt2.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/bullet.png")));
+		blt2.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/bullet.png")));
 		blt2.setBounds(20, 64, 22, 32);
 		pnlOverview.add(blt2);
 
 		blt1 = new JLabel();
-		blt1.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/bullet.png")));
+		blt1.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/bullet.png")));
 		blt1.setBounds(20, 24, 22, 32);
 		pnlOverview.add(blt1);
 
 		blt6 = new JLabel();
 		blt6.setEnabled(false);
-		blt6.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/bullet.png")));
+		blt6.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/bullet.png")));
 		blt6.setBounds(20, 224, 22, 32);
 		pnlOverview.add(blt6);
 
 		blt4 = new JLabel();
 		blt4.setEnabled(false);
-		blt4.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/bullet.png")));
+		blt4.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/bullet.png")));
 		blt4.setBounds(20, 144, 22, 32);
 		pnlOverview.add(blt4);
 
 		blt3 = new JLabel();
 		blt3.setEnabled(false);
-		blt3.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/bullet.png")));
+		blt3.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/bullet.png")));
 		blt3.setBounds(20, 104, 22, 32);
 		pnlOverview.add(blt3);
 
@@ -307,20 +304,17 @@ public class Setup extends JDialog {
 		lblHi.setBounds(36, 95, 141, 57);
 		panel_11.add(lblHi);
 
-		lblItLooksLike = new JLabel(
-				"It looks like this is the first time you've run Music Player.");
+		lblItLooksLike = new JLabel("It looks like this is the first time you've run Music Factory.");
 		lblItLooksLike.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblItLooksLike.setBounds(36, 163, 500, 22);
 		panel_11.add(lblItLooksLike);
 
-		lblThisSetupProcess = new JLabel(
-				"This setup process will guide you through importing your music from other software.");
+		lblThisSetupProcess = new JLabel("This setup process will guide you through importing your music from other software.");
 		lblThisSetupProcess.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblThisSetupProcess.setBounds(36, 196, 541, 22);
 		panel_11.add(lblThisSetupProcess);
 
-		lblYourMusicWill = new JLabel(
-				"Your music will be analysed, and then the software will be ready to start learning your");
+		lblYourMusicWill = new JLabel("Your music will be analysed, and then the software will be ready to start learning your");
 		lblYourMusicWill.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblYourMusicWill.setBounds(36, 229, 541, 22);
 		panel_11.add(lblYourMusicWill);
@@ -333,27 +327,26 @@ public class Setup extends JDialog {
 		panel_11.add(panel);
 		panel.setLayout(null);
 
-		lblYourMusicPreferences = new JLabel(
-				"Your settings and music preference data will be stored in: ");
+		lblYourMusicPreferences = new JLabel("Your settings and music preference data will be stored in: ");
 		lblYourMusicPreferences.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblYourMusicPreferences.setBounds(22, 30, 445, 17);
 		panel.add(lblYourMusicPreferences);
 
-		lblcusersjamesmusicplayer = new JTextField(
-				"\"C:\\Users\\James\\MusicPlayer\"");
+		String homedir = System.getenv("user.home");
+		if (homedir == null)
+			homedir = System.getenv("USERPROFILE");
+		lblcusersjamesmusicplayer = new JTextField("\"" + homedir + "\\Music Factory\"");
 		lblcusersjamesmusicplayer.setEditable(false);
 		lblcusersjamesmusicplayer.setBounds(22, 62, 485, 25);
 		panel.add(lblcusersjamesmusicplayer);
 		lblcusersjamesmusicplayer.setFont(new Font("Tahoma", Font.BOLD, 14));
 
-		lblPleaseDontMove = new JLabel(
-				"Please don't move or change this folder or its contents.");
+		lblPleaseDontMove = new JLabel("Please don't move or change this folder or its contents.");
 		lblPleaseDontMove.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblPleaseDontMove.setBounds(22, 104, 485, 23);
 		panel.add(lblPleaseDontMove);
 
-		lblYourAudioFiles = new JLabel(
-				"Your audio files will not be moved or copied here, and the preference data");
+		lblYourAudioFiles = new JLabel("Your audio files will not be moved or copied here, and the preference data");
 		lblYourAudioFiles.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblYourAudioFiles.setBounds(22, 134, 485, 32);
 		panel.add(lblYourAudioFiles);
@@ -369,8 +362,7 @@ public class Setup extends JDialog {
 		panel_11.add(lblListeningPreferences);
 
 		label = new JLabel();
-		label.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/setupbg3.png")));
+		label.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/setupbg3.png")));
 		label.setBounds(0, -23, 587, 153);
 		panel_11.add(label);
 
@@ -386,8 +378,7 @@ public class Setup extends JDialog {
 		btnNext1.setFont(new Font("Tahoma", Font.BOLD, 11));
 		btnNext1.addActionListener(new BtnNextActionListener());
 		btnNext1.setHorizontalTextPosition(SwingConstants.LEADING);
-		btnNext1.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/rarrow.png")));
+		btnNext1.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/rarrow.png")));
 		btnNext1.setPreferredSize(new Dimension(110, 25));
 		panel_12.add(btnNext1, BorderLayout.EAST);
 
@@ -412,14 +403,15 @@ public class Setup extends JDialog {
 		lblBasicSettings_1.setBounds(60, 20, 176, 48);
 		panel_21.add(lblBasicSettings_1);
 
-		chckbxTryToDownload = new JCheckBox(
-				"Try to download album artwork automatically");
+		chckbxTryToDownload = new JCheckBox("Try to download album artwork automatically");
+		chckbxTryToDownload.setEnabled(false);
 		chckbxTryToDownload.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		chckbxTryToDownload.setBackground(Color.WHITE);
 		chckbxTryToDownload.setBounds(60, 262, 379, 23);
 		panel_21.add(chckbxTryToDownload);
 
 		chckbxEnableShortcuts = new JCheckBox("Enable keyboard shortcuts");
+		chckbxEnableShortcuts.setEnabled(false);
 		chckbxEnableShortcuts.setSelected(true);
 		chckbxEnableShortcuts.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		chckbxEnableShortcuts.setBackground(Color.WHITE);
@@ -441,21 +433,19 @@ public class Setup extends JDialog {
 		lblDefaultSortOrder.setFont(new Font("Tahoma", Font.PLAIN, 14));
 
 		list = new JList();
+		list.setEnabled(false);
 		list.setBounds(242, 25, 176, 101);
 		panel_1.add(list);
 		list.setVisibleRowCount(5);
 		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		list.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		list.setBorder(new SoftBevelBorder(BevelBorder.LOWERED,
-				Color.LIGHT_GRAY, Color.GRAY, null, null));
+		list.setBorder(new SoftBevelBorder(BevelBorder.LOWERED, Color.LIGHT_GRAY, Color.GRAY, null, null));
 		list.setModel(new AbstractListModel() {
 			/**
 			 * 
 			 */
 			private static final long serialVersionUID = 1L;
-			String[] values = new String[] { "By track name",
-					"By artist, then album", "By artist, then track name",
-					"By genre, then artist", "By year, then artist" };
+			String[] values = new String[] { "By track name", "By artist, then album", "By artist, then track name", "By genre, then artist", "By year, then artist" };
 
 			public int getSize() {
 				return values.length;
@@ -475,12 +465,14 @@ public class Setup extends JDialog {
 		panel_21.add(panel_2);
 
 		rdbtnOne = new JRadioButton("Repeat one");
+		rdbtnOne.setEnabled(false);
 		rdbtnOne.setBounds(20, 65, 109, 23);
 		panel_2.add(rdbtnOne);
 		rdbtnOne.setBackground(Color.WHITE);
 		repeats.add(rdbtnOne);
 
 		rdbtnRepeatAll = new JRadioButton("Repeat all");
+		rdbtnRepeatAll.setEnabled(false);
 		rdbtnRepeatAll.setBounds(135, 65, 109, 23);
 		panel_2.add(rdbtnRepeatAll);
 		rdbtnRepeatAll.setSelected(true);
@@ -488,13 +480,13 @@ public class Setup extends JDialog {
 		repeats.add(rdbtnRepeatAll);
 
 		rdbtnRepeatNone = new JRadioButton("Repeat none");
+		rdbtnRepeatNone.setEnabled(false);
 		rdbtnRepeatNone.setBounds(250, 65, 109, 23);
 		panel_2.add(rdbtnRepeatNone);
 		rdbtnRepeatNone.setBackground(Color.WHITE);
 		repeats.add(rdbtnRepeatNone);
 
-		lblDefaultRepeatBehaviour = new JLabel(
-				"Default repeat behaviour for songs:");
+		lblDefaultRepeatBehaviour = new JLabel("Default repeat behaviour for songs:");
 		lblDefaultRepeatBehaviour.setBounds(20, 24, 217, 23);
 		panel_2.add(lblDefaultRepeatBehaviour);
 		lblDefaultRepeatBehaviour.setFont(new Font("Tahoma", Font.PLAIN, 14));
@@ -510,8 +502,7 @@ public class Setup extends JDialog {
 		btnPrevious2.setBackground(Color.WHITE);
 		btnPrevious2.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		btnPrevious2.addActionListener(new BtnPrevActionListener());
-		btnPrevious2.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/larrow.png")));
+		btnPrevious2.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/larrow.png")));
 		btnPrevious2.setPreferredSize(new Dimension(110, 25));
 		btnPrevious2.setMaximumSize(new Dimension(73, 20));
 		panel_22.add(btnPrevious2, BorderLayout.WEST);
@@ -521,8 +512,7 @@ public class Setup extends JDialog {
 		btnNext2.setFont(new Font("Tahoma", Font.BOLD, 11));
 		btnNext2.addActionListener(new BtnNextActionListener());
 		btnNext2.setHorizontalTextPosition(SwingConstants.LEADING);
-		btnNext2.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/rarrow.png")));
+		btnNext2.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/rarrow.png")));
 		btnNext2.setPreferredSize(new Dimension(110, 25));
 		panel_22.add(btnNext2, BorderLayout.EAST);
 
@@ -536,103 +526,85 @@ public class Setup extends JDialog {
 		pnl3.add(panel_31, BorderLayout.CENTER);
 		panel_31.setLayout(null);
 
-		lblNoAudioFiles = new JLabel("No audio files will be copied.");
-		lblNoAudioFiles.setBounds(239, 125, 134, 14);
+		lblNoAudioFiles = new JLabel("(Audio files will not be copied)");
+		lblNoAudioFiles.setBounds(178, 141, 191, 14);
 		panel_31.add(lblNoAudioFiles);
 
-		lblFoundItunesLibrary = new JLabel(
-				"Found itunes library here / couldn't find itunes library.");
-		lblFoundItunesLibrary.setBounds(195, 58, 257, 14);
-		panel_31.add(lblFoundItunesLibrary);
-
-		btnBrowseItunes = new JButton("Browse...");
-		btnBrowseItunes.setBackground(Color.WHITE);
-		btnBrowseItunes.setBounds(338, 83, 79, 23);
-		panel_31.add(btnBrowseItunes);
-
 		txtMusicItunes = new JTextField();
-		txtMusicItunes.setBounds(32, 84, 296, 20);
-		String homedir = System.getenv("user.home");
+		txtMusicItunes.setBounds(30, 101, 445, 21);
+		homedir = System.getenv("user.home");
 		if (homedir == null)
 			homedir = System.getenv("USERPROFILE");
 		txtMusicItunes.setText(homedir + "\\Music\\iTunes");
 		panel_31.add(txtMusicItunes);
 		txtMusicItunes.setColumns(10);
 
-		lblPleaseLcoateYour = new JLabel("Please locate your itunes folder");
-		lblPleaseLcoateYour.setBounds(34, 60, 151, 14);
-		panel_31.add(lblPleaseLcoateYour);
+		lblItunesLocate = new JLabel("Please locate your itunes folder:");
+		lblItunesLocate.setBounds(30, 76, 170, 14);
+		panel_31.add(lblItunesLocate);
+
+		String path = homedir + "\\Music\\iTunes\\iTunes Music Library.xml";
+		if ((new File(path)).exists()) {
+			lblFoundItunesLibrary = new JLabel("Found an iTunes library: " + path);
+			lblFoundItunesLibrary.setBounds(30, 76, 500, 14);
+			lblFoundItunesLibrary.setForeground(new Color(0, 128, 0));
+			txtMusicItunes.setText(path);
+			lblItunesLocate.setVisible(false);
+			panel_31.add(lblFoundItunesLibrary);
+		}
+
+		btnBrowseItunes = new JButton("Browse...");
+		btnBrowseItunes.addActionListener(new BtnBrowseItunesActionListener());
+		btnBrowseItunes.setBackground(Color.WHITE);
+		btnBrowseItunes.setBounds(481, 100, 79, 23);
+		panel_31.add(btnBrowseItunes);
 
 		btnImportItunes = new JButton("Import Music");
 		btnImportItunes.setBackground(Color.WHITE);
 		btnImportItunes.setForeground(new Color(0, 128, 0));
-		btnImportItunes.setBounds(33, 115, 136, 30);
+		btnImportItunes.setBounds(30, 133, 136, 30);
 		btnImportItunes.addActionListener(new BtnImportItunesActionListener());
 		btnImportItunes.setFont(new Font("Tahoma", Font.BOLD, 14));
 		panel_31.add(btnImportItunes);
 
 		scrlItunesTable = new JScrollPane();
-		scrlItunesTable.setBounds(34, 243, 339, 262);
+		scrlItunesTable.setToolTipText("Select one or more tracks and press delete to remove them");
+		scrlItunesTable.setBounds(30, 250, 339, 240);
 		scrlItunesTable.setPreferredSize(new Dimension(100, 100));
 		panel_31.add(scrlItunesTable);
 
-		tblItunes = new JTable();
-		scrlItunesTable.setViewportView(tblItunes);
-		tblItunes.setModel(new DefaultTableModel(new Object[][] {
-				{ null, null, null, null, null, null, null },
-				{ null, null, null, null, null, null, null },
-				{ null, null, null, null, null, null, null },
-				{ null, null, null, null, null, null, null },
-				{ null, null, null, null, null, null, null },
-				{ null, null, null, null, null, null, null },
-				{ null, null, null, null, null, null, null }, }, new String[] {
-				"New column", "New column", "New column", "New column",
-				"New column", "New column", "New column" }));
-
-		lblSelectOneOr = new JLabel(
-				"Select one or more songs and press delete to remove them");
-		lblSelectOneOr.setBounds(34, 156, 283, 14);
-		panel_31.add(lblSelectOneOr);
-
-		lblPlaylistsFound = new JLabel("Playlists found:");
-		lblPlaylistsFound.setBounds(322, 156, 73, 14);
-		panel_31.add(lblPlaylistsFound);
+		listTracks = new JList();
+		listTracks.setToolTipText("Select one or more tracks and press delete to remove them");
+		scrlItunesTable.setViewportView(listTracks);
 
 		scrollPane_1 = new JScrollPane();
-		scrollPane_1.setBounds(400, 243, 151, 262);
+		scrollPane_1.setToolTipText("Select one or more playlists and press delete to remove them");
+		scrollPane_1.setBounds(390, 250, 170, 240);
 		scrollPane_1.setPreferredSize(new Dimension(50, 50));
 		panel_31.add(scrollPane_1);
 
 		listPlaylists = new JList();
+		listPlaylists.setToolTipText("Select one or more playlists and press delete to remove them");
 		scrollPane_1.setViewportView(listPlaylists);
-		listPlaylists.setModel(new AbstractListModel() {
-			/**
-			 * 
-			 */
-			private static final long serialVersionUID = 1L;
-			String[] values = new String[] { "one", "two", "three" };
+		/*
+		 * listPlaylists.setModel(new AbstractListModel() { String[] values =
+		 * new String[] {}; public int getSize() { return values.length; }
+		 * public Object getElementAt(int index) { return values[index]; } });
+		 */
 
-			public int getSize() {
-				return values.length;
-			}
-
-			public Object getElementAt(int index) {
-				return values[index];
-			}
-		});
-
-		chckbxImportPlaylists = new JCheckBox("import playlists");
+		chckbxImportPlaylists = new JCheckBox("Import playlists");
+		chckbxImportPlaylists.setSelected(true);
 		chckbxImportPlaylists.setBackground(Color.WHITE);
-		chckbxImportPlaylists.setBounds(455, 151, 97, 23);
+		chckbxImportPlaylists.setBounds(386, 492, 143, 23);
 		panel_31.add(chckbxImportPlaylists);
 
-		lblPressDeleteTo = new JLabel("Press delete to remove playlist");
-		lblPressDeleteTo.setBounds(73, 193, 147, 14);
+		lblPressDeleteTo = new JLabel("Tracks");
+		lblPressDeleteTo.setFont(new Font("Trebuchet MS", Font.BOLD, 12));
+		lblPressDeleteTo.setBounds(32, 225, 153, 23);
 		panel_31.add(lblPressDeleteTo);
 
-		lblLoadMoreItunes = new JLabel(
-				"Load more itunes stuff later using File -> Import from iTunes");
-		lblLoadMoreItunes.setBounds(225, 193, 289, 14);
+		lblLoadMoreItunes = new JLabel("You can import additional tracks from iTunes later if needed.");
+		lblLoadMoreItunes.setBounds(30, 496, 289, 14);
 		panel_31.add(lblLoadMoreItunes);
 
 		lblImportFromItunes_2 = new JLabel("Import from iTunes (optional)");
@@ -643,9 +615,20 @@ public class Setup extends JDialog {
 
 		btnSkipItunes = new JButton("Skip");
 		btnSkipItunes.setBackground(Color.WHITE);
-		btnSkipItunes.setBounds(460, 34, 90, 24);
+		btnSkipItunes.setBounds(470, 33, 90, 24);
 		panel_31.add(btnSkipItunes);
 		btnSkipItunes.setFont(new Font("Tahoma", Font.BOLD, 11));
+
+		lblPlaylists = new JLabel("Playlists");
+		lblPlaylists.setFont(new Font("Trebuchet MS", Font.BOLD, 12));
+		lblPlaylists.setBounds(390, 225, 153, 23);
+		panel_31.add(lblPlaylists);
+
+		lblPreview = new JLabel("Preview:");
+		lblPreview.setForeground(Color.GRAY);
+		lblPreview.setFont(new Font("Tahoma", Font.BOLD, 16));
+		lblPreview.setBounds(32, 174, 335, 48);
+		panel_31.add(lblPreview);
 		btnSkipItunes.addActionListener(new BtnSkipActionListener());
 
 		panel_32 = new JPanel();
@@ -658,8 +641,7 @@ public class Setup extends JDialog {
 		btnPrevious3 = new JButton("Previous");
 		btnPrevious3.setBackground(Color.WHITE);
 		btnPrevious3.addActionListener(new BtnPrevActionListener());
-		btnPrevious3.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/larrow.png")));
+		btnPrevious3.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/larrow.png")));
 		btnPrevious3.setPreferredSize(new Dimension(110, 25));
 		btnPrevious3.setMaximumSize(new Dimension(73, 20));
 		panel_32.add(btnPrevious3, BorderLayout.WEST);
@@ -670,8 +652,7 @@ public class Setup extends JDialog {
 		btnNext3.setFont(new Font("Tahoma", Font.BOLD, 11));
 		btnNext3.addActionListener(new BtnNextActionListener());
 		btnNext3.setHorizontalTextPosition(SwingConstants.LEADING);
-		btnNext3.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/rarrow.png")));
+		btnNext3.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/rarrow.png")));
 		btnNext3.setPreferredSize(new Dimension(110, 25));
 		panel_32.add(btnNext3, BorderLayout.EAST);
 
@@ -687,50 +668,77 @@ public class Setup extends JDialog {
 
 		btnSkipMusic = new JButton("Skip");
 		btnSkipMusic.setBackground(Color.WHITE);
-		btnSkipMusic.setBounds(460, 34, 90, 24);
+		btnSkipMusic.setBounds(470, 33, 90, 24);
 		btnSkipMusic.addActionListener(new BtnSkip_1ActionListener());
 		btnSkipMusic.setFont(new Font("Tahoma", Font.BOLD, 11));
 		panel_41.add(btnSkipMusic);
 
-		lblIfYouUse = new JLabel(
-				"If you use another media player such as \"Windows Media Player\", your music is probably stored in my music.");
-		lblIfYouUse.setBounds(60, 84, 365, 14);
+		lblIfYouUse = new JLabel("If you use another player such as \"Windows Media Player\", your music may be stored in \"My Music\".");
+		lblIfYouUse.setBounds(60, 84, 517, 14);
 		panel_41.add(lblIfYouUse);
 
-		lblYouCanAlso = new JLabel(
-				"You can also select any location where music is stored on your computer.");
-		lblYouCanAlso.setBounds(60, 109, 350, 14);
+		lblYouCanAlso = new JLabel("You can also select any location where music is stored on your computer.");
+		lblYouCanAlso.setBounds(60, 104, 350, 14);
 		panel_41.add(lblYouCanAlso);
 
 		txtMusicRoot = new JTextField();
-		txtMusicRoot.setBounds(60, 161, 270, 20);
+		txtMusicRoot.setBounds(60, 129, 415, 21);
 		txtMusicRoot.setText(homedir + "\\Music");
 		panel_41.add(txtMusicRoot);
 		txtMusicRoot.setColumns(10);
 
 		btnBrowseMusic = new JButton("Browse...");
+		btnBrowseMusic.addActionListener(new BtnBrowseMusicActionListener());
 		btnBrowseMusic.setBackground(Color.WHITE);
-		btnBrowseMusic.setBounds(351, 160, 79, 23);
+		btnBrowseMusic.setBounds(481, 128, 79, 23);
 		panel_41.add(btnBrowseMusic);
 
 		btnImportMusic = new JButton("Import Music");
 		btnImportMusic.setBackground(Color.WHITE);
 		btnImportMusic.setForeground(new Color(0, 128, 0));
-		btnImportMusic.setBounds(60, 238, 138, 34);
+		btnImportMusic.setBounds(60, 161, 138, 34);
 		btnImportMusic.addActionListener(new BtnImportMusicActionListener());
 		btnImportMusic.setFont(new Font("Tahoma", Font.BOLD, 14));
 		panel_41.add(btnImportMusic);
-
-		lblLoadMoreMusic = new JLabel(
-				"Load more music later using File -> Import");
-		lblLoadMoreMusic.setBounds(103, 90, 201, 14);
-		panel_41.add(lblLoadMoreMusic);
 
 		lblImportFromDisk = new JLabel("Import from Disk (optional)");
 		lblImportFromDisk.setForeground(Color.GRAY);
 		lblImportFromDisk.setFont(new Font("Tahoma", Font.BOLD, 20));
 		lblImportFromDisk.setBounds(60, 20, 365, 48);
 		panel_41.add(lblImportFromDisk);
+
+		lblNoteThisWill = new JLabel("Note: this will replace any music imported from iTunes");
+		lblNoteThisWill.setFont(new Font("Tahoma", Font.PLAIN, 12));
+		lblNoteThisWill.setForeground(Color.RED);
+		lblNoteThisWill.setBounds(217, 180, 343, 15);
+		panel_41.add(lblNoteThisWill);
+
+		label_3 = new JLabel("Tracks");
+		label_3.setFont(new Font("Trebuchet MS", Font.BOLD, 12));
+		label_3.setBounds(62, 239, 153, 23);
+		panel_41.add(label_3);
+
+		label_4 = new JLabel("Preview:");
+		label_4.setForeground(Color.GRAY);
+		label_4.setFont(new Font("Tahoma", Font.BOLD, 16));
+		label_4.setBounds(60, 208, 335, 34);
+		panel_41.add(label_4);
+
+		lblYouCanImport = new JLabel("You can import additional tracks from disk later if needed.");
+		lblYouCanImport.setBounds(60, 510, 289, 14);
+		panel_41.add(lblYouCanImport);
+
+		label_6 = new JLabel("(Audio files will not be copied)");
+		label_6.setBounds(217, 161, 191, 14);
+		panel_41.add(label_6);
+
+		scrollPane = new JScrollPane();
+		scrollPane.setBounds(61, 265, 450, 238);
+		panel_41.add(scrollPane);
+
+		listTracksDisk = new JList();
+		scrollPane.setViewportView(listTracksDisk);
+		listTracksDisk.setToolTipText("Select one or more tracks and press delete to remove them");
 
 		panel_42 = new JPanel();
 		panel_42.setPreferredSize(new Dimension(10, 30));
@@ -742,8 +750,7 @@ public class Setup extends JDialog {
 		btnPrevious4 = new JButton("Previous");
 		btnPrevious4.setBackground(Color.WHITE);
 		btnPrevious4.addActionListener(new BtnPrevActionListener());
-		btnPrevious4.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/larrow.png")));
+		btnPrevious4.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/larrow.png")));
 		btnPrevious4.setPreferredSize(new Dimension(110, 25));
 		btnPrevious4.setMaximumSize(new Dimension(73, 20));
 		panel_42.add(btnPrevious4, BorderLayout.WEST);
@@ -754,8 +761,7 @@ public class Setup extends JDialog {
 		btnNext4.setFont(new Font("Tahoma", Font.BOLD, 11));
 		btnNext4.addActionListener(new BtnNextActionListener());
 		btnNext4.setHorizontalTextPosition(SwingConstants.LEADING);
-		btnNext4.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/rarrow.png")));
+		btnNext4.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/rarrow.png")));
 		btnNext4.setPreferredSize(new Dimension(110, 25));
 		panel_42.add(btnNext4, BorderLayout.EAST);
 
@@ -769,8 +775,7 @@ public class Setup extends JDialog {
 		pnl5.add(panel_51, BorderLayout.CENTER);
 		panel_51.setLayout(null);
 
-		lblAudioAnalysis = new JLabel(
-				"The tracks being imported will now be analysed to determine their musical 'feel'.");
+		lblAudioAnalysis = new JLabel("The tracks being imported will now be analysed to determine their musical 'feel'.");
 		lblAudioAnalysis.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblAudioAnalysis.setBounds(60, 86, 503, 23);
 		panel_51.add(lblAudioAnalysis);
@@ -783,8 +788,7 @@ public class Setup extends JDialog {
 		btnAnalyse.addActionListener(new BtnGoActionListener());
 		panel_51.add(btnAnalyse);
 
-		lblThisMayTake = new JLabel(
-				"This may take several minutes. Please wait...");
+		lblThisMayTake = new JLabel("This may take several minutes. Please wait...");
 		lblThisMayTake.setVisible(false);
 		lblThisMayTake.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblThisMayTake.setBounds(60, 322, 367, 23);
@@ -795,7 +799,7 @@ public class Setup extends JDialog {
 		panel_51.add(progressBar);
 
 		lblSong = new JLabel("Processing track");
-		lblSong.setBounds(60, 431, 107, 14);
+		lblSong.setBounds(60, 431, 78, 14);
 		panel_51.add(lblSong);
 
 		lblAudioAnalyses = new JLabel("Audio analysis");
@@ -804,40 +808,39 @@ public class Setup extends JDialog {
 		lblAudioAnalyses.setBounds(60, 20, 270, 48);
 		panel_51.add(lblAudioAnalyses);
 
-		label_1 = new JLabel("1");
-		label_1.setBounds(152, 431, 46, 14);
-		panel_51.add(label_1);
+		lblProcessingStart = new JLabel("0");
+		lblProcessingStart.setBounds(148, 431, 38, 14);
+		panel_51.add(lblProcessingStart);
 
 		lblOf = new JLabel("of");
-		lblOf.setBounds(178, 431, 46, 14);
+		lblOf.setBounds(190, 431, 23, 14);
 		panel_51.add(lblOf);
 
-		label_2 = new JLabel("1429");
-		label_2.setBounds(223, 431, 46, 14);
-		panel_51.add(label_2);
+		lblProcessingCount = new JLabel("0");
+		lblProcessingCount.setBounds(223, 431, 46, 14);
+		panel_51.add(lblProcessingCount);
 
-		lbleyeOfThe = new JLabel("Muse  -  Thoughts of a Dying Atheist");
-		lbleyeOfThe.setBounds(60, 456, 503, 23);
-		panel_51.add(lbleyeOfThe);
+		lblProcessingName = new JLabel("");
+		lblProcessingName.setBounds(60, 456, 503, 23);
+		panel_51.add(lblProcessingName);
 
 		lblTimeTaken = new JLabel("Time taken:");
-		lblTimeTaken.setBounds(60, 490, 97, 14);
+		lblTimeTaken.setBounds(60, 490, 67, 14);
 		panel_51.add(lblTimeTaken);
 
 		lblTimeRemaining = new JLabel("Time remaining:");
 		lblTimeRemaining.setBounds(231, 490, 99, 14);
 		panel_51.add(lblTimeRemaining);
 
-		lblms = new JLabel("1m 14s");
-		lblms.setBounds(129, 490, 46, 14);
-		panel_51.add(lblms);
+		lblProcessingTime = new JLabel("0m 0s");
+		lblProcessingTime.setBounds(129, 490, 46, 14);
+		panel_51.add(lblProcessingTime);
 
-		lblms_1 = new JLabel("4m 1s");
-		lblms_1.setBounds(318, 490, 46, 14);
-		panel_51.add(lblms_1);
+		lblProcessingTimeLeft = new JLabel("0m 0s");
+		lblProcessingTimeLeft.setBounds(318, 490, 46, 14);
+		panel_51.add(lblProcessingTimeLeft);
 
-		lblThisInformationWill = new JLabel(
-				"This information will be used to help create smart playlists once your listening");
+		lblThisInformationWill = new JLabel("This information will be used to help create smart playlists once your listening");
 		lblThisInformationWill.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblThisInformationWill.setBounds(60, 123, 503, 23);
 		panel_51.add(lblThisInformationWill);
@@ -862,8 +865,7 @@ public class Setup extends JDialog {
 		btnPrevious5 = new JButton("Previous");
 		btnPrevious5.setBackground(Color.WHITE);
 		btnPrevious5.addActionListener(new BtnPrevActionListener());
-		btnPrevious5.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/larrow.png")));
+		btnPrevious5.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/larrow.png")));
 		btnPrevious5.setPreferredSize(new Dimension(110, 25));
 		btnPrevious5.setMaximumSize(new Dimension(73, 20));
 		panel_52.add(btnPrevious5, BorderLayout.WEST);
@@ -874,8 +876,7 @@ public class Setup extends JDialog {
 		btnNext5.setFont(new Font("Tahoma", Font.BOLD, 11));
 		btnNext5.addActionListener(new BtnNextActionListener());
 		btnNext5.setHorizontalTextPosition(SwingConstants.LEADING);
-		btnNext5.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/rarrow.png")));
+		btnNext5.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/rarrow.png")));
 		btnNext5.setPreferredSize(new Dimension(110, 25));
 		panel_52.add(btnNext5, BorderLayout.EAST);
 
@@ -894,8 +895,7 @@ public class Setup extends JDialog {
 		lblThanksWereAll.setBounds(57, 79, 270, 28);
 		panel_61.add(lblThanksWereAll);
 
-		lblAFewInstructions = new JLabel(
-				"Click 'finish' below to start playing music, or navigate back to a previous page");
+		lblAFewInstructions = new JLabel("Click 'finish' below to start playing music, or navigate back to a previous page");
 		lblAFewInstructions.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblAFewInstructions.setBounds(57, 126, 520, 28);
 		panel_61.add(lblAFewInstructions);
@@ -906,8 +906,7 @@ public class Setup extends JDialog {
 		lblSetupComplete.setBounds(60, 20, 270, 48);
 		panel_61.add(lblSetupComplete);
 
-		lblToAdjustSettings = new JLabel(
-				"to adjust settings. Import more music later using the import options in the");
+		lblToAdjustSettings = new JLabel("to adjust settings. Import more music later using the import options in the");
 		lblToAdjustSettings.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblToAdjustSettings.setBounds(57, 153, 520, 28);
 		panel_61.add(lblToAdjustSettings);
@@ -927,8 +926,7 @@ public class Setup extends JDialog {
 		btnPrevious6 = new JButton("Previous");
 		btnPrevious6.setBackground(Color.WHITE);
 		btnPrevious6.addActionListener(new BtnPrevActionListener());
-		btnPrevious6.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/larrow.png")));
+		btnPrevious6.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/larrow.png")));
 		btnPrevious6.setPreferredSize(new Dimension(110, 25));
 		btnPrevious6.setMaximumSize(new Dimension(73, 20));
 		panel_62.add(btnPrevious6, BorderLayout.WEST);
@@ -938,11 +936,62 @@ public class Setup extends JDialog {
 		btnFinish.setFont(new Font("Tahoma", Font.BOLD, 11));
 		btnFinish.addActionListener(new BtnFinishActionListener());
 		btnFinish.setHorizontalTextPosition(SwingConstants.LEADING);
-		btnFinish.setIcon(new ImageIcon(Setup.class
-				.getResource("/jk509/player/res/tick.png")));
+		btnFinish.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/tick.png")));
 		btnFinish.setPreferredSize(new Dimension(110, 25));
 		panel_62.add(btnFinish, BorderLayout.EAST);
 
+	}
+
+	private void UpdateTrackDisplay() {
+		if (stage == 3) {
+			// import from itunes
+			listTracks.setModel(new AbstractListModel() {
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				public int getSize() {
+					return library.getPlaylists().get(0).size();
+				}
+
+				@Override
+				public Object getElementAt(int arg0) {
+					Song track = library.getPlaylists().get(0).get(arg0);
+					return track.getName() + " - " + track.getAlbum() + " - " + track.getArtist();
+				}
+			});
+			listPlaylists.setModel(new AbstractListModel() {
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				public int getSize() {
+					return library.getPlaylists().size() - MusicPlayer.FIXED_PLAYLIST_ELEMENTS;
+				}
+
+				@Override
+				public Object getElementAt(int index) {
+					return library.getPlaylists().get(index - MusicPlayer.FIXED_PLAYLIST_ELEMENTS).getName();
+				}
+			});
+			listTracks.repaint();
+			listPlaylists.repaint();
+		} else if (stage == 4) {
+			// import from disk
+			listTracksDisk.setModel(new AbstractListModel() {
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				public int getSize() {
+					return library.getPlaylists().get(0).size();
+				}
+
+				@Override
+				public Object getElementAt(int index) {
+					Song track = library.getPlaylists().get(0).get(index);
+					return track.getName() + " - " + track.getAlbum() + " - " + track.getArtist();
+				}
+			});
+			listTracksDisk.repaint();
+		}
 	}
 
 	private class BtnNextActionListener implements ActionListener {
@@ -982,6 +1031,11 @@ public class Setup extends JDialog {
 			lblThisMayTake.setVisible(true);
 			btnAnalyse.setEnabled(false);
 			btnAnalyse.setForeground(Color.GRAY);
+			progressBar.setValue(progressBar.getMaximum());
+			if (library.size() > 0 && library.getPlaylists().get(0).size() > 0) {
+				lblProcessingCount.setText(Integer.toString(library.getPlaylists().get(0).size()));
+				lblProcessingName.setText(library.getPlaylists().get(0).get(0).getName() + " - " + library.getPlaylists().get(0).get(0).getAlbum() + " - " + library.getPlaylists().get(0).get(0).getArtist());
+			}
 		}
 	}
 
@@ -995,34 +1049,139 @@ public class Setup extends JDialog {
 
 	private class BtnImportMusicActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
-			String folder = txtMusicRoot.getText();
-			FileScanner fs = new FileScanner(folder);
-			fs.run();
-			UpdateDatabase(fs.getTracks());
-			artwork = fs.getArtwork();
+
+			btnImportMusic.setEnabled(false);
+			btnImportMusic.setText("Importing...");
+			btnImportMusic.invalidate();
+			btnImportMusic.repaint();
+			// dialog.invalidate(); dialog.repaint();
+
+			SwingUtilities.invokeLater(new Runnable() {
+				@Override
+				public void run() {
+					String folder = txtMusicRoot.getText();
+					FileScanner parser = new FileScanner();
+					parser.setPath(folder);
+					parser.setValid(true);
+					if (Import(parser)) {
+						btnImportMusic.setEnabled(false);
+						btnImportMusic.setText("Done");
+						btnNext4.setEnabled(true);
+					}
+					UpdateTrackDisplay();
+				}
+			});
+
 		}
 	}
 
 	private class BtnImportItunesActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
 			String loc = txtMusicItunes.getText();
-			ItunesParser ip = new ItunesParser(loc);
-			ip.run();
-			UpdateDatabase(ip.getTracks());
-			playlists = ip.getPlaylists();
+			LibraryParser parser = new ItunesParser();
+			parser.setPath(loc);
+			parser.setValid(true);
+			if (Import(parser)) {
+				btnImportItunes.setEnabled(false);
+				btnNext3.setEnabled(true);
+			}
+			UpdateTrackDisplay();
 		}
 	}
 
 	private class ThisWindowListener extends WindowAdapter {
 		@Override
 		public void windowClosing(WindowEvent arg0) {
-			if (JOptionPane
-					.showConfirmDialog(
-							dialog,
-							"The music player cannot be used until setup has completed.\nAre you sure you want to exit?",
-							"Warning", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION)
+			if (JOptionPane.showConfirmDialog(dialog, "The music player will not be useful until setup has completed.\nAre you sure you want to exit?", "Warning", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION)
 				dispose();
 		}
+	}
+
+	private class BtnBrowseMusicActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+			JFileChooser chooser = new JFileChooser();
+
+			String startat = "";
+			// choose initial folder (first check textfield, otherwise try user
+			// home dir)
+			try {
+				if ((new File(txtMusicRoot.getText())).exists() && (new File(txtMusicRoot.getText())).isDirectory())
+					startat = (new File(txtMusicRoot.getText())).getPath();
+				else
+					startat = "";
+			} catch (Exception e2) {
+				startat = "";
+			}
+
+			if (startat.equals("")) {
+				startat = System.getenv("user.home");
+				if (startat == null || startat.equals(""))
+					startat = System.getenv("USERPROFILE");
+				if (startat == null || startat.equals(""))
+					startat = ".";
+			}
+			chooser.setCurrentDirectory(new java.io.File(startat));
+			chooser.setDialogTitle("Select music folder");
+			chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+			// disable the "All files" option.
+			chooser.setAcceptAllFileFilterUsed(false);
+
+			int result = chooser.showOpenDialog(dialog);
+			if (result == JFileChooser.APPROVE_OPTION) {
+				txtMusicRoot.setText(chooser.getSelectedFile().getPath());
+			} else {
+				// System.out.println("No Selection ");
+				// System.out.println(result);
+			}
+		}
+	}
+
+	private class BtnBrowseItunesActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+			JFileChooser fc = new JFileChooser();
+			fc.setFileFilter(new OBJfilter());
+			// fc.type = 1;
+
+			String startat = "";
+			// choose initial folder (first check textfield, otherwise try user
+			// home dir)
+			try {
+				if (new File((new File(txtMusicItunes.getText())).getParent()).exists())
+					startat = (new File(txtMusicItunes.getText())).getParent();
+				else
+					startat = "";
+			} catch (Exception e2) {
+				startat = "";
+			}
+
+			fc.setCurrentDirectory(new File(startat));
+
+			int returnVal = fc.showOpenDialog(dialog);
+			if (returnVal == JFileChooser.APPROVE_OPTION) {
+				File file = fc.getSelectedFile();
+				txtMusicItunes.setText(file.getPath());
+			} else {
+				// System.out.println("not loaded");
+			}
+		}
+	}
+
+	private boolean Import(LibraryParser parser) {
+
+		if (!parser.isValid())
+			return false;
+
+		parser.run();
+
+		// TODO: sort
+		library.setPlaylist(0, parser.getTracks());
+		library.setPlaylist(1, parser.getTracks());
+		library.setPlaylist(2, parser.getTracks());
+
+		return true;
+
+		// TODO: import playlists, artwork
 	}
 
 	public void UpdateSidebar() {
@@ -1114,11 +1273,49 @@ public class Setup extends JDialog {
 		}
 	}
 
-	public void UpdateDatabase(List<Song> ts) {
-		if (tracks == null) {
-			tracks = ts;
-		} else {
-			tracks.addAll(ts);
+	/*
+	 * Get the extension of a file.
+	 */
+	public static String getExtension(File f) {
+		String ext = null;
+		String s = f.getName();
+		int i = s.lastIndexOf('.');
+
+		if (i > 0 && i < s.length() - 1) {
+			ext = s.substring(i + 1).toLowerCase();
 		}
+		return ext;
+	}
+
+	class OBJfilter extends FileFilter {
+
+		public OBJfilter() {
+			super();
+		}
+
+		@Override
+		public String getDescription() {
+			String des = "Library files";
+			return des;
+		}
+
+		@Override
+		public boolean accept(File f) {
+			if (f.isDirectory()) {
+				return true;
+			}
+
+			String extension = getExtension(f);
+			if (extension != null) {
+				if (extension.equals("ser") || extension.equals("xml")) {
+					return true;
+				} else {
+					return false;
+				}
+			}
+
+			return false;
+		}
+
 	}
 }

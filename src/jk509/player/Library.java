@@ -104,9 +104,17 @@ public class Library implements Serializable {
 		}
 		playlists.add(p);
 	}
+	
+	public void addPlaylists(List<Playlist> ps) {
+		playlists.addAll(ps);
+	}
 
 	public void addArtwork(String s, BufferedImage im) {
 		artwork.put(s, im);
+	}
+	
+	public void addArtwork(Map<String, BufferedImage> map) {
+		artwork.putAll(map);
 	}
 
 }

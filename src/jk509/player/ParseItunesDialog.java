@@ -40,7 +40,6 @@ public class ParseItunesDialog extends JDialog {
 		setTitle("Import from iTunes");
 		setResizable(false);
 		setModalityType(ModalityType.APPLICATION_MODAL);
-		setModalExclusionType(ModalExclusionType.APPLICATION_EXCLUDE);
 		setIconImage(Toolkit.getDefaultToolkit().getImage(MusicPlayer.class.getResource("/jk509/player/res/icon.png")));
 		setModal(true);
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
@@ -229,33 +228,33 @@ public class ParseItunesDialog extends JDialog {
 	}
 	class OBJfilter extends FileFilter {
 	
-	public OBJfilter(){
-		super();	
-	}
+		public OBJfilter(){
+			super();	
+		}
+			
+		@Override
+		public String getDescription(){
+			String des = "Library files";
+			return des;
+		}
 		
-	@Override
-	public String getDescription(){
-		String des = "Library files";
-		return des;
-	}
+		@Override
+		public boolean accept(File f) {
+			if (f.isDirectory()) {
+		        return true;
+		    }
 	
-	@Override
-	public boolean accept(File f) {
-		if (f.isDirectory()) {
-	        return true;
-	    }
-
-	    String extension = getExtension(f);
-	    if (extension != null) {
-	        if (extension.equals("ser") || extension.equals("xml")) {
-	                return true;
-	        } else {
-	            return false;
-	        }
-	    }
-
-	    return false;
+		    String extension = getExtension(f);
+		    if (extension != null) {
+		        if (extension.equals("ser") || extension.equals("xml")) {
+		                return true;
+		        } else {
+		            return false;
+		        }
+		    }
+	
+		    return false;
+		}
+	
 	}
-
-}
 }

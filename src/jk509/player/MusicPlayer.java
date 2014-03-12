@@ -137,8 +137,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					window.startup();
 					window.SetVolume(1.0f);
 					new SwingDragImages.GlobalImageProvider();
-					window.frmMusicPlayer.setVisible(true);
 					window.frmMusicPlayer.setLocationRelativeTo(null);
+					window.frmMusicPlayer.setExtendedState(window.frmMusicPlayer.getExtendedState() | JFrame.MAXIMIZED_BOTH);
+					window.frmMusicPlayer.setVisible(true);
+					// window.startup();
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -159,14 +161,19 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private boolean stopped = true; // whether anything is playing/paused
 	private int rowPlaying = -1;
 	private int trackPlaying = -1;
-	private int playlistPlaying = -1; // which playlist the row/track playing ints
-									// refer to
+	private int playlistPlaying = -1; // which playlist the row/track playing
+										// ints
+										// refer to
 	private TableSorter playlistPlayingSorter; // TableSorter for the currently
 												// playing playlist : TODO needs
 												// to keep updated with current,
 												// or ignore if
 												// playlistPlaying==selectedPlaylist
-	//private int rowSelected; // changes according to sort
+	private TableSorter currentTableSorter; // TableSorter for the current view
+											// (because the constructor setTable
+											// casts this to a TableModel and we
+											// lose it otherwise)
+	// private int rowSelected; // changes according to sort
 	// private int playlistSelected = 0;
 	public static int FIXED_PLAYLIST_ELEMENTS = 3; // number of system-set
 													// playlists (ie. tracks,
@@ -217,6 +224,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JMenuItem mntmSmartPlaylistFrom_1;
 	private JButton btnCancelSearch;
 	private JPanel pnlSearchTxt;
+	private JMenuItem mntmResetFactoryDefaults;
 
 	/**
 	 * Create the application.
@@ -246,7 +254,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			}
 		}, AWTEvent.MOUSE_EVENT_MASK);
 		frmMusicPlayer.setMinimumSize(new Dimension(900, 600));
-		frmMusicPlayer.setTitle("Music Player");
+		frmMusicPlayer.setTitle("Music Factory");
 		frmMusicPlayer.setIconImage(Toolkit.getDefaultToolkit().getImage(MusicPlayer.class.getResource("/jk509/player/res/icon.png")));
 		frmMusicPlayer.setBounds(100, 100, 838, 539);
 		frmMusicPlayer.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -529,7 +537,22 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				int value = ui.valueForXPosition(p.x);
 				slider.setValue(value);
 				// update time label
-				lbl_time.setText(Song.SecondsToString((int) (((double) value * library.getPlaylists().get(playlistPlaying).get(trackPlaying).getLengthS()/*library.getTracks().get(trackPlaying).getLengthS()*/) / (double) slider.getMaximum())));
+				lbl_time.setText(Song.SecondsToString((int) (((double) value * library.getPlaylists().get(playlistPlaying).get(trackPlaying).getLengthS()/*
+																																						 * library
+																																						 * .
+																																						 * getTracks
+																																						 * (
+																																						 * )
+																																						 * .
+																																						 * get
+																																						 * (
+																																						 * trackPlaying
+																																						 * )
+																																						 * .
+																																						 * getLengthS
+																																						 * (
+																																						 * )
+																																						 */) / (double) slider.getMaximum())));
 			}
 
 			@Override
@@ -539,7 +562,22 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				int value = ui.valueForXPosition(p.x);
 				slider.setValue(value);
 				// update time label
-				double secs = ((double) value * (double) library.getPlaylists().get(playlistPlaying).get(trackPlaying).getLengthS()/*library.getTracks().get(trackPlaying).getLengthS()*/) / (double) slider.getMaximum();
+				double secs = ((double) value * (double) library.getPlaylists().get(playlistPlaying).get(trackPlaying).getLengthS()/*
+																																	 * library
+																																	 * .
+																																	 * getTracks
+																																	 * (
+																																	 * )
+																																	 * .
+																																	 * get
+																																	 * (
+																																	 * trackPlaying
+																																	 * )
+																																	 * .
+																																	 * getLengthS
+																																	 * (
+																																	 * )
+																																	 */) / (double) slider.getMaximum();
 				lbl_time.setText(Song.SecondsToString((int) secs));
 				// skip song to this point
 				SkipTo(secs);
@@ -560,7 +598,22 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				int value = ui.valueForXPosition(p.x);
 				slider.setValue(value);
 				// update time label
-				lbl_time.setText(Song.SecondsToString((int) (((double) value * library.getPlaylists().get(playlistPlaying).get(trackPlaying).getLengthS()/*library.getTracks().get(trackPlaying).getLengthS()*/) / (double) slider.getMaximum())));
+				lbl_time.setText(Song.SecondsToString((int) (((double) value * library.getPlaylists().get(playlistPlaying).get(trackPlaying).getLengthS()/*
+																																						 * library
+																																						 * .
+																																						 * getTracks
+																																						 * (
+																																						 * )
+																																						 * .
+																																						 * get
+																																						 * (
+																																						 * trackPlaying
+																																						 * )
+																																						 * .
+																																						 * getLengthS
+																																						 * (
+																																						 * )
+																																						 */) / (double) slider.getMaximum())));
 			}
 
 			// disable check that will invoke scrollDueToClickInTrack
@@ -584,7 +637,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 		lblSearch = new JLabel();
 		lblSearch.addMouseListener(new LblSearchMouseListener());
-		
+
 		pnlSearchTxt = new JPanel();
 		pnlSearchTxt.setOpaque(false);
 		GridBagConstraints gbc_pnlSearchTxt = new GridBagConstraints();
@@ -604,7 +657,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		txtSearch.setForeground(Color.GRAY);
 		txtSearch.setText(" Search");
 		txtSearch.setColumns(15);
-		
+
 		btnCancelSearch = new JButton();
 		btnCancelSearch.setPreferredSize(new Dimension(16, 10));
 		btnCancelSearch.setMinimumSize(new Dimension(11, 10));
@@ -801,6 +854,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		mnFile.add(mntmImportFromDisk);
 
 		mntmExportData = new JMenuItem("Export data...");
+		mntmExportData.setEnabled(false);
 		mntmExportData.addActionListener(new BtnExportDataActionListener());
 		mnFile.add(mntmExportData);
 
@@ -812,27 +866,37 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		menuBar.add(mnView);
 
 		mntmOptions = new JMenuItem("Options...");
+		mntmOptions.setEnabled(false);
 		mnView.add(mntmOptions);
 
 		mntmVisualiser = new JMenuItem("Visualiser");
+		mntmVisualiser.setEnabled(false);
 		mnView.add(mntmVisualiser);
 
 		mntmFullScreen = new JMenuItem("Full screen");
+		mntmFullScreen.setEnabled(false);
 		mnView.add(mntmFullScreen);
 
 		mnSettings = new JMenu("Settings");
 		menuBar.add(mnSettings);
 
+		mntmResetFactoryDefaults = new JMenuItem("Factory Reset");
+		mntmResetFactoryDefaults.addActionListener(new MntmResetFactoryDefaultsActionListener());
+		mnSettings.add(mntmResetFactoryDefaults);
+
 		mntmOptions_1 = new JMenuItem("Options...");
+		mntmOptions_1.setEnabled(false);
 		mnSettings.add(mntmOptions_1);
 
 		mnHelp = new JMenu("Help");
 		menuBar.add(mnHelp);
 
 		mntmInformation = new JMenuItem("Information");
+		mntmInformation.setEnabled(false);
 		mnHelp.add(mntmInformation);
 
 		mntmAbout = new JMenuItem("About");
+		mntmAbout.addActionListener(new MntmAboutActionListener());
 		mnHelp.add(mntmAbout);
 
 		try {
@@ -860,7 +924,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		String homedir = System.getenv("user.home");
 		if (homedir == null)
 			homedir = System.getenv("USERPROFILE");
-		File settings = new File(homedir + "\\MusicPlayer\\library.ser");
+		File settings = new File(homedir + "\\Music Factory\\library.ser");
 
 		if (!settings.exists()) {
 			library = new Library();
@@ -881,7 +945,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				ObjectInputStream ois = new ObjectInputStream(fin);
 				library = (Library) ois.readObject();
 				ois.close();
-				DisplayLibrary();
+				// DisplayLibrary();
 				RefreshPlaylists();
 				// System.out.println("lib read");
 			} catch (FileNotFoundException e) {
@@ -901,15 +965,18 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private void SetupStatus() {
 		// TODO (check valid library, whether setup closed early or
 		// successfully)
+		UpdateLibrary();
+		DisplayLibrary();
+		RefreshPlaylists();
 	}
 
 	private void UpdateLibrary() {
 		String homedir = System.getenv("user.home");
 		if (homedir == null)
 			homedir = System.getenv("USERPROFILE");
-		File settings = new File(homedir + "\\MusicPlayer\\library.ser");
+		File settings = new File(homedir + "\\Music Factory\\library.ser");
 
-		File theDir = new File(homedir + "\\MusicPlayer");
+		File theDir = new File(homedir + "\\Music Factory");
 
 		// if the directory does not exist, create it
 		if (!theDir.exists()) {
@@ -944,7 +1011,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 	private class BtnImportFromDiskActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
-			LibraryParser parser = new FileScanner();
+			final LibraryParser parser = new FileScanner();
 			ParseDiskDialog worker = new ParseDiskDialog(parser);
 			worker.setLocationRelativeTo(frmMusicPlayer);
 			worker.setVisible(true);
@@ -1013,7 +1080,25 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				return columnEditables[column];
 			}
 		});
-		tabMain.setModel(new TableSorter(tabMain.getModel(), tabMain.getTableHeader(), new TableRowSortedListener(), tabMain));
+
+		try {
+			currentTableSorter.clearListeners();
+		} catch (Exception e) {
+			// e.printStackTrace();
+		}
+
+		/*
+		 * if(playlistPlaying == listPlaylists.getSelectedIndex())
+		 * currentTableSorter = playlistPlayingSorter; else currentTableSorter =
+		 * new TableSorter(tabMain.getModel(), tabMain.getTableHeader(), new
+		 * TableRowSortedListener(), tabMain);
+		 */
+		// Could do that, but need to reattach listeners and redraw table header
+		currentTableSorter = new TableSorter(tabMain.getModel(), tabMain.getTableHeader(), new TableRowSortedListener(), tabMain);
+		if (playlistPlaying == listPlaylists.getSelectedIndex())
+			playlistPlayingSorter = currentTableSorter;
+
+		tabMain.setModel(currentTableSorter);
 
 		tabMain.getSelectionModel().setSelectionInterval(0, 0);
 
@@ -1090,7 +1175,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			// format
 			if (trackPlaying > -1 && playlistPlaying == listPlaylists.getSelectedIndex())
 				rowPlaying = playlistPlayingSorter.viewIndex(trackPlaying);
-				//rowPlaying = ((TableSorter) tabMain.getModel()).viewIndex(trackPlaying);
+			// rowPlaying = ((TableSorter)
+			// tabMain.getModel()).viewIndex(trackPlaying);
 			int rowSelected = arg0.getModifiers();
 			tabMain.getSelectionModel().setSelectionInterval(rowSelected, rowSelected);
 			// force selection to be at top of screen
@@ -1102,15 +1188,16 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private void playSelected() {
 		// rowPlaying = ((TableSorter)
 		// tabMain.getModel()).modelIndex(tabMain.getSelectedRow());
-		
-		// This is the only method which can start playing tracks from a different playlist. So save the new playlistPlaying and table model
+
+		// This is the only method which can start playing tracks from a
+		// different playlist. So save the new playlistPlaying and table model
 		playlistPlaying = listPlaylists.getSelectedIndex();
 		playlistPlayingSorter = (TableSorter) tabMain.getModel();
-		
+
 		// make sure playing icon gets updated on playlist list
 		listPlaylists.invalidate();
 		listPlaylists.repaint();
-		
+
 		rowPlaying = tabMain.getSelectedRow();
 		play(rowPlaying);
 	}
@@ -1132,8 +1219,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private void playNext() {
 		if (player == null)
 			return;
-		
-		if(rowPlaying == library.getPlaylists().get(playlistPlaying).size() - 1){
+
+		if (rowPlaying == library.getPlaylists().get(playlistPlaying).size() - 1) {
 			Stop();
 			return;
 		}
@@ -1157,7 +1244,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					initialised = true;
 					// }
 				} catch (Exception e) {// InterruptedException e) {
-					if(escape < 1)
+					if (escape < 1)
 						initialised = true;
 					else
 						initialised = false;
@@ -1172,11 +1259,11 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		boolean paused = player.isPaused();
 
 		// restart current if not near beginning
-		if (timing_offset > 3000 || milliseconds > 3000 /*|| rowPlaying == 0*/) {
+		if (timing_offset > 3000 || milliseconds > 3000 /* || rowPlaying == 0 */) {
 			play(rowPlaying);
 
 		} else {
-			if(rowPlaying == 0){
+			if (rowPlaying == 0) {
 				Stop();
 				return;
 			}
@@ -1196,7 +1283,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 						initialised = true;
 					}
 				} catch (InterruptedException e) {
-					if(escape < 1)
+					if (escape < 1)
 						initialised = true;
 					else
 						initialised = false;
@@ -1220,10 +1307,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 			// get row in terms of underlying model
 
-			if (r >= 0 && r <= playlistPlayingSorter.getRowCount() - 1 /*r <= tabMain.getModel().getRowCount() - 1*/) {
-				//int row = ((TableSorter) tabMain.getModel()).modelIndex(r);
+			if (r >= 0 && r <= playlistPlayingSorter.getRowCount() - 1) {
+				// int row = ((TableSorter) tabMain.getModel()).modelIndex(r);
 				int row = playlistPlayingSorter.modelIndex(r);
-				String loc = library.getPlaylists().get(playlistPlaying).get(row).getLocation(); //library.get(row).getLocation();
+				String loc = library.getPlaylists().get(playlistPlaying).get(row).getLocation(); // library.get(row).getLocation();
 				if (loc == null || loc.equals(""))
 					return;
 
@@ -1235,6 +1322,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 						} catch (NullPointerException e) {
 							// track had just finished
 						}
+					try {
+						player.pause();
+					} catch (Exception e) {
+					}
 					player = null; // try to force gc?
 					player = new SoundJLayer(loc, playbackListener);
 					player.play();
@@ -1242,7 +1333,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					btnBack.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/back.png")));
 					btnFwd.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/fwd.png")));
 					rowPlaying = r;
-					//trackPlaying = ((TableSorter) tabMain.getModel()).modelIndex(rowPlaying);
+					// trackPlaying = ((TableSorter)
+					// tabMain.getModel()).modelIndex(rowPlaying);
 					trackPlaying = playlistPlayingSorter.modelIndex(rowPlaying);
 					RefreshMainList();
 					UpdateTrackDisplay();
@@ -1295,7 +1387,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		int row = trackPlaying;
 
 		try {
-			if (row >= 0 && row <= playlistPlayingSorter.getRowCount() - 1 /*row <= tabMain.getModel().getRowCount() - 1*/) {
+			if (row >= 0 && row <= playlistPlayingSorter.getRowCount() - 1) {
 				// String loc = (String)
 				// tabMain.getModel().getValueAt(rowPlaying, 8);
 				String loc = library.getPlaylists().get(playlistPlaying).get(row).getLocation();
@@ -1310,6 +1402,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 						} catch (NullPointerException e) {
 							// track had just finished
 						}
+					try {
+						player.pause();
+					} catch (Exception e) {
+					}
 					player = new SoundJLayer(loc, playbackListener);
 					player.play();
 					btnPlay.setIcon(new ImageIcon(this.getClass().getResource("/jk509/player/res/pause.png")));
@@ -1343,7 +1439,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private void UpdateTrackDisplay() {
 		try {
 			int row = trackPlaying;
-			if (row >= 0 && row <= playlistPlayingSorter.getRowCount() - 1 /*row <= tabMain.getModel().getRowCount() - 1*/) {
+			if (row >= 0 && row <= playlistPlayingSorter.getRowCount() - 1) {
 				stopped = false;
 				btnRepeat.setVisible(true);
 				btnShuffle.setVisible(true);
@@ -1371,24 +1467,26 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 	}
 
-	private void Search(String query){
-		//TODO
-		// idea: create temporary playlist without changing playlistlist display. Adjust other onclicks so it can't be cancelled
-		if(!btnCancelSearch.isVisible()){
+	private void Search(String query) {
+		// TODO
+		// idea: create temporary playlist without changing playlistlist
+		// display. Adjust other onclicks so it can't be cancelled
+		if (!btnCancelSearch.isVisible()) {
 			btnCancelSearch.setVisible(true);
-			//txtSearch.setSize(txtSearch.getWidth() - 30, txtSearch.getHeight());
-			txtSearch.setColumns(txtSearch.getColumns()-2);
+			// txtSearch.setSize(txtSearch.getWidth() - 30,
+			// txtSearch.getHeight());
+			txtSearch.setColumns(txtSearch.getColumns() - 2);
 		}
-		
+
 	}
-	
-	private void CancelSearch(){
+
+	private void CancelSearch() {
 		btnCancelSearch.setVisible(false);
-		//txtSearch.setSize(txtSearch.getWidth() + 30, txtSearch.getHeight());
+		// txtSearch.setSize(txtSearch.getWidth() + 30, txtSearch.getHeight());
 		txtSearch.setText(" Search");
-		txtSearch.setColumns(txtSearch.getColumns()+2);
+		txtSearch.setColumns(txtSearch.getColumns() + 2);
 	}
-	
+
 	class PlaybackListener extends JLayerPlayerPausable.PlaybackAdapter {
 		// PlaybackListener members
 		@Override
@@ -1407,47 +1505,67 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		@Override
 		public void playbackFinished(JLayerPlayerPausable.PlaybackEvent playbackEvent) {
 			// System.err.println("PlaybackStopped()");
-			if(stopped)
+
+			if (!playbackEvent.source.getPath().equals(library.getPlaylists().get(playlistPlaying).get(currentTableSorter.modelIndex(rowPlaying)).getLocation())) {
+				// user changed song before this one finished
 				return;
-			if (repeatone) {
-				playAgain();
 			} else {
-				if (shuffle) {
-					playRandom();
-				} else if (rowPlaying == library.getPlaylists().get(playlistPlaying).size() - 1/*tabMain.getRowCount() - 1*/) {
-					if (repeat)
-						playFirst();
-					else
-						Stop();
+				if (stopped)
+					return;
+				if (repeatone) {
+					playAgain();
 				} else {
-					playNext();
+					if (shuffle) {
+						playRandom();
+					} else if (rowPlaying == library.getPlaylists().get(playlistPlaying).size() - 1) {
+						if (repeat)
+							playFirst();
+						else
+							Stop();
+					} else {
+						playNext();
+					}
 				}
 			}
 		}
 
 		@Override
 		public void frameDecoded(JLayerPlayerPausable.DecodeEvent event) {
-			milliseconds = event.position;
-			// if(s > seconds){
-			if (!player.isPaused() && milliseconds > (seconds + 1) * 1000) {
-				// System.out.println("***************");
-				seconds = (int) Math.floor(milliseconds / 1000.0);
-				if (!mouseIsDown) {
-					lbl_time.setText(Song.SecondsToString(seconds + (int) (timing_offset / 1000.0)));
-					slider.setValue((int) ((double) slider.getMaximum() * ((double) seconds + (timing_offset / 1000.0)) / (double) library.getPlaylists().get(playlistPlaying).get(trackPlaying).getLengthS()));
+			if (!event.path.equals(library.getPlaylists().get(playlistPlaying).get(trackPlaying).getLocation())) {
+				// This is not the current track: stop it
+				// System.out.println("!");
+				try {
+					event.source.pause();
+				} catch (Exception e) {
 				}
-			} // else {
-				// System.out.println(milliseconds);
-				// System.out.println(seconds * 1000);
-			// }
+				try {
+					event.source.close();
+				} catch (Exception e) {
+				}
+			} else {
+				milliseconds = event.position;
+				// if(s > seconds){
+				if (!player.isPaused() && milliseconds > (seconds + 1) * 1000) {
+					// System.out.println("***************");
+					seconds = (int) Math.floor(milliseconds / 1000.0);
+					if (!mouseIsDown) {
+						lbl_time.setText(Song.SecondsToString(seconds + (int) (timing_offset / 1000.0)));
+						slider.setValue((int) ((double) slider.getMaximum() * ((double) seconds + (timing_offset / 1000.0)) / (double) library.getPlaylists().get(playlistPlaying).get(trackPlaying).getLengthS()));
+					}
+				} // else {
+					// System.out.println(milliseconds);
+					// System.out.println(seconds * 1000);
+				// }
+			}
 		}
 	}
 
 	private void Stop() {
 		stopped = true;
-		try{
+		try {
 			player.stop();
-		}catch(Exception e){}
+		} catch (Exception e) {
+		}
 		player = null;
 		rowPlaying = -1;
 		trackPlaying = -1;
@@ -1584,26 +1702,26 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		boolean last = false;
 		if (rowV == tabMain.getRowCount() - 1)
 			last = true;
-		//int rowM = ((TableSorter) tabMain.getModel()).modelIndex(rowV);
-		int rowM = playlistPlayingSorter.modelIndex(rowV);
+		// int rowM = ((TableSorter) tabMain.getModel()).modelIndex(rowV);
+		int rowM = ((TableSorter) tabMain.getModel()).modelIndex(rowV);
 		int reply = JOptionPane.showConfirmDialog(frmMusicPlayer, "Are you sure you want to delete this track from your library?", "Confirm deletion", JOptionPane.YES_NO_OPTION);
 		if (reply == JOptionPane.YES_OPTION) {
 			Delete(rowM);
-		}
 
-		// adjust rowPlaying (not trackplaying)
-		if (playlistPlaying == listPlaylists.getSelectedIndex() && rowPlaying > rowV) {
-			rowPlaying--;
-		} else if (playlistPlaying == listPlaylists.getSelectedIndex() && rowPlaying < rowV) {
-			// do nothing
-		} // do nothing if rowplaying was deleted
+			// adjust rowPlaying (not trackplaying)
+			if (playlistPlaying == listPlaylists.getSelectedIndex() && rowPlaying > rowV) {
+				rowPlaying--;
+			} else if (playlistPlaying == listPlaylists.getSelectedIndex() && rowPlaying < rowV) {
+				// do nothing
+			} // do nothing if rowplaying was deleted
 
-		// adjust selection
-		if (last)
-			rowV = rowV - 1;
-		if (rowV >= 0) {
-			tabMain.getSelectionModel().setSelectionInterval(rowV, rowV);
-			tabMain.scrollRectToVisible(tabMain.getCellRect(rowV, 0, true));
+			// adjust selection
+			if (last)
+				rowV = rowV - 1;
+			if (rowV >= 0) {
+				tabMain.getSelectionModel().setSelectionInterval(rowV, rowV);
+				tabMain.scrollRectToVisible(tabMain.getCellRect(rowV, 0, true));
+			}
 		}
 	}
 
@@ -1623,14 +1741,23 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		@Override
 		public void keyPressed(KeyEvent e) {
 			int row = tabMain.getSelectedRow();
+			int rowNew;
 			switch (e.getKeyCode()) {
 			case KeyEvent.VK_DOWN:
-				tabMain.getSelectionModel().setSelectionInterval(row++, row++);
-				tabMain.scrollRectToVisible(tabMain.getCellRect(row - 1, 0, true));
+				if(row < tabMain.getRowCount() - 1)
+					rowNew = row + 1;
+				else
+					rowNew = row;
+				tabMain.getSelectionModel().setSelectionInterval(rowNew, rowNew);
+				tabMain.scrollRectToVisible(tabMain.getCellRect(row, 0, true));
 				break;
 			case KeyEvent.VK_UP:
-				tabMain.getSelectionModel().setSelectionInterval(row--, row--);
-				tabMain.scrollRectToVisible(tabMain.getCellRect(row + 1, 0, true));
+				if(row > 0)
+					rowNew = row - 1;
+				else
+					rowNew = row;
+				tabMain.getSelectionModel().setSelectionInterval(rowNew, rowNew);
+				tabMain.scrollRectToVisible(tabMain.getCellRect(row, 0, true));
 				break;
 			case KeyEvent.VK_F:
 				if ((e.getModifiers() & KeyEvent.CTRL_MASK) != 0) {
@@ -1755,34 +1882,68 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			}
 		}
 	}
+
 	private class TxtSearchKeyListener extends KeyAdapter {
 		@Override
 		public void keyReleased(KeyEvent arg0) {
-			if(arg0.getKeyCode() == KeyEvent.VK_ENTER){
-				if(txtSearch.getText() != null && !txtSearch.getText().equals(""))
+			if (arg0.getKeyCode() == KeyEvent.VK_ENTER) {
+				if (txtSearch.getText() != null && !txtSearch.getText().equals(""))
 					Search(txtSearch.getText());
 			}
 		}
 	}
+
 	private class LblSearchMouseListener extends MouseAdapter {
 		@Override
 		public void mouseEntered(MouseEvent e) {
 			lblSearch.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/search_hover.png")));
 		}
+
 		@Override
 		public void mouseExited(MouseEvent e) {
 			lblSearch.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/search.png")));
 		}
+
 		@Override
 		public void mouseClicked(MouseEvent e) {
-			if(txtSearch.getText() != null && !txtSearch.getText().equals("") && !txtSearch.getText().equals(" Search"))
+			if (txtSearch.getText() != null && !txtSearch.getText().equals("") && !txtSearch.getText().equals(" Search"))
 				Search(txtSearch.getText());
 		}
 	}
+
 	private class BtnCancelSearchMouseListener extends MouseAdapter {
 		@Override
 		public void mouseClicked(MouseEvent e) {
 			CancelSearch();
+		}
+	}
+
+	private class MntmAboutActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			JOptionPane about = new JOptionPane(new JLabel("<html><div style=\"text-align: center;\">Music Factory<br><br>James King \u00a9 2014<br><br>www.github.com/James3432/MusicPlayer<br><br></html>", JLabel.CENTER));
+			JDialog dialog = about.createDialog(frmMusicPlayer, "About");
+			dialog.setModal(true);
+			dialog.setVisible(true);
+			// JOptionPane.showMessageDialog(frmMusicPlayer,
+			// "Music Factory\n\nJames King \u00a9 2014\n\nwww.github.com/James3432/MusicPlayer\n",
+			// "About", JOptionPane.INFORMATION_MESSAGE);
+		}
+	}
+
+	private class MntmResetFactoryDefaultsActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+			int response = JOptionPane.showConfirmDialog(frmMusicPlayer, "Are you sure you want to revert to factory defaults?\nAll library data, settings and learned preferences will be deleted.", "Confirm factory reset", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+			if (response == JOptionPane.YES_OPTION) {
+				String homedir = System.getenv("user.home");
+				if (homedir == null)
+					homedir = System.getenv("USERPROFILE");
+				File settings = new File(homedir + "\\Music Factory\\library.ser");
+				if (settings.exists()) {
+					settings.delete();
+				}
+				JOptionPane.showMessageDialog(frmMusicPlayer, "Music Factory will now close to finish reverting settings.", "Settings deleted", JOptionPane.INFORMATION_MESSAGE);
+				System.exit(0);
+			}
 		}
 	}
 
@@ -1880,7 +2041,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 				@Override
 				public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException {
-					return library.get(((TableSorter)tabMain.getModel()).modelIndex(tabMain.getSelectedRow()));
+					return library.get(((TableSorter) tabMain.getModel()).modelIndex(tabMain.getSelectedRow()));
 				}
 
 				@Override
@@ -2060,13 +2221,13 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		private ImageIcon image[];
 		Font fontPlain;
 		Font fontBold;
-		 
+
 		// Hack to overcome core bug (#6700748)
 		@Override
-	    public boolean isVisible() {
-	        return false;
-	    }
-		 
+		public boolean isVisible() {
+			return false;
+		}
+
 		public PlaylistRenderer() {
 			ImageIcon[] image = new ImageIcon[6];
 			try {
@@ -2103,25 +2264,25 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			// Set the correct image
 			switch (pl.getType()) {
 			case Playlist.DEFAULT:
-				if(index == playlistPlaying)
+				if (index == playlistPlaying)
 					setIcon(image[3]);
 				else
 					setIcon(image[0]);
 				break;
 			case Playlist.USER:
-				if(index == playlistPlaying)
+				if (index == playlistPlaying)
 					setIcon(image[4]);
 				else
 					setIcon(image[1]);
 				break;
 			case Playlist.AUTO:
-				if(index == playlistPlaying)
+				if (index == playlistPlaying)
 					setIcon(image[5]);
 				else
 					setIcon(image[2]);
 				break;
 			default:
-				if(index == playlistPlaying)
+				if (index == playlistPlaying)
 					setIcon(image[3]);
 				else
 					setIcon(image[0]);
