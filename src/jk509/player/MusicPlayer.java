@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.AudioSystem;
@@ -1043,7 +1044,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 
 	private void DisplayLibrary() {
-		Object[][] rows = new Object[library.size()][9];
+		Object[][] rows = new Object[library.size()][10];
 		for (int i = 0; i < library.size(); ++i) {
 			Song s = library.get(i);
 			rows[i][0] = null;
@@ -1052,32 +1053,32 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			rows[i][3] = s.getAlbum();
 			rows[i][4] = s.getArtist();
 			rows[i][5] = s.getGenre();
-			try {
-				rows[i][6] = (new SimpleDateFormat("dd/MM/yyyy")).format(s.getDateAdded());
+			rows[i][6] = s.getTrackTime();
+			rows[i][7] = s.getPlayCount();
+			/*try {
+				rows[i][8] = (new SimpleDateFormat("dd/MM/yyyy")).format(s.getDateAdded());
 			} catch (NullPointerException e) {
-				rows[i][6] = "01/01/2000";
-			}
-			rows[i][7] = s.getLength();
-			rows[i][8] = s.getLocation();
+				rows[i][8] = "01/01/2000";
+			}*/
+			rows[i][8] = s.getDateAdded();
+			rows[i][9] = s.getLocation();
 		}
 
-		tabMain.setModel(new DefaultTableModel(rows, new String[] { "", "", "Name", "Album", "Artist", "Genre", "Date Added", "Time", "Location" }) {
-			/**
-				 * 
-				 */
+		tabMain.setModel(new DefaultTableModel(rows, new String[] { "", "", "Name", "Album", "Artist", "Genre", "Time", "Play Count", "Date Added", "Location" }) {
 			private static final long serialVersionUID = 1L;
 			@SuppressWarnings("rawtypes")
-			Class[] columnTypes = new Class[] { ImageIcon.class, String.class, String.class, String.class, String.class, String.class, String.class, String.class, String.class };
+			Class[] columnTypes = new Class[] { ImageIcon.class, Integer.class, String.class, String.class, String.class, String.class, TrackTime.class, Integer.class, Date.class, String.class };
 
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			public Class getColumnClass(int columnIndex) {
 				return columnTypes[columnIndex];
 			}
 
-			boolean[] columnEditables = new boolean[] { false, false, false, false, false, false, false, false };
+			//boolean[] columnEditables = new boolean[] { false, false, false, false, false, false, false, false, false };
 
 			public boolean isCellEditable(int row, int column) {
-				return columnEditables[column];
+				// return columnEditables[column];
+				return false;
 			}
 		});
 
@@ -1110,7 +1111,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		tabMain.getColumnModel().getColumn(1).setMinWidth(miniWidth);
 		tabMain.getColumnModel().getColumn(1).setMaxWidth(miniWidth);
 
-		tabMain.removeColumn(tabMain.getColumnModel().getColumn(8));
+		tabMain.removeColumn(tabMain.getColumnModel().getColumn(9));
 
 		DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
 		rightRenderer.setHorizontalAlignment(JLabel.RIGHT);
@@ -1146,6 +1147,23 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 			}
 		});
+		
+		tabMain.setDefaultRenderer(TrackTime.class, rightRenderer);
+		tabMain.setDefaultRenderer(int.class, rightRenderer);
+		tabMain.setDefaultRenderer(Date.class, new DefaultTableCellRenderer(){
+			private static final long serialVersionUID = 1L;
+			@Override
+			public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+				Component cell = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+				try{
+					((JLabel) cell).setText((new SimpleDateFormat("dd/MM/yyyy")).format((Date) value));
+				} catch (NullPointerException e) {
+					((JLabel) cell).setText("01/01/2000");
+				}
+				return cell;
+			}
+		});
+		
 	}
 
 	private class BtnExportDataActionListener implements ActionListener {
@@ -1704,8 +1722,17 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			last = true;
 		// int rowM = ((TableSorter) tabMain.getModel()).modelIndex(rowV);
 		int rowM = ((TableSorter) tabMain.getModel()).modelIndex(rowV);
-		int reply = JOptionPane.showConfirmDialog(frmMusicPlayer, "Are you sure you want to delete this track from your library?", "Confirm deletion", JOptionPane.YES_NO_OPTION);
+		int reply;
+		if (((Playlist) listPlaylists.getSelectedValue()).getType() == Playlist.DEFAULT)
+			reply = JOptionPane.showConfirmDialog(frmMusicPlayer, "Are you sure you want to delete this track from your library?\nIt will also be removed from any playlists it is in.", "Confirm deletion", JOptionPane.YES_NO_OPTION);
+		else
+			reply = JOptionPane.showConfirmDialog(frmMusicPlayer, "Are you sure you want to remove this track from the playlist?", "Confirm deletion", JOptionPane.YES_NO_OPTION);
+
 		if (reply == JOptionPane.YES_OPTION) {
+
+			if (((Playlist) listPlaylists.getSelectedValue()).getType() == Playlist.DEFAULT)
+				DeleteInPlaylists(library.get(rowM));
+
 			Delete(rowM);
 
 			// adjust rowPlaying (not trackplaying)
@@ -1737,6 +1764,22 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		RefreshMainList();
 	}
 
+	private void DeleteInPlaylists(Song s) {
+		// scan all user/auto playlists and remove this song, based on it's
+		// location (for now)
+		String loc = s.getLocation();
+		for (int pl = 0; pl < library.getPlaylists().size() - FIXED_PLAYLIST_ELEMENTS; pl++) {
+			for (int i = 0; i < library.getPlaylists().get(pl + FIXED_PLAYLIST_ELEMENTS).size(); i++) {
+				if (library.getPlaylists().get(pl + FIXED_PLAYLIST_ELEMENTS).get(i).getLocation().equals(loc)) {
+					library.getPlaylists().get(pl + FIXED_PLAYLIST_ELEMENTS).remove(i);
+					// may have multiple instances in a playlist
+					if (i < library.getPlaylists().get(pl + FIXED_PLAYLIST_ELEMENTS).size() - 1)
+						i--;
+				}
+			}
+		}
+	}
+
 	private class FrmMusicPlayerKeyListener extends KeyAdapter {
 		@Override
 		public void keyPressed(KeyEvent e) {
@@ -1744,7 +1787,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			int rowNew;
 			switch (e.getKeyCode()) {
 			case KeyEvent.VK_DOWN:
-				if(row < tabMain.getRowCount() - 1)
+				if (row < tabMain.getRowCount() - 1)
 					rowNew = row + 1;
 				else
 					rowNew = row;
@@ -1752,7 +1795,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				tabMain.scrollRectToVisible(tabMain.getCellRect(row, 0, true));
 				break;
 			case KeyEvent.VK_UP:
-				if(row > 0)
+				if (row > 0)
 					rowNew = row - 1;
 				else
 					rowNew = row;

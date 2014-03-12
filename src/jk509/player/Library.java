@@ -17,7 +17,7 @@ public class Library implements Serializable {
 	//private List<Song> tracks; // todo: won't use
 	private List<Playlist> playlists;
 	private Map<String, BufferedImage> artwork;
-	private int currentPlaylist = 0;
+	private int currentPlaylist = 0; // currently viewing, not currently playing, playlist.
 
 	public Library() {
 		//tracks = new ArrayList<Song>();

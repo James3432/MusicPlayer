@@ -34,7 +34,6 @@ import javax.swing.border.BevelBorder;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.SoftBevelBorder;
 import javax.swing.filechooser.FileFilter;
-import java.awt.Dialog.ModalityType;
 
 public class Setup extends JDialog {
 	/**

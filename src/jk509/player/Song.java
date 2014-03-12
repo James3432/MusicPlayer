@@ -132,6 +132,10 @@ public class Song implements Serializable {
 	public int getLengthS() {
 		return length;
 	}
+	
+	public TrackTime getTrackTime(){
+		return new TrackTime(length);
+	}
 
 	public void setLength(int l) {
 		length = l;
