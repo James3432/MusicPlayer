@@ -1,8 +1,11 @@
 package jk509.player;
 
+import java.awt.Point;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+
+import jk509.player.TableSorter.Directive;
 
 public class Playlist implements Serializable {
 
@@ -13,7 +16,11 @@ public class Playlist implements Serializable {
 	private String name;
 	private List<Song> list;
 	private int type;
-
+	private int[] selection;
+	private Point viewPos;
+	private List<Directive> sort;
+	//public JTableHeader header;
+	
 	// Types of playlist
 	public static final int DEFAULT = 0;
 	public static final int USER = 1;
@@ -23,6 +30,8 @@ public class Playlist implements Serializable {
 		this.name = "";
 		list = new ArrayList<Song>();
 		type = 0;
+		selection = new int[0];
+		viewPos = new Point(0, 0);
 	}
 
 	public Playlist(String name) {
@@ -50,6 +59,30 @@ public class Playlist implements Serializable {
 	public void remove(int i) {
 		list.remove(i);
 	}
+	
+	public int[] getSelection(){
+		return selection;
+	}
+	
+	public void setSelection(int[] ns){
+		selection = ns;
+	}
+	
+	public Point getViewPos(){
+		return viewPos;
+	}
+	
+	public void setViewPos(Point p){
+		viewPos = p;
+	}
+	
+	public List<Directive> getSort(){
+		return sort;
+	}
+	
+	public void setSort(List<Directive> s){
+		sort = s;
+	}
 
 	public void add(int index, Song element) {
 		list.add(index, element);
@@ -68,7 +101,11 @@ public class Playlist implements Serializable {
 	}
 
 	public void setList(List<Song> l) {
-		list = l;
+		list = new ArrayList<Song>(l);
+	}
+	
+	public void append(List<Song> l) {
+		list.addAll(l);
 	}
 
 	public String getName() {

@@ -381,7 +381,7 @@ public class Setup extends JDialog {
 		btnNext1.setPreferredSize(new Dimension(110, 25));
 		panel_12.add(btnNext1, BorderLayout.EAST);
 
-		lblVBuild = new JLabel("             v1.0.0 Build 1 01/02/2014 22:28");
+		lblVBuild = new JLabel("");
 		lblVBuild.setForeground(Color.LIGHT_GRAY);
 		lblVBuild.setFont(new Font("Tahoma", Font.BOLD, 10));
 		panel_12.add(lblVBuild, BorderLayout.CENTER);
@@ -1034,7 +1034,9 @@ public class Setup extends JDialog {
 			if (library.size() > 0 && library.getPlaylists().get(0).size() > 0) {
 				lblProcessingCount.setText(Integer.toString(library.getPlaylists().get(0).size()));
 				lblProcessingName.setText(library.getPlaylists().get(0).get(0).getName() + " - " + library.getPlaylists().get(0).get(0).getAlbum() + " - " + library.getPlaylists().get(0).get(0).getArtist());
+				lblProcessingStart.setText(lblProcessingCount.getText());
 			}
+			lblThisMayTake.setText("Processing complete.");
 		}
 	}
 
@@ -1049,6 +1051,19 @@ public class Setup extends JDialog {
 	private class BtnImportMusicActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
 
+			btnPrevious4.setEnabled(false);
+			btnSkipMusic.setEnabled(false);
+			btnBrowseMusic.setEnabled(false);
+			listTracksDisk.setModel(new AbstractListModel() {
+				private static final long serialVersionUID = 1L;
+				public int getSize() {
+					return 1;
+				}
+				public Object getElementAt(int index) {
+					return "Loading... this may take several minutes for large collections, please wait.";
+				}
+			});
+			
 			btnImportMusic.setEnabled(false);
 			btnImportMusic.setText("Importing...");
 			btnImportMusic.invalidate();
@@ -1063,9 +1078,12 @@ public class Setup extends JDialog {
 					parser.setPath(folder);
 					parser.setValid(true);
 					if (Import(parser)) {
-						btnImportMusic.setEnabled(false);
+						//btnImportMusic.setEnabled(false);
 						btnImportMusic.setText("Done");
 						btnNext4.setEnabled(true);
+						btnPrevious4.setEnabled(true);
+						btnSkipMusic.setEnabled(true);
+						btnBrowseMusic.setEnabled(true);
 					}
 					UpdateTrackDisplay();
 				}

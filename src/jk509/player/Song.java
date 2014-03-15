@@ -4,8 +4,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * A representation of audio tracks which may have data drawn from ID3 tags or
- * an iTunes database
+ * A representation of audio tracks which may have data drawn from ID3 tags or an iTunes database
  */
 public class Song implements Serializable {
 
@@ -35,6 +34,8 @@ public class Song implements Serializable {
 
 	public void setName(String name) {
 		this.name = name;
+		if (name == null || name.equals(""))
+			this.name = "Unknown track";
 	}
 
 	public String getAlbum() {
@@ -43,6 +44,8 @@ public class Song implements Serializable {
 
 	public void setAlbum(String albumName) {
 		this.album = albumName;
+		if (albumName == null || albumName.equals(""))
+			this.album = "Unknown album";
 	}
 
 	public String getArtist() {
@@ -51,6 +54,8 @@ public class Song implements Serializable {
 
 	public void setArtist(String artistName) {
 		this.artist = artistName;
+		if (artistName == null || artistName.equals("") || artistName.equals(null))
+			this.artist = "Unknown artist";
 	}
 
 	public String getGenre() {
@@ -59,6 +64,8 @@ public class Song implements Serializable {
 
 	public void setGenre(String genre) {
 		this.genre = genre;
+		if (genre == null)
+			this.genre = "";
 	}
 
 	public String getYear() {
@@ -67,6 +74,8 @@ public class Song implements Serializable {
 
 	public void setYear(String year) {
 		this.year = year;
+		if (year == null)
+			this.year = "";
 	}
 
 	public String getType() {
@@ -99,6 +108,8 @@ public class Song implements Serializable {
 
 	public void setDateAdded(Date date) {
 		this.added = date;
+		if (date == null)
+			this.added = new Date();
 	}
 
 	public int getID() {
@@ -125,6 +136,13 @@ public class Song implements Serializable {
 		this.playCount = playCount;
 	}
 
+	public void incrementPlayCount() {
+		if (playCount < 0)
+			playCount = 1;
+		else
+			playCount++;
+	}
+
 	public String getLength() {
 		return SecondsToString(length);
 	}
@@ -132,16 +150,28 @@ public class Song implements Serializable {
 	public int getLengthS() {
 		return length;
 	}
-	
-	public TrackTime getTrackTime(){
+
+	public TrackTime getTrackTime() {
 		return new TrackTime(length);
 	}
 
 	public void setLength(int l) {
 		length = l;
 	}
-	
-	public static String SecondsToString(int length){
+
+	public void cleanUp() {
+		// remove any null fields
+		if (name == null || name.equals(""))
+			name = "Unknown track";
+		if (artist == null || artist.equals(""))
+			artist = "Unknown artist";
+		if (album == null || album.equals(""))
+			album = "Unknown album";
+		if (added == null)
+			added = new Date();
+	}
+
+	public static String SecondsToString(int length) {
 		String s = Integer.toString(length % 60);
 		if (s.length() == 0)
 			s = "00";

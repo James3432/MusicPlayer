@@ -90,6 +90,13 @@ public class ParseItunesDialog extends JDialog {
 			contentPanel.add(lblegCusersmemusic);
 		}
 		{
+			JLabel label = new JLabel("Warning: this will replace all music currently in your library");
+			label.setForeground(Color.RED);
+			label.setFont(new Font("Tahoma", Font.BOLD, 11));
+			label.setBounds(35, 166, 385, 14);
+			contentPanel.add(label);
+		}
+		{
 			JPanel buttonPane = new JPanel();
 			buttonPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
 			getContentPane().add(buttonPane, BorderLayout.SOUTH);

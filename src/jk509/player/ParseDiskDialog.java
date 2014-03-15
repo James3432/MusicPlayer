@@ -18,6 +18,7 @@ import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import java.awt.Color;
 
 public class ParseDiskDialog extends JDialog {
 
@@ -27,11 +28,12 @@ public class ParseDiskDialog extends JDialog {
 	private JButton btnCancel;
 	private JTextField txtPath;
 	LibraryParser parser;
+	private JLabel lblWarningThisWill;
 
 	/**
 	 * Create the dialog.
 	 */
-	public ParseDiskDialog(LibraryParser parser) {
+	public ParseDiskDialog(LibraryParser parser, boolean hideWarning) {
 		this.parser = parser;
 		setTitle("Import from Disk");
 		setResizable(false);
@@ -77,6 +79,14 @@ public class ParseDiskDialog extends JDialog {
 			btnBrowse.setBounds(406, 72, 79, 23);
 			contentPanel.add(btnBrowse);
 		}
+		
+		lblWarningThisWill = new JLabel("Warning: this will replace all music currently in your library");
+		lblWarningThisWill.setForeground(Color.RED);
+		lblWarningThisWill.setFont(new Font("Tahoma", Font.BOLD, 11));
+		lblWarningThisWill.setBounds(36, 105, 385, 14);
+		if(hideWarning)
+			lblWarningThisWill.setVisible(false);
+		contentPanel.add(lblWarningThisWill);
 		{
 			JPanel buttonPane = new JPanel();
 			buttonPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
@@ -97,7 +107,7 @@ public class ParseDiskDialog extends JDialog {
 			}
 		}
 	}
-
+	
 	private void CheckValidPath() {
 		String path = txtPath.getText();
 		if (path != null && !path.equals("") && (new File(path)).exists()) {

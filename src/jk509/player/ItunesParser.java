@@ -109,6 +109,8 @@ public class ItunesParser extends DefaultHandler implements LibraryParser {
         if (foundTracks) {
             if ("key".equals(previousTag) && "dict".equalsIgnoreCase(qName)) {
                 //create a new instance
+            	if(tempTrack != null)
+            		tempTrack.cleanUp();
                 tempTrack = new Song();
                 tracks.add(tempTrack);
             }

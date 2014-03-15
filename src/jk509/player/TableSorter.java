@@ -33,6 +33,7 @@ package jk509.player;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.io.Serializable;
 import java.util.*;
 import java.util.List;
 
@@ -44,44 +45,21 @@ import javax.swing.table.*;
 import jk509.player.MusicPlayer.TableRowSortedListener;
 
 /**
- * TableSorter is a decorator for TableModels; adding sorting functionality to a
- * supplied TableModel. TableSorter does not store or copy the data in its
- * TableModel; instead it maintains a map from the row indexes of the view to
- * the row indexes of the model. As requests are made of the sorter (like
- * getValueAt(row, col)) they are passed to the underlying model after the row
- * numbers have been translated via the internal mapping array. This way, the
- * TableSorter appears to hold another copy of the table with the rows in a
- * different order.
+ * TableSorter is a decorator for TableModels; adding sorting functionality to a supplied TableModel. TableSorter does not store or copy the data in its TableModel; instead it maintains a map from the row indexes of the view to the row indexes of the model. As requests are made of the sorter (like getValueAt(row, col)) they are passed to the underlying model after the row numbers have been translated via the internal mapping array. This way, the TableSorter appears to hold another copy of the table with the rows in a different order.
  * <p/>
- * TableSorter registers itself as a listener to the underlying model, just as
- * the JTable itself would. Events recieved from the model are examined,
- * sometimes manipulated (typically widened), and then passed on to the
- * TableSorter's listeners (typically the JTable). If a change to the model has
- * invalidated the order of TableSorter's rows, a note of this is made and the
- * sorter will resort the rows the next time a value is requested.
+ * TableSorter registers itself as a listener to the underlying model, just as the JTable itself would. Events recieved from the model are examined, sometimes manipulated (typically widened), and then passed on to the TableSorter's listeners (typically the JTable). If a change to the model has invalidated the order of TableSorter's rows, a note of this is made and the sorter will resort the rows the next time a value is requested.
  * <p/>
- * When the tableHeader property is set, either by using the setTableHeader()
- * method or the two argument constructor, the table header may be used as a
- * complete UI for TableSorter. The default renderer of the tableHeader is
- * decorated with a renderer that indicates the sorting status of each column.
- * In addition, a mouse listener is installed with the following behavior:
+ * When the tableHeader property is set, either by using the setTableHeader() method or the two argument constructor, the table header may be used as a complete UI for TableSorter. The default renderer of the tableHeader is decorated with a renderer that indicates the sorting status of each column. In addition, a mouse listener is installed with the following behavior:
  * <ul>
  * <li>
- * Mouse-click: Clears the sorting status of all other columns and advances the
- * sorting status of that column through three values: {NOT_SORTED, ASCENDING,
- * DESCENDING} (then back to NOT_SORTED again).
+ * Mouse-click: Clears the sorting status of all other columns and advances the sorting status of that column through three values: {NOT_SORTED, ASCENDING, DESCENDING} (then back to NOT_SORTED again).
  * <li>
- * SHIFT-mouse-click: Clears the sorting status of all other columns and cycles
- * the sorting status of the column through the same three values, in the
- * opposite order: {NOT_SORTED, DESCENDING, ASCENDING}.
+ * SHIFT-mouse-click: Clears the sorting status of all other columns and cycles the sorting status of the column through the same three values, in the opposite order: {NOT_SORTED, DESCENDING, ASCENDING}.
  * <li>
- * CONTROL-mouse-click and CONTROL-SHIFT-mouse-click: as above except that the
- * changes to the column do not cancel the statuses of columns that are already
- * sorting - giving a way to initiate a compound sort.
+ * CONTROL-mouse-click and CONTROL-SHIFT-mouse-click: as above except that the changes to the column do not cancel the statuses of columns that are already sorting - giving a way to initiate a compound sort.
  * </ul>
  * <p/>
- * This is a long overdue rewrite of a class of the same name that first
- * appeared in the swing table demos in 1997.
+ * This is a long overdue rewrite of a class of the same name that first appeared in the swing table demos in 1997.
  * 
  * @author Philip Milne
  * @author Brendon McLean
@@ -118,14 +96,16 @@ public class TableSorter extends AbstractTableModel {
 	private Row[] viewToModel;
 	private int[] modelToView;
 
+	public int[] selectedRowsInView;
+
 	private JTableHeader tableHeader;
 	private MouseListener mouseListener;
 	private TableModelListener tableModelListener;
 	private JTable table;
-	private int selectedRow;
+	private int[] selectedRows;
 	private TableRowSortedListener changeListener;
 	private Map columnComparators = new HashMap();
-	private List sortingColumns = new ArrayList();
+	private List<Directive> sortingColumns = new ArrayList<Directive>();
 
 	public TableSorter() {
 		this.mouseListener = new MouseHandler();
@@ -221,7 +201,8 @@ public class TableSorter extends AbstractTableModel {
 		if (tableHeader != null) {
 			tableHeader.repaint();
 		}
-		changeListener.actionPerformed(new ActionEvent(this, 0, "", viewIndex(selectedRow)));
+		this.selectedRowsInView = viewIndices(selectedRows);
+		changeListener.actionPerformed(new ActionEvent(this, 0, ""));
 	}
 
 	public void setSortingStatus(int column, int status) {
@@ -233,6 +214,17 @@ public class TableSorter extends AbstractTableModel {
 			sortingColumns.add(new Directive(column, status));
 		}
 		sortingStatusChanged();
+	}
+
+	public List<Directive> getFullSortingStatus() {
+		return sortingColumns;
+	}
+
+	public void setFullSortingStatus(List<Directive> sorts) {
+		for (int i = 0; i < sorts.size(); ++i) {
+			Directive d = sorts.get(i);
+			setSortingStatus(d.column, d.direction);
+		}
 	}
 
 	protected Icon getHeaderRendererIcon(int column, int size) {
@@ -289,6 +281,28 @@ public class TableSorter extends AbstractTableModel {
 
 	public int viewIndex(int modelIndex) {
 		return getModelToView()[modelIndex];
+	}
+
+	public int[] modelIndices(int[] viewIndices) {
+		if (viewIndices == null || viewIndices.length < 1)
+			return new int[] {};
+		else {
+			int[] modelIndices = new int[viewIndices.length];
+			for (int i = 0; i < viewIndices.length; ++i)
+				modelIndices[i] = modelIndex(viewIndices[i]);
+			return modelIndices;
+		}
+	}
+
+	public int[] viewIndices(int[] modelIndices) {
+		if (modelIndices == null || modelIndices.length < 1)
+			return new int[] {};
+		else {
+			int[] viewIndices = new int[modelIndices.length];
+			for (int i = 0; i < modelIndices.length; ++i)
+				viewIndices[i] = viewIndex(modelIndices[i]);
+			return viewIndices;
+		}
 	}
 
 	private int[] getModelToView() {
@@ -359,7 +373,7 @@ public class TableSorter extends AbstractTableModel {
 			int row1 = modelIndex;
 			int row2 = ((Row) o).modelIndex;
 
-			for (Iterator it = sortingColumns.iterator(); it.hasNext();) {
+			for (Iterator<Directive> it = sortingColumns.iterator(); it.hasNext();) {
 				Directive directive = (Directive) it.next();
 				int column = directive.column;
 				Object o1 = tableModel.getValueAt(row1, column);
@@ -443,9 +457,9 @@ public class TableSorter extends AbstractTableModel {
 	private class MouseHandler extends MouseAdapter {
 		public void mouseClicked(MouseEvent e) {
 			try {
-				selectedRow = modelIndex(table.getSelectedRow());
+				selectedRows = modelIndices(table.getSelectedRows());
 			} catch (Exception arg0) {
-				selectedRow = -1;
+				selectedRows = new int[] {};
 			}
 			JTableHeader h = (JTableHeader) e.getSource();
 			TableColumnModel columnModel = h.getColumnModel();
@@ -453,17 +467,77 @@ public class TableSorter extends AbstractTableModel {
 			int column = columnModel.getColumn(viewColumn).getModelIndex();
 			if (column > 1) {
 				int status = getSortingStatus(column);
-				if (!e.isControlDown()) {
+				// BUT we'll call status 0 unless this was the primary sorting column
+				if(sortingColumns.get(0).column != column)
+					status = 0;
+				
+				// uncomment to allow Ctrl modifier
+				//if (!e.isControlDown()) {
 					cancelSorting();
-				}
+				//}
+					
 				// Cycle the sorting states through {NOT_SORTED, ASCENDING,
 				// DESCENDING} or
 				// {NOT_SORTED, DESCENDING, ASCENDING} depending on whether
 				// shift is pressed.
-				status = status + (e.isShiftDown() ? -1 : 1);
+				if(column != 4)
+					status = status + (e.isShiftDown() ? -1 : 1);
+				else
+					status = status + 1;
 				status = (status + 4) % 3 - 1; // signed mod, returning {-1, 0,
 												// 1}
-				setSortingStatus(column, status);
+				// OLD CODE:
+				// setSortingStatus(column, status);
+
+				/*
+				 * Sorting hierarchy:
+				 * 
+				 * sort by name (standalone)
+				 * 
+				 * sort by album -> then sorts by track# (no choice)
+				 * 
+				 * sort by artist -> then sorts by album -> then sorts by track#
+				 * 
+				 * sort by genre -> then sorts by artist->album->track#
+				 */
+
+				// NEW CODE FOR CUSTOM SORTING HIERARCHY:
+				switch (column) {
+				case 2: // name
+					setSortingStatus(column, status);
+					if (status != 0) {
+						setSortingStatus(4, 1);
+						setSortingStatus(3, 1);
+					}
+					break;
+				case 3: // album
+					setSortingStatus(column, status);
+					if (status != 0) {
+						setSortingStatus(1, 1);
+					}
+					break;
+				case 4: // artist
+					setSortingStatus(column, status);
+					if (status != 0) {
+						setSortingStatus(3, 1);
+						setSortingStatus(1, 1);
+					}
+					break;
+				}
+				if (column > 4) {
+					setSortingStatus(column, status);
+					if (status != 0) {
+						setSortingStatus(4, 1);
+						setSortingStatus(3, 1);
+						setSortingStatus(1, 1);
+					}
+				}
+				
+				if(!isSorting()){
+					setSortingStatus(4, 1);
+					setSortingStatus(3, 1);
+					setSortingStatus(1, 1);
+				}
 			}
 		}
 	}
@@ -477,39 +551,45 @@ public class TableSorter extends AbstractTableModel {
 			this.descending = descending;
 			this.size = size;
 			this.priority = priority;
+			// only draw 1st priority
+			if (priority > 0) {
+				size = 0;
+			}
 		}
 
 		public void paintIcon(Component c, Graphics g, int x, int y) {
-			Color color = c == null ? Color.GRAY : c.getBackground();
-			// In a compound sort, make each succesive triangle 20%
-			// smaller than the previous one.
-			int dx = (int) (size / 2 * Math.pow(0.8, priority));
-			int dy = descending ? dx : -dx;
-			// Align icon (roughly) with font baseline.
-			y = y + 5 * size / 6 + (descending ? -dy : 0);
-			int shift = descending ? 1 : -1;
-			g.translate(x, y);
+			if (priority == 0) {
+				Color color = c == null ? Color.GRAY : c.getBackground();
+				// In a compound sort, make each succesive triangle 20%
+				// smaller than the previous one.
+				int dx = (int) (size / 2 * Math.pow(0.8, priority));
+				int dy = descending ? dx : -dx;
+				// Align icon (roughly) with font baseline.
+				y = y + 5 * size / 6 + (descending ? -dy : 0);
+				int shift = descending ? 1 : -1;
+				g.translate(x, y);
 
-			// Right diagonal.
-			g.setColor(color.darker());
-			g.drawLine(dx / 2, dy, 0, 0);
-			g.drawLine(dx / 2, dy + shift, 0, shift);
+				// Right diagonal.
+				g.setColor(color.darker());
+				g.drawLine(dx / 2, dy, 0, 0);
+				g.drawLine(dx / 2, dy + shift, 0, shift);
 
-			// Left diagonal.
-			g.setColor(color.brighter());
-			g.drawLine(dx / 2, dy, dx, 0);
-			g.drawLine(dx / 2, dy + shift, dx, shift);
+				// Left diagonal.
+				g.setColor(color.brighter());
+				g.drawLine(dx / 2, dy, dx, 0);
+				g.drawLine(dx / 2, dy + shift, dx, shift);
 
-			// Horizontal line.
-			if (descending) {
-				g.setColor(color.darker().darker());
-			} else {
-				g.setColor(color.brighter().brighter());
+				// Horizontal line.
+				if (descending) {
+					g.setColor(color.darker().darker());
+				} else {
+					g.setColor(color.brighter().brighter());
+				}
+				g.drawLine(dx, 0, 0, 0);
+
+				g.setColor(color);
+				g.translate(-x, -y);
 			}
-			g.drawLine(dx, 0, 0, 0);
-
-			g.setColor(color);
-			g.translate(-x, -y);
 		}
 
 		public int getIconWidth() {
@@ -534,13 +614,15 @@ public class TableSorter extends AbstractTableModel {
 				JLabel l = (JLabel) c;
 				l.setHorizontalTextPosition(JLabel.LEFT);
 				int modelColumn = table.convertColumnIndexToModel(column);
-				l.setIcon(getHeaderRendererIcon(modelColumn, l.getFont().getSize()));
+				if (modelColumn > 1)
+					l.setIcon(getHeaderRendererIcon(modelColumn, l.getFont().getSize()));
 			}
 			return c;
 		}
 	}
 
-	private static class Directive {
+	static class Directive implements Serializable {
+		private static final long serialVersionUID = 1L;
 		private int column;
 		private int direction;
 
