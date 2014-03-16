@@ -1043,7 +1043,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				ObjectInputStream ois = new ObjectInputStream(fin);
 				library = (Library) ois.readObject();
 				ois.close();
-				sliderVol.setValue(library.getVolume());
+				try{
+					sliderVol.setValue(library.getVolume());
+				}catch(Exception e){ library.setVolume(100); sliderVol.setValue(100);}
 				sliderVol.repaint();
 				if(library.getVolume() < 0)
 					library.setVolume(100);
@@ -1194,7 +1196,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		// new: save col widths all the time
 		int[] prevColWidths = new int[9];
 		if (tabMain.getColumnCount() < 9) {
-			prevColWidths = library.getColWidths();
+			try{
+				prevColWidths = library.getColWidths();
+			}catch(NullPointerException e){  prevColWidths = new int[] { 25, 25, 300, 200, 200, 100, 80, 80, 100 }; library.setColWidths(prevColWidths);}
 		} else {
 			for (int i = 0; i < prevColWidths.length; ++i) {
 				int col = tabMain.getColumnModel().getColumn(i).getModelIndex();
@@ -1332,7 +1336,11 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			tabMain.getColumnModel().getColumn(i).setPreferredWidth(prevColWidths[i]);
 		}
 
-		SetView(library.getSort(), library.getSelection(), library.getViewPos());
+		try{
+			SetView(library.getSort(), library.getSelection(), library.getViewPos());
+		}catch(NullPointerException e){
+			SetView(null, null, null);
+		}
 
 	}
 
@@ -1479,9 +1487,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 	private void playRandom() {
 		UpdatePlayCount();
-		int tracks = library.getPlaylist(playlistPlaying).size();
-		int rand = (int) (Math.random() * tracks);
-		play(rand);
+		//int tracks = library.getPlaylist(playlistPlaying).size();
+		//int rand = (int) (Math.random() * tracks);
+		int nextUp = playlistPlayingSorter.viewIndex(library.shuffleIndexToModel(library.modelIndexToShuffle(playlistPlayingSorter.modelIndex(rowPlaying))+1));
+		play(nextUp);
 	}
 
 	private void playNext() {
@@ -1498,7 +1507,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			nextUp = rowPlaying;
 		} else {
 			if (shuffle) {
-				nextUp = (int) (Math.random() * library.getPlaylist(playlistPlaying).size());
+				//nextUp = (int) (Math.random() * library.getPlaylist(playlistPlaying).size());
+				nextUp = playlistPlayingSorter.viewIndex(library.shuffleIndexToModel(library.modelIndexToShuffle(playlistPlayingSorter.modelIndex(rowPlaying))+1));
 			} else if (rowPlaying == library.getPlaylist(playlistPlaying).size() - 1) {
 				if (repeat)
 					nextUp = 0;
@@ -1564,7 +1574,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				nextUp = rowPlaying;
 			} else {
 				if (shuffle) {
-					nextUp = (int) (Math.random() * library.getPlaylist(playlistPlaying).size());
+					//nextUp = (int) (Math.random() * library.getPlaylist(playlistPlaying).size());
+					nextUp = playlistPlayingSorter.viewIndex(library.shuffleIndexToModel(library.modelIndexToShuffle(playlistPlayingSorter.modelIndex(rowPlaying))-1));
 				} else if (rowPlaying == 0) {
 					Stop();
 					return;
@@ -2036,6 +2047,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			btnShuffle.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/shuffle.png")));
 		} else {
 			btnShuffle.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/shuffle_on.png")));
+			library.shuffle();
 		}
 		shuffle = !shuffle;
 	}

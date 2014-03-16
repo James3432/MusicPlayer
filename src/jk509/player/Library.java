@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import jk509.player.Playlist.Shuffle;
 import jk509.player.TableSorter.Directive;
 
 /*
@@ -26,6 +27,7 @@ public class Library implements Serializable {
 	public final static int HIDDEN_PLAYLISTS = 2;
 	public final static int MAIN_PLAYLIST = 2;
 	private boolean searching = false;
+	private Shuffle shuffle;
 	
 	public Library() {
 		//tracks = new ArrayList<Song>();
@@ -220,8 +222,30 @@ public class Library implements Serializable {
 	}
 	
 	public void shuffle(){
-		getPlaylists().get(1).setList(getPlaylist(0).shuffle());
+		shuffle = getPlaylist(0).shuffle();
+		getPlaylists().get(1).setList(shuffle.tracks);
 		// don't set current playlist, because we play but don't view the shuffle...
+	}
+	
+	public int shuffleIndexToModel(int i){
+		if(i < 0 )
+			return shuffle.tracks.size()-1;
+		if(i >= shuffle.tracks.size())
+			return 0;
+		return shuffle.indices.get(i);
+	}
+	
+	public int modelIndexToShuffle(int index){
+		if(index < 0 )
+			return shuffle.tracks.size()-1;
+		if(index >= shuffle.tracks.size())
+			return 0;
+		for(int i=0; i<shuffle.indices.size(); ++i)
+			if(shuffle.indices.get(i) == index)
+				return i;
+		//else
+		shuffle();
+		return 0;
 	}
 	
 	public List<Song> getShuffle(){

@@ -145,11 +145,16 @@ public class Playlist implements Serializable {
 		return result;
 	}
 	
-	public List<Song> shuffle(){
+	public Shuffle shuffle(){
 		List<Song> res = new ArrayList<Song>(getList());
+		List<Integer> indexList = new ArrayList<Integer>();
+		for(int i=0; i<res.size(); ++i)
+			indexList.add(i);
 		long seed = System.nanoTime();
 		Collections.shuffle(res, new Random(seed));
-		return res;
+		Collections.shuffle(indexList, new Random(seed));
+		Shuffle s = new Shuffle(res, indexList);
+		return s;
 	}
 	
 	public int getIndexOf(String loc){
@@ -157,6 +162,13 @@ public class Playlist implements Serializable {
 			if(get(i).getLocation().equals(loc))
 				return i;
 		return -1;
+	}
+	
+	public class Shuffle {
+		public List<Song> tracks;
+		public List<Integer> indices;
+		//public int position = 0;
+		public Shuffle(List<Song> s, List<Integer> i){ tracks = s; indices = i; }
 	}
 
 }
