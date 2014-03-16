@@ -20,10 +20,13 @@ public class Library implements Serializable {
 	//private List<Song> tracks; // todo: won't use
 	private List<Playlist> playlists;
 	private Map<String, BufferedImage> artwork;
-	private int currentPlaylist = 0; // currently viewing, not currently playing, playlist.
+	private int currentPlaylist = 2; // currently viewing, not currently playing, playlist.
 	private int volume = 100; // 0-100
 	private int[] colWidths;
-
+	public final static int HIDDEN_PLAYLISTS = 2;
+	public final static int MAIN_PLAYLIST = 2;
+	private boolean searching = false;
+	
 	public Library() {
 		//tracks = new ArrayList<Song>();
 		playlists = new ArrayList<Playlist>();
@@ -56,6 +59,16 @@ public class Library implements Serializable {
 		playlists.get(index).setList(songs);
 	}
 	
+	public Playlist getPlaylist(int i){
+		if(searching)
+			return getPlaylists().get(0);
+		return getPlaylists().get(i + HIDDEN_PLAYLISTS);
+	}
+	
+	public int getPlaylistCount(){
+		return getPlaylists().size() - HIDDEN_PLAYLISTS;
+	}
+	
 	public void addToPlaylist(int index, List<Song> songs){
 		if(playlists.size() < MusicPlayer.FIXED_PLAYLIST_ELEMENTS){
 			Initialise();
@@ -73,15 +86,15 @@ public class Library implements Serializable {
 	
 	private void Initialise(){
 		playlists = new ArrayList<Playlist>();
+		playlists.add(new Playlist("Search", Playlist.DEFAULT));
+		playlists.add(new Playlist("Shuffle", Playlist.DEFAULT));
 		playlists.add(new Playlist("Songs", Playlist.DEFAULT));
-		playlists.add(new Playlist("Artists", Playlist.DEFAULT));
-		playlists.add(new Playlist("Albums", Playlist.DEFAULT));
 	}
 	
 	public Playlist[] getPlaylistsAsArray(){
-		Playlist[] res = new Playlist[playlists.size()];
-		for(int i=0; i<playlists.size(); i++){
-			res[i] = playlists.get(i);
+		Playlist[] res = new Playlist[playlists.size() - HIDDEN_PLAYLISTS];
+		for(int i=0; i<playlists.size() - HIDDEN_PLAYLISTS; i++){
+			res[i] = playlists.get(i + HIDDEN_PLAYLISTS);
 		}
 		return res;
 	}
@@ -174,5 +187,49 @@ public class Library implements Serializable {
 	public void setColWidths(int[] c){
 		colWidths = c;
 	}
+	
+	public void clearViews(){
+		setSelection(new int[]{});
+		setViewPos(new Point(0, 0));
+		setSort(new ArrayList<Directive>());
+	}
 
+	public int search(String q, int playlistToSearch, int trackPlaying){
+		searching = true;
+		getPlaylists().get(0).setList(getPlaylists().get(playlistToSearch+HIDDEN_PLAYLISTS).search(q, trackPlaying));
+		setCurrentPlaylist(0);
+		if(getPlaylists().get(0).size() > 0)
+			getPlaylists().get(0).setSelection(new int[]{0});
+		getPlaylists().get(0).setSort(null);
+		getPlaylists().get(0).setViewPos(new Point(0, 0));
+		return getPlaylists().get(playlistToSearch+HIDDEN_PLAYLISTS).trackPlaying;
+	}
+	
+	//public int searchTrackPlaying(int track){
+		// find new track index in model after search filter has been applied
+		// now done by method above
+	//}
+	
+	public List<Song> searchResults(){
+		return getPlaylists().get(0).getList();
+	}
+	
+	public void cancelSearch(int i){
+		setCurrentPlaylist(i + HIDDEN_PLAYLISTS);
+		searching = false;
+	}
+	
+	public void shuffle(){
+		getPlaylists().get(1).setList(getPlaylist(0).shuffle());
+		// don't set current playlist, because we play but don't view the shuffle...
+	}
+	
+	public List<Song> getShuffle(){
+		return getPlaylists().get(1).getList();
+	}
+	
+	public int getTrackIndex(String loc/*ID*/, int playlist){
+		return getPlaylist(playlist).getIndexOf(loc);
+	}
+	
 }

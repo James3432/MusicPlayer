@@ -170,6 +170,14 @@ public class Song implements Serializable {
 		if (added == null)
 			added = new Date();
 	}
+	
+	public boolean search(String q){
+		q = q.toLowerCase();
+		if(name.toLowerCase().contains(q) || artist.toLowerCase().contains(q) || album.toLowerCase().contains(q))
+			return true;
+		else
+			return false;
+	}
 
 	public static String SecondsToString(int length) {
 		String s = Integer.toString(length % 60);

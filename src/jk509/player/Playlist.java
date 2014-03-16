@@ -3,7 +3,9 @@ package jk509.player;
 import java.awt.Point;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 import jk509.player.TableSorter.Directive;
 
@@ -20,6 +22,7 @@ public class Playlist implements Serializable {
 	private Point viewPos;
 	private List<Directive> sort;
 	//public JTableHeader header;
+	public int trackPlaying = -1;
 	
 	// Types of playlist
 	public static final int DEFAULT = 0;
@@ -126,6 +129,34 @@ public class Playlist implements Serializable {
 
 	public int size() {
 		return list.size();
+	}
+	
+	public List<Song> search(String q, int trackPlaying){
+		this.trackPlaying = -1;
+		// returns a subset of `tracks' for which track.search returns true
+		List<Song> result = new ArrayList<Song>();
+		for(int i=0; i<getList().size(); ++i){
+			if(getList().get(i).search(q)){
+					result.add(getList().get(i));
+					if(trackPlaying == i)
+						this.trackPlaying = result.size()-1;
+			}
+		}
+		return result;
+	}
+	
+	public List<Song> shuffle(){
+		List<Song> res = new ArrayList<Song>(getList());
+		long seed = System.nanoTime();
+		Collections.shuffle(res, new Random(seed));
+		return res;
+	}
+	
+	public int getIndexOf(String loc){
+		for(int i=0; i<size(); ++i)
+			if(get(i).getLocation().equals(loc))
+				return i;
+		return -1;
 	}
 
 }

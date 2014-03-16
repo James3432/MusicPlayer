@@ -221,9 +221,12 @@ public class TableSorter extends AbstractTableModel {
 	}
 
 	public void setFullSortingStatus(List<Directive> sorts) {
-		for (int i = 0; i < sorts.size(); ++i) {
-			Directive d = sorts.get(i);
-			setSortingStatus(d.column, d.direction);
+		clearSortingState();
+		if(sorts != null){
+			for (int i = 0; i < sorts.size(); ++i) {
+				Directive d = sorts.get(i);
+				setSortingStatus(d.column, d.direction);
+			}
 		}
 	}
 
