@@ -14,7 +14,7 @@ import jk509.player.TableSorter.Directive;
 /*
  *  Library format for save files
  */
-public class Library implements Serializable {
+public class Library implements Serializable, Cloneable {
 
 	private static final long serialVersionUID = 516185787632474552L;
 	
@@ -24,9 +24,10 @@ public class Library implements Serializable {
 	private int currentPlaylist = 2; // currently viewing, not currently playing, playlist.
 	private int volume = 100; // 0-100
 	private int[] colWidths;
-	public final static int HIDDEN_PLAYLISTS = 2;
-	public final static int MAIN_PLAYLIST = 2;
-	private boolean searching = false;
+	public final static int HIDDEN_PLAYLISTS = 2; // 0 is search, 1 is shuffle list
+	public final static int MAIN_PLAYLIST = 2; // index of main "songs" playlist
+	public boolean searching = false;
+	public boolean playingInSearch = false;
 	private Shuffle shuffle;
 	
 	public Library() {
@@ -62,7 +63,7 @@ public class Library implements Serializable {
 	}
 	
 	public Playlist getPlaylist(int i){
-		if(searching)
+		if(searching && playingInSearch)
 			return getPlaylists().get(0);
 		return getPlaylists().get(i + HIDDEN_PLAYLISTS);
 	}
@@ -204,6 +205,8 @@ public class Library implements Serializable {
 			getPlaylists().get(0).setSelection(new int[]{0});
 		getPlaylists().get(0).setSort(null);
 		getPlaylists().get(0).setViewPos(new Point(0, 0));
+		if(getPlaylists().get(playlistToSearch+HIDDEN_PLAYLISTS).trackPlaying > -1)
+			playingInSearch = true;
 		return getPlaylists().get(playlistToSearch+HIDDEN_PLAYLISTS).trackPlaying;
 	}
 	
@@ -219,10 +222,14 @@ public class Library implements Serializable {
 	public void cancelSearch(int i){
 		setCurrentPlaylist(i + HIDDEN_PLAYLISTS);
 		searching = false;
+		playingInSearch = false;
 	}
 	
-	public void shuffle(){
-		shuffle = getPlaylist(0).shuffle();
+	public void shuffle(int playlist){
+		if(searching)
+			shuffle = getPlaylists().get(0).shuffle();
+		else
+			shuffle = getPlaylist(playlist).shuffle();
 		getPlaylists().get(1).setList(shuffle.tracks);
 		// don't set current playlist, because we play but don't view the shuffle...
 	}
@@ -244,7 +251,7 @@ public class Library implements Serializable {
 			if(shuffle.indices.get(i) == index)
 				return i;
 		//else
-		shuffle();
+		shuffle(getCurrentPlaylist());
 		return 0;
 	}
 	
@@ -254,6 +261,19 @@ public class Library implements Serializable {
 	
 	public int getTrackIndex(String loc/*ID*/, int playlist){
 		return getPlaylist(playlist).getIndexOf(loc);
+	}
+	
+	@Override
+	public Object clone(){
+		Library lib;
+		try {
+			lib = (Library) super.clone();
+		} catch (CloneNotSupportedException e) {
+			return null;
+		}
+		lib.artwork = this.artwork;
+		lib.playlists = this.playlists; // TODO: deep clone?
+		return lib;
 	}
 	
 }

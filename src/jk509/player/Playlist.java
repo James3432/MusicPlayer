@@ -164,7 +164,8 @@ public class Playlist implements Serializable {
 		return -1;
 	}
 	
-	public class Shuffle {
+	public class Shuffle implements Serializable {
+		private static final long serialVersionUID = 1L;
 		public List<Song> tracks;
 		public List<Integer> indices;
 		//public int position = 0;

@@ -173,7 +173,9 @@ public class Song implements Serializable {
 	
 	public boolean search(String q){
 		q = q.toLowerCase();
-		if(name.toLowerCase().contains(q) || artist.toLowerCase().contains(q) || album.toLowerCase().contains(q))
+		if((name != null && name.toLowerCase().contains(q)) || 
+				(artist != null && artist.toLowerCase().contains(q)) || 
+				(album != null && album.toLowerCase().contains(q)))
 			return true;
 		else
 			return false;
