@@ -1125,6 +1125,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			Library libOut = (Library) library.clone();
 			libOut.setCurrentPlaylist(2);
 			libOut.searching = false;
+			libOut.playingInSearch = false;
 			oos.writeObject(libOut);
 			oos.close();
 		} catch (FileNotFoundException e) {
@@ -1270,7 +1271,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		// /////////
 		// JTableHeader h = library.getPlaylists().get(library.getCurrentPlaylist()).header;
 		// if(h==null)
-		currentTableSorter = new TableSorter(tabMain.getModel(), tabMain.getTableHeader(), new TableRowSortedListener(), tabMain);
+		boolean isPlaylist = listPlaylists.getSelectedIndex() >= 1;
+		currentTableSorter = new TableSorter(tabMain.getModel(), tabMain.getTableHeader(), new TableRowSortedListener(), tabMain, isPlaylist);
 		// else
 		// currentTableSorter = new TableSorter(tabMain.getModel(), h, new TableRowSortedListener(), tabMain);
 		// /////////
@@ -1380,10 +1382,12 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			((TableSorter) tabMain.getModel()).setFullSortingStatus(sort);
 		else {
 			sort = new ArrayList<Directive>();
-			sort.add(new Directive(4, 1));
-			sort.add(new Directive(3, 1));
-			sort.add(new Directive(1, 1));
-			((TableSorter) tabMain.getModel()).setFullSortingStatus(sort);
+			if(listPlaylists.getSelectedIndex() < 1){
+				sort.add(new Directive(4, 1));
+				sort.add(new Directive(3, 1));
+				sort.add(new Directive(1, 1));
+				((TableSorter) tabMain.getModel()).setFullSortingStatus(sort);
+			}
 			library.setSort(sort);
 		}
 		if (sel == null || pos == null || sel.length < 1 || (sel.length > 0 && sel[0] < 0)) {
@@ -1444,9 +1448,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					tabMain.getSelectionModel().setSelectionInterval(row, row);
 				}
 				addToPlaylist.removeAll();
-				for (int i = FIXED_PLAYLIST_ELEMENTS; i < library.getPlaylistCount(); i++) {
+				for (int i = FIXED_PLAYLIST_ELEMENTS+Library.HIDDEN_PLAYLISTS; i < library.getPlaylists().size(); i++) {
 					final int playlist = i;
-					JMenuItem item = new JMenuItem(library.getPlaylist(i).getName());
+					JMenuItem item = new JMenuItem(library.getPlaylists().get(i).getName());
 					item.addActionListener(new ActionListener() {
 						@Override
 						public void actionPerformed(ActionEvent e) {
@@ -1465,7 +1469,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 	private void AddSelectionToPlaylist(int pl) {
 		for (int i = 0; i < tabMain.getSelectedRowCount(); ++i)
-			library.getPlaylist(pl).add(library.get(((TableSorter) tabMain.getModel()).modelIndex(tabMain.getSelectedRows()[i])));
+			library.getPlaylists().get(pl).add(library.get(ViewToModel(tabMain.getSelectedRows()[i])));
 	}
 
 	class TableRowSortedListener implements ActionListener {
@@ -1473,7 +1477,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		public void actionPerformed(ActionEvent arg0) {
 			// get new row - convert back to model format then into new view
 			// format
-			if (trackPlaying > -1 && playlistPlaying == listPlaylists.getSelectedIndex() && !searching)
+			if (trackPlaying > -1 && playlistPlaying == listPlaylists.getSelectedIndex() && (!searching || playingInSearch))
 				rowPlaying = playlistPlayingSorter.viewIndex(trackPlaying);
 			// rowPlaying = ((TableSorter)
 			// tabMain.getModel()).viewIndex(trackPlaying);
@@ -1492,6 +1496,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 
 	private void playSelected() {
+		if(tabMain.getSelectedRowCount() < 1 || tabMain.getRowCount() < 1)
+			return;
 		// rowPlaying = ((TableSorter)
 		// tabMain.getModel()).modelIndex(tabMain.getSelectedRow());
 		UpdatePlayCount();
@@ -1841,6 +1847,11 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 
 	private void Search(String query) {
+		//save view
+		library.setSelection(tabMain.getSelectedRows());
+		library.setViewPos(((JViewport) tabMain.getParent()).getViewPosition());
+		library.setSort(((TableSorter) tabMain.getModel()).getFullSortingStatus());
+		
 		// perform CancelSearch
 		searching = false;
 		//btnCancelSearch.setVisible(false);
@@ -2071,7 +2082,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private void SetSelectedRows(int[] sel){
 		tabMain.clearSelection();
 		for(int i=0; i<sel.length; ++i)
-			tabMain.getSelectionModel().addSelectionInterval(sel[i], sel[i]);
+			if(sel[i] > 0 && sel[i] < tabMain.getRowCount())
+				tabMain.getSelectionModel().addSelectionInterval(sel[i], sel[i]);
 	}
 
 	private class ButtonActionListener implements ActionListener {
@@ -2085,6 +2097,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		public void focusGained(FocusEvent arg0) {
 			if (txtSearch.getText().equals(" Search"))
 				txtSearch.setText("");
+			else
+				txtSearch.selectAll();
 			txtSearch.setForeground(Color.black);
 		}
 
@@ -2181,6 +2195,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 
 	private void DeleteSelected() {
+		if(tabMain.getSelectedRowCount() < 1 || tabMain.getRowCount() < 1)
+			return;
 		int reply;
 		if (((Playlist) listPlaylists.getSelectedValue()).getType() == Playlist.DEFAULT)
 			if (tabMain.getSelectedRowCount() > 1)
@@ -2201,7 +2217,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				if (rowV == tabMain.getRowCount() - 1)
 					last = true;
 				// int rowM = ((TableSorter) tabMain.getModel()).modelIndex(rowV);
-				int rowM = ((TableSorter) tabMain.getModel()).modelIndex(rowV);
+				int rowM = ViewToModel(rowV);
 
 				if (((Playlist) listPlaylists.getSelectedValue()).getType() == Playlist.DEFAULT)
 					DeleteInPlaylists(library.get(rowM));
@@ -2209,7 +2225,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				Delete(rowM);
 
 				// adjust rowPlaying (not trackplaying)
-				if (playlistPlaying == listPlaylists.getSelectedIndex() && rowPlaying > rowV) {
+				if ((playlistPlaying == listPlaylists.getSelectedIndex()) && rowPlaying > rowV) {
 					// rowPlaying--;
 					// turns out that the tablesortlistener already updates this from trackplaying
 				} else if (playlistPlaying == listPlaylists.getSelectedIndex() && rowPlaying < rowV) {
@@ -2228,6 +2244,59 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}
 	}
 
+	// These are view-type conversion methods
+	// 'model' here means the un-search-filtered model
+	public int ViewToModel(int v){
+		int m = 0;
+		if(searching){
+			m = ((TableSorter) tabMain.getModel()).modelIndex(v);
+			//m = library.searchToNormalModel(m);
+		}
+		else{
+			m = ((TableSorter) tabMain.getModel()).modelIndex(v);
+		}
+		return m;
+	}
+	
+	public int ModelToView(int m){
+		int v = 0;
+		if(searching){
+			v = library.normalToSearchModel(m);
+			if(v<0)
+				return -1;
+			v = ((TableSorter) tabMain.getModel()).viewIndex(v);
+		}
+		else{
+			v = ((TableSorter) tabMain.getModel()).viewIndex(m);
+		}
+		return v;
+	}
+	
+	// These are playing-type conversion methods
+	//TODO: may not be needed, since playlistplayingsorter gets updated after search (although so does tabmain.getmodel)
+	public int RowToModel(int r){
+		int m = 0;
+		if(searching){// TODO: not if(searching) but if(playlistplaying = seachingplaylist or whatever or playinginseach)
+			m = playlistPlayingSorter.modelIndex(r);
+			m = library.searchToNormalModel(m);
+		}else{
+			m = playlistPlayingSorter.modelIndex(r);
+		}
+		return m;
+	}
+	public int ModelToRow(int m){
+		int r = 0;
+		if(searching){
+			r = library.normalToSearchModel(m);
+			if(r<0)
+				return -1;
+			r = playlistPlayingSorter.viewIndex(r);
+		}else{
+			r = playlistPlayingSorter.viewIndex(m);
+		}
+		return r;
+	}
+	
 	private void Delete(int row) {
 		// row is the row of the model, not the view
 		if (playlistPlaying == listPlaylists.getSelectedIndex() && trackPlaying == row) {
@@ -2235,10 +2304,23 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				TogglePause();
 			Stop();
 		}
+		
+		// remove song from main playlist if we're searching or shuffling the main list
+		if(library.getCurrentPlaylist() == 0)
+			library.getPlaylists().get(Library.HIDDEN_PLAYLISTS + playlistSearching).remove(library.searchToNormalModel(row));
+		//if(library.getCurrentPlaylist() == 1)
+		//	library.getPlaylists().get(Library.MAIN_PLAYLIST).remove(row);
+		
 		library.remove(row);
+		
 		if (playlistPlaying == listPlaylists.getSelectedIndex() && row < trackPlaying) {
 			trackPlaying--;
 		}
+		
+		if(shuffle){
+			library.shuffle(playlistShuffling);
+		}
+		
 		// remember: viewpos, sort, selection
 		library.setSelection(tabMain.getSelectedRows());
 		library.setViewPos(((JViewport) tabMain.getParent()).getViewPosition());
@@ -2251,12 +2333,12 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		// scan all user/auto playlists and remove this song, based on it's
 		// location (for now)
 		String loc = s.getLocation();
-		for (int pl = FIXED_PLAYLIST_ELEMENTS; pl < library.getPlaylistCount(); pl++) {
-			for (int i = 0; i < library.getPlaylist(pl).size(); i++) {
-				if (library.getPlaylist(pl).get(i).getLocation().equals(loc)) {
-					library.getPlaylist(pl).remove(i);
+		for (int pl = FIXED_PLAYLIST_ELEMENTS+Library.HIDDEN_PLAYLISTS; pl < library.getPlaylists().size(); pl++) {
+			for (int i = 0; i < library.getPlaylists().get(pl).size(); i++) {
+				if (library.getPlaylists().get(pl).get(i).getLocation().equals(loc)) {
+					library.getPlaylists().get(pl).remove(i);
 					// may have multiple instances in a playlist
-					if (i < library.getPlaylist(pl).size() - 1)
+					if (i < library.getPlaylists().get(pl).size() - 1)
 						i--;
 				}
 			}
@@ -2531,7 +2613,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					RefreshPlaylists();
 					if (type == 2) {
 						for (int i = 0; i < tabMain.getSelectedRowCount(); ++i)
-							pl.add(library.get(((TableSorter) tabMain.getModel()).modelIndex(tabMain.getSelectedRows()[i])));
+							pl.add(library.get(ViewToModel(tabMain.getSelectedRows()[i])));
 					}
 				}
 			}
@@ -2796,7 +2878,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException {
 					Song[] sels = new Song[tabMain.getSelectedRowCount()];
 					for (int i = 0; i < tabMain.getSelectedRowCount(); ++i)
-						sels[i] = library.get(((TableSorter) tabMain.getModel()).modelIndex(tabMain.getSelectedRows()[i]));
+						sels[i] = library.get(ViewToModel(tabMain.getSelectedRows()[i]));
 					return sels;// library.get(((TableSorter) tabMain.getModel()).modelIndex(tabMain.getSelectedRow()));
 				}
 
@@ -2920,7 +3002,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		if (index < FIXED_PLAYLIST_ELEMENTS) {
 			// do nothing: can't insert into default playlists
 		} else {
-			library.getPlaylist(index).append(data);
+			library.getPlaylists().get(index+Library.HIDDEN_PLAYLISTS).append(data);
 		}
 	}
 

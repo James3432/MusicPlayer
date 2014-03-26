@@ -106,6 +106,7 @@ public class TableSorter extends AbstractTableModel {
 	private TableRowSortedListener changeListener;
 	private Map columnComparators = new HashMap();
 	private List<Directive> sortingColumns = new ArrayList<Directive>();
+	private boolean allow_empty_sort = false; // would be true for a playlist, so that default ordering is preserved
 
 	public TableSorter() {
 		this.mouseListener = new MouseHandler();
@@ -123,12 +124,13 @@ public class TableSorter extends AbstractTableModel {
 		setTableModel(tableModel);
 	}
 
-	public TableSorter(TableModel tableModel, JTableHeader tableHeader, TableRowSortedListener trsl, JTable table) {
+	public TableSorter(TableModel tableModel, JTableHeader tableHeader, TableRowSortedListener trsl, JTable table, boolean isPlaylist) {
 		this();
 		setTableHeader(tableHeader);
 		setTableModel(tableModel);
 		setListener(trsl);
 		this.table = table;
+		this.allow_empty_sort = isPlaylist;
 	}
 
 	private void setListener(TableRowSortedListener trsl) {
@@ -471,7 +473,7 @@ public class TableSorter extends AbstractTableModel {
 			if (column > 1) {
 				int status = getSortingStatus(column);
 				// BUT we'll call status 0 unless this was the primary sorting column
-				if(sortingColumns.get(0).column != column)
+				if(sortingColumns.size() < 1 || sortingColumns.get(0).column != column)
 					status = 0;
 				
 				// uncomment to allow Ctrl modifier
@@ -483,7 +485,7 @@ public class TableSorter extends AbstractTableModel {
 				// DESCENDING} or
 				// {NOT_SORTED, DESCENDING, ASCENDING} depending on whether
 				// shift is pressed.
-				if(column != 4)
+				if(column != 4 || allow_empty_sort)
 					status = status + (e.isShiftDown() ? -1 : 1);
 				else
 					status = status + 1;
@@ -537,9 +539,13 @@ public class TableSorter extends AbstractTableModel {
 				}
 				
 				if(!isSorting()){
-					setSortingStatus(4, 1);
-					setSortingStatus(3, 1);
-					setSortingStatus(1, 1);
+					if(allow_empty_sort)
+						clearSortingState();
+					else{
+						setSortingStatus(4, 1);
+						setSortingStatus(3, 1);
+						setSortingStatus(1, 1);
+					}
 				}
 			}
 		}
