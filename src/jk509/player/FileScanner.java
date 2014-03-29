@@ -73,27 +73,10 @@ public class FileScanner implements LibraryParser {
 		Mp3File mp3file;
 		tempTrack = new Song();
 		
-		
 		try{
 			mp3file = new Mp3File(sourceFile.getPath());
-			if(mp3file.hasId3v1Tag()){
-				// ID3v1
-				ID3v1 tag = mp3file.getId3v1Tag();
-				try{
-					tempTrack.setTrackNumber(Integer.parseInt(RemNull(RemSlash(tag.getTrack()))));
-				}catch(NumberFormatException e){ 
-					tempTrack.setTrackNumber(0); 
-				}
-				tempTrack.setName(RemNull(tag.getTitle()));
-				tempTrack.setAlbum(RemNull(tag.getAlbum()));
-				tempTrack.setArtist(RemNull(tag.getArtist()));
-				tempTrack.setGenre(RemNull(tag.getGenreDescription()));
-				tempTrack.setYear(RemNull(tag.getYear()));
-				tempTrack.setLength((int) mp3file.getLengthInSeconds());
-				tempTrack.setDateAdded(new Date(mp3file.getLastModified()));
-				tempTrack.setLocation(sourceFile.getPath());
-
-			}else if(mp3file.hasId3v2Tag()){
+			
+			if(mp3file.hasId3v2Tag()){
 				// ID3v2
 				ID3v2 tag = mp3file.getId3v2Tag();
 				try{
@@ -103,7 +86,14 @@ public class FileScanner implements LibraryParser {
 				}
 				tempTrack.setName(RemNull(tag.getTitle()));
 				tempTrack.setAlbum(RemNull(tag.getAlbum()));
-				tempTrack.setArtist(RemNull(tag.getArtist()));
+				String artist = tag.getArtist();
+				if(artist == null || artist.equals(""))
+					artist = tag.getAlbumArtist();
+				if(artist == null || artist.equals(""))
+					artist = tag.getOriginalArtist();
+				if(artist == null || artist.equals(""))
+					artist = tag.getComposer();
+				tempTrack.setArtist(RemNull(artist));
 				tempTrack.setGenre(RemNull(tag.getGenreDescription()));
 				tempTrack.setYear(RemNull(tag.getYear()));
 				tempTrack.setLength((int) mp3file.getLengthInSeconds());
@@ -124,7 +114,23 @@ public class FileScanner implements LibraryParser {
 						tempTrack.setArtwork(false);
 					}
 				}
-				
+			}else if(mp3file.hasId3v1Tag()){
+				// ID3v1
+				ID3v1 tag = mp3file.getId3v1Tag();
+				try{
+					tempTrack.setTrackNumber(Integer.parseInt(RemNull(RemSlash(tag.getTrack()))));
+				}catch(NumberFormatException e){ 
+					tempTrack.setTrackNumber(0); 
+				}
+				tempTrack.setName(RemNull(tag.getTitle()));
+				tempTrack.setAlbum(RemNull(tag.getAlbum()));
+				tempTrack.setArtist(RemNull(tag.getArtist()));
+				tempTrack.setGenre(RemNull(tag.getGenreDescription()));
+				tempTrack.setYear(RemNull(tag.getYear()));
+				tempTrack.setLength((int) mp3file.getLengthInSeconds());
+				tempTrack.setDateAdded(new Date(mp3file.getLastModified()));
+				tempTrack.setLocation(sourceFile.getPath());
+
 			}else{
 				// no tag
 				tempTrack.setLocation(sourceFile.getPath());

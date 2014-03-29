@@ -191,4 +191,20 @@ public class Song implements Serializable {
 			s = s.substring(0, 2);
 		return (length / 60 + ":" + s);
 	}
+	
+	@Override
+	public String toString(){
+		String str;
+		str = name + " \u2014 " + /*album + " \u2014 " +*/ artist;
+		return str;
+	}
+	
+	@Override
+	public boolean equals(Object o){
+		Song other = (Song) o;
+		if(this.getLocation() != null && other.getLocation() != null && this.getLocation().equals(other.getLocation()))
+			return true;
+		else
+			return false;
+	}
 }

@@ -31,6 +31,7 @@ public class Library implements Serializable, Cloneable {
 	private Shuffle shuffle;
 	private int[] normalToSearch;
 	private int[] searchToNormal;
+	private SongQueue queue;
 
 	public Library() {
 		// tracks = new ArrayList<Song>();
@@ -295,6 +296,9 @@ public class Library implements Serializable, Cloneable {
 	public int getTrackIndex(String loc/* ID */, int playlist) {
 		return getPlaylist(playlist).getIndexOf(loc);
 	}
+	public int getTrackIndex(Song s, int playlist) {
+		return getPlaylist(playlist).getIndexOf(s);
+	}
 
 	@Override
 	public Object clone() {
@@ -307,6 +311,27 @@ public class Library implements Serializable, Cloneable {
 		lib.artwork = this.artwork;
 		lib.playlists = this.playlists; // TODO: deep clone?
 		return lib;
+	}
+
+	public SongQueue getQueue() {
+		return queue;
+	}
+
+	public void setQueue(SongQueue sq) {
+		queue = sq;
+	}
+
+	public void createQueue(SongQueueElement start) {
+		queue = new SongQueue(start);
+	}
+
+	// TODO: use this! when next passes end of queue (but not through use of prev)
+	public void deleteQueue() {
+		queue = null;
+	}
+
+	public boolean hasQueue() {
+		return queue != null;
 	}
 
 }

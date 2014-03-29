@@ -189,6 +189,13 @@ public class Playlist implements Serializable {
 		return -1;
 	}
 	
+	public int getIndexOf(Song s){
+		for(int i=0; i<size(); ++i)
+			if(get(i).equals(s))
+				return i;
+		return -1;
+	}
+	
 	public class Shuffle implements Serializable {
 		private static final long serialVersionUID = 1L;
 		public List<Song> tracks;
