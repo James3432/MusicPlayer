@@ -195,7 +195,7 @@ public class Song implements Serializable {
 	@Override
 	public String toString(){
 		String str;
-		str = name + " \u2014 " + /*album + " \u2014 " +*/ artist;
+		str = name + "  \u2014  " + album + "  \u2014  " + artist;
 		return str;
 	}
 	

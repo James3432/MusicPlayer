@@ -807,18 +807,17 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				g2d.fillRect(0, 0, w, h);
 			}
 		};
-		pnlSmart.setVisible(false);
+		//pnlSmart.setVisible(false);
 		mainPanel.add(pnlSmart, BorderLayout.SOUTH);
 		GridBagLayout gbl_pnlSmart = new GridBagLayout();
-		gbl_pnlSmart.columnWidths = new int[] { 63, 0, 104, 3, 88, 100, 3, 59, 150, 16, 0 };
-		gbl_pnlSmart.rowHeights = new int[] { 50, 0 };
-		gbl_pnlSmart.columnWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, Double.MIN_VALUE };
-		gbl_pnlSmart.rowWeights = new double[] { 0.0, Double.MIN_VALUE };
+		gbl_pnlSmart.columnWidths = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+		gbl_pnlSmart.rowHeights = new int[] { 0 };
+		gbl_pnlSmart.columnWeights = new double[] { 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, 1};
+		gbl_pnlSmart.rowWeights = new double[] { 0.0 };
 		pnlSmart.setLayout(gbl_pnlSmart);
 
 		btnSmart = new JButton();
 		GridBagConstraints gbc_btnSmart = new GridBagConstraints();
-		gbc_btnSmart.insets = new Insets(0, 0, 0, 5);
 		gbc_btnSmart.gridx = 0;
 		gbc_btnSmart.gridy = 0;
 		pnlSmart.add(btnSmart, gbc_btnSmart);
@@ -830,39 +829,39 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		btnSmart.setBorderPainted(false);
 		btnSmart.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/brain.png")));
 		btnSmart.setPressedIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/brain_press.png")));
+		
+				lblSmartMode = new JLabel("Smart mode off");
+				lblSmartMode.setFocusable(false);
+				lblSmartMode.setFont(new Font("Segoe UI", Font.BOLD, 14));
+				lblSmartMode.setForeground(Color.DARK_GRAY);
+				GridBagConstraints gbc_lblSmartMode = new GridBagConstraints();
+				gbc_lblSmartMode.insets = new Insets(0, 0, 3, 0);
+				gbc_lblSmartMode.anchor = GridBagConstraints.WEST;
+				gbc_lblSmartMode.gridx = 1;
+				gbc_lblSmartMode.gridy = 0;
+				pnlSmart.add(lblSmartMode, gbc_lblSmartMode);
+		
+				lblBar1 = new JLabel();
+				lblBar1.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/vbar.png")));
+				GridBagConstraints gbc_lblBar1 = new GridBagConstraints();
+				gbc_lblBar1.insets = new Insets(0, 10, 0, 10);
+				gbc_lblBar1.gridx = 3;
+				gbc_lblBar1.gridy = 0;
+				pnlSmart.add(lblBar1, gbc_lblBar1);
 
-		lblSmartMode = new JLabel("Smart mode off");
-		lblSmartMode.setFocusable(false);
-		lblSmartMode.setFont(new Font("Segoe UI", Font.BOLD, 14));
-		lblSmartMode.setForeground(Color.DARK_GRAY);
-		GridBagConstraints gbc_lblSmartMode = new GridBagConstraints();
-		gbc_lblSmartMode.anchor = GridBagConstraints.WEST;
-		gbc_lblSmartMode.insets = new Insets(0, 0, 0, 5);
-		gbc_lblSmartMode.gridx = 2;
-		gbc_lblSmartMode.gridy = 0;
-		pnlSmart.add(lblSmartMode, gbc_lblSmartMode);
-
-		lblBar1 = new JLabel();
-		lblBar1.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/vbar.png")));
-		GridBagConstraints gbc_lblBar1 = new GridBagConstraints();
-		gbc_lblBar1.anchor = GridBagConstraints.NORTHWEST;
-		gbc_lblBar1.insets = new Insets(0, 0, 0, 5);
-		gbc_lblBar1.gridx = 3;
-		gbc_lblBar1.gridy = 0;
-		pnlSmart.add(lblBar1, gbc_lblBar1);
-
-		lblRandomness = new JLabel("Randomness:");
+		lblRandomness = new JLabel("Randomness");
 		lblRandomness.setFocusable(false);
 		lblRandomness.setForeground(Color.DARK_GRAY);
 		lblRandomness.setFont(new Font("Segoe UI", Font.BOLD, 14));
 		GridBagConstraints gbc_lblRandomness = new GridBagConstraints();
-		gbc_lblRandomness.anchor = GridBagConstraints.WEST;
-		gbc_lblRandomness.insets = new Insets(0, 0, 0, 5);
-		gbc_lblRandomness.gridx = 4;
+		gbc_lblRandomness.insets = new Insets(0, 0, 3, 10);
+		gbc_lblRandomness.gridx = 5;
 		gbc_lblRandomness.gridy = 0;
 		pnlSmart.add(lblRandomness, gbc_lblRandomness);
 
 		sliderRand = new JSlider();
+		sliderRand.setMaximumSize(new Dimension(100, 23));
+		sliderRand.setMinimumSize(new Dimension(100, 23));
 		sliderRand.setFocusable(false);
 		sliderRand.setPreferredSize(new Dimension(100, 23));
 		sliderRand.setOpaque(false);
@@ -919,39 +918,39 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		sliderRand.addMouseListener(tl3);
 		sliderRand.addMouseMotionListener(mml3);
 		GridBagConstraints gbc_sliderRand = new GridBagConstraints();
-		gbc_sliderRand.anchor = GridBagConstraints.WEST;
-		gbc_sliderRand.insets = new Insets(0, 0, 0, 5);
-		gbc_sliderRand.gridx = 5;
+		gbc_sliderRand.insets = new Insets(2, 0, 0, 0);
+		gbc_sliderRand.gridx = 6;
 		gbc_sliderRand.gridy = 0;
 		pnlSmart.add(sliderRand, gbc_sliderRand);
 
 		lblBar2 = new JLabel();
 		lblBar2.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/vbar.png")));
 		GridBagConstraints gbc_lblBar2 = new GridBagConstraints();
-		gbc_lblBar2.anchor = GridBagConstraints.NORTHWEST;
-		gbc_lblBar2.insets = new Insets(0, 0, 0, 5);
-		gbc_lblBar2.gridx = 6;
+		gbc_lblBar2.insets = new Insets(0, 10, 0, 10);
+		gbc_lblBar2.gridx = 8;
 		gbc_lblBar2.gridy = 0;
 		pnlSmart.add(lblBar2, gbc_lblBar2);
 
-		lblUpNext = new JLabel("Up Next:");
+		lblUpNext = new JLabel("Up Next");
 		lblUpNext.setFocusable(false);
 		lblUpNext.setForeground(Color.DARK_GRAY);
 		lblUpNext.setFont(new Font("Segoe UI", Font.BOLD, 14));
 		GridBagConstraints gbc_lblUpNext = new GridBagConstraints();
-		gbc_lblUpNext.insets = new Insets(5, 5, 5, 5);
-		gbc_lblUpNext.gridx = 7;
+		gbc_lblUpNext.insets = new Insets(0, 0, 3, 5);
+		gbc_lblUpNext.gridx = 10;
 		gbc_lblUpNext.gridy = 0;
 		pnlSmart.add(lblUpNext, gbc_lblUpNext);
 
 		scrollPane = new JScrollPane();
+		scrollPane.setMaximumSize(new Dimension(400, 50));
+		scrollPane.setMinimumSize(new Dimension(150, 50));
 		scrollPane.setFocusable(false);
-		scrollPane.setPreferredSize(new Dimension(150, 50));
+		scrollPane.setPreferredSize(new Dimension(400, 50));
 		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
-		gbc_scrollPane.insets = new Insets(5, 5, 5, 5);
-		gbc_scrollPane.gridx = 8;
+		gbc_scrollPane.insets = new Insets(5, 5, 5, 0);
+		gbc_scrollPane.gridx = 11;
 		gbc_scrollPane.gridy = 0;
 		pnlSmart.add(scrollPane, gbc_scrollPane);
 
@@ -984,8 +983,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		btnClear.setRolloverIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/search_cancel_hover.png")));
 
 		GridBagConstraints gbc_btnClear = new GridBagConstraints();
+		gbc_btnClear.insets = new Insets(0, 5, 0, 0);
 		gbc_btnClear.anchor = GridBagConstraints.WEST;
-		gbc_btnClear.gridx = 9;
+		gbc_btnClear.gridx = 12;
 		gbc_btnClear.gridy = 0;
 		pnlSmart.add(btnClear, gbc_btnClear);
 
@@ -1751,7 +1751,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private void playSelectedNext() {
 		int[] sel = tabMain.getSelectedRows();
 		if (sel.length > 0 && !library.hasQueue())
-			library.createQueue(new SongQueueElement(library.getPlaylist(playlistPlaying).get(trackPlaying), listPlaylists.getSelectedIndex(), trackPlaying));
+			library.createQueue(new SongQueueElement(library.getPlaylist(playlistPlaying).get(trackPlaying), playlistPlaying, trackPlaying));
 		for (int i = sel.length - 1; i >= 0; --i) {
 			int row = ((TableSorter) tabMain.getModel()).modelIndex(sel[i]);
 			Song track = library.getPlaylist(listPlaylists.getSelectedIndex()).get(row);
@@ -1764,7 +1764,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private void addSelectedToQueue() {
 		int[] sel = tabMain.getSelectedRows();
 		if (sel.length > 0 && !library.hasQueue())
-			library.createQueue(new SongQueueElement(library.getPlaylist(playlistPlaying).get(trackPlaying), listPlaylists.getSelectedIndex(), trackPlaying));
+			library.createQueue(new SongQueueElement(library.getPlaylist(playlistPlaying).get(trackPlaying), playlistPlaying, trackPlaying));
 		for (int i = 0; i < sel.length; ++i) {
 			int row = ((TableSorter) tabMain.getModel()).modelIndex(sel[i]);
 			Song track = library.getPlaylist(listPlaylists.getSelectedIndex()).get(row);
@@ -1775,6 +1775,11 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 
 	private TableSorter getPlaylistSorter(int playlist) {
+		if(playlist == listPlaylists.getSelectedIndex())
+			return ((TableSorter) tabMain.getModel());
+		if(playlist == playlistPlaying)
+			return playlistPlayingSorter;
+		
 		TableSorter sorter;
 		Object[][] rows = new Object[library.getPlaylists().get(Library.HIDDEN_PLAYLISTS + playlist).size()][10];
 		for (int i = 0; i < library.getPlaylists().get(Library.HIDDEN_PLAYLISTS + playlist).size(); ++i) {
@@ -1811,8 +1816,14 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			}
 		});
 
+		TableRowSortedListener nullListener = new TableRowSortedListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				return;
+			}
+		};
 		boolean isPlaylist = playlist >= 1;
-		sorter = new TableSorter(tabHidden.getModel(), tabMain.getTableHeader(), new TableRowSortedListener(), tabHidden, isPlaylist);
+		sorter = new TableSorter(tabHidden.getModel(), tabHidden.getTableHeader(), nullListener, tabHidden, isPlaylist);
 
 		List<Directive> sort = library.getPlaylists().get(Library.HIDDEN_PLAYLISTS + playlist).getSort();
 		if (sort != null && sort.size() > 0)
@@ -1841,18 +1852,21 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			return -1;
 		}
 
-		if (playlistPlaying != next.playlist) {
+		if (library.getQueue().isValid() && playlistPlaying != next.playlist) {
 			playlistPlaying = next.playlist;
 			playlistPlayingSorter = getPlaylistSorter(playlistPlaying);
 		}
 
 		if (!library.getQueue().isValid()) {
 			library.deleteQueue();
+			playlistPlayingSorter = getPlaylistSorter(next.playlist);
 			nextUp = playlistPlayingSorter.viewIndex(next.index) + 1;
+			playlistPlaying = next.playlist;
 		} else
 			nextUp = playlistPlayingSorter.viewIndex(next.index);
 
 		RefreshUpNext();
+		RefreshPlaylists();
 
 		return nextUp;
 	}
@@ -1879,6 +1893,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}
 
 		RefreshUpNext();
+		RefreshPlaylists();
 
 		return nextUp;
 	}
@@ -2247,7 +2262,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					artist = "";
 				if (album == null || album.equals("null"))
 					album = "";
-				lblArtistAlbum.setText(artist + " \u2014 " + album);
+				lblArtistAlbum.setText(artist + "  \u2014  " + album);
 				lbl_endtime.setText(len);
 				slider.setMaximum(Math.min(length, MAX_SLIDER_RANGE));
 				slider.setValue(0);
@@ -2395,7 +2410,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				// user changed song before this one finished
 				return;
 			} else {
-				if (stopped)
+				/*if (stopped)
 					return;
 				if (searching && !playingInSearch) {
 					Stop();
@@ -2416,7 +2431,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					} else {
 						playNext();
 					}
-				}
+				}*/
+				playNext(); // which does all the above commented-out stuff
 			}
 		}
 
@@ -2778,6 +2794,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					sliderVol.setValue(Math.max(0, sliderVol.getValue() - 5));
 					SetVolume((float) sliderVol.getValue() / 100f);
 				} else if ((e.getModifiers() & KeyEvent.SHIFT_MASK) != 0) {
+					if(tabMain.getSelectedRowCount() < 1)
+						break;
 					if (row == rowSelectionRoot) {
 						row = tabMain.getSelectedRows()[tabMain.getSelectedRowCount() - 1];
 						if (row < tabMain.getRowCount() - 1)
@@ -2790,6 +2808,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 						tabMain.getSelectionModel().removeSelectionInterval(row, row);
 					}
 				} else {
+					if(tabMain.getSelectedRowCount() < 1)
+						break;
 					row = tabMain.getSelectedRows()[tabMain.getSelectedRowCount() - 1];
 					if (row < tabMain.getRowCount() - 1)
 						rowNew = row + 1;
@@ -2804,6 +2824,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					sliderVol.setValue(Math.min(sliderVol.getMaximum(), sliderVol.getValue() + 5));
 					SetVolume((float) sliderVol.getValue() / 100f);
 				} else if ((e.getModifiers() & KeyEvent.SHIFT_MASK) != 0) {
+					if(tabMain.getSelectedRowCount() < 1)
+						break;
 					if (row == rowSelectionRoot && tabMain.getSelectedRowCount() > 1) {
 						tabMain.getSelectionModel().removeSelectionInterval(tabMain.getSelectedRows()[tabMain.getSelectedRowCount() - 1], tabMain.getSelectedRows()[tabMain.getSelectedRowCount() - 1]);
 					} else {
@@ -2815,6 +2837,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 						tabMain.scrollRectToVisible(tabMain.getCellRect(rowNew, 0, true));
 					}
 				} else {
+					if(tabMain.getSelectedRowCount() < 1)
+						break;
 					if (row > 0)
 						rowNew = row - 1;
 					else
@@ -2868,6 +2892,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				tabMain.scrollRectToVisible(tabMain.getCellRect(tabMain.getRowCount() - 1, 0, true));
 				break;
 			case KeyEvent.VK_PAGE_UP:
+				if(tabMain.getSelectedRowCount() < 1)
+					break;
 				page_height = getRowsInView() - 1;
 				if (row > page_height)
 					rowNew = row - page_height;
@@ -2877,6 +2903,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				tabMain.scrollRectToVisible(tabMain.getCellRect(rowNew, 0, true));
 				break;
 			case KeyEvent.VK_PAGE_DOWN:
+				if(tabMain.getSelectedRowCount() < 1)
+					break;
 				page_height = getRowsInView() - 1;
 				row = tabMain.getSelectedRows()[tabMain.getSelectedRowCount() - 1];
 				if (row < tabMain.getRowCount() - page_height)
@@ -3299,7 +3327,11 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		Song[] upnext2 = library.getQueue().getNextUpSongArray();
 		// if at end of upnext queue
 		if (upnext2.length == 0 && library.getQueue().isValid() && library.getQueue().position == library.getQueue().size() - 1 && library.getQueue().getStart() != null)
-			upnext2 = new Song[] { library.getPlaylists().get(Library.HIDDEN_PLAYLISTS + library.getQueue().getStart().playlist).get(playlistPlayingSorter.modelIndex(playlistPlayingSorter.viewIndex(library.getQueue().getStart().index) + 1)) };
+			try{
+				upnext2 = new Song[] { library.getPlaylists().get(Library.HIDDEN_PLAYLISTS + library.getQueue().getStart().playlist).get((getPlaylistSorter(library.getQueue().getStart().playlist)).modelIndex((getPlaylistSorter(library.getQueue().getStart().playlist)).viewIndex(library.getQueue().getStart().index) + 1)) };
+			}catch(Exception e){
+				upnext2 = new Song[]{};
+			}
 		final Song[] upnext = upnext2;
 		listUpNext.setModel(new AbstractListModel() {
 			private static final long serialVersionUID = 1L;
