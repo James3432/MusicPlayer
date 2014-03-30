@@ -21,9 +21,9 @@ public class Playlist implements Serializable {
 	private int[] selection;
 	private Point viewPos;
 	private List<Directive> sort;
-	//public JTableHeader header;
-	//public int trackPlaying = -1;
-	
+	// public JTableHeader header;
+	// public int trackPlaying = -1;
+
 	// Types of playlist
 	public static final int DEFAULT = 0;
 	public static final int USER = 1;
@@ -56,34 +56,43 @@ public class Playlist implements Serializable {
 	}
 
 	public Song get(int i) {
-		return list.get(i);
+		//try {
+			return list.get(i);
+		//} catch (IndexOutOfBoundsException e) {
+		//	e.printStackTrace();
+		//	return null;
+		//}
 	}
 
 	public void remove(int i) {
-		list.remove(i);
+		try {
+			list.remove(i);
+		} catch (IndexOutOfBoundsException e) {
+			e.printStackTrace();
+		}
 	}
-	
-	public int[] getSelection(){
+
+	public int[] getSelection() {
 		return selection;
 	}
-	
-	public void setSelection(int[] ns){
+
+	public void setSelection(int[] ns) {
 		selection = ns;
 	}
-	
-	public Point getViewPos(){
+
+	public Point getViewPos() {
 		return viewPos;
 	}
-	
-	public void setViewPos(Point p){
+
+	public void setViewPos(Point p) {
 		viewPos = p;
 	}
-	
-	public List<Directive> getSort(){
+
+	public List<Directive> getSort() {
 		return sort;
 	}
-	
-	public void setSort(List<Directive> s){
+
+	public void setSort(List<Directive> s) {
 		sort = s;
 	}
 
@@ -106,7 +115,7 @@ public class Playlist implements Serializable {
 	public void setList(List<Song> l) {
 		list = new ArrayList<Song>(l);
 	}
-	
+
 	public void append(List<Song> l) {
 		list.addAll(l);
 	}
@@ -130,50 +139,40 @@ public class Playlist implements Serializable {
 	public int size() {
 		return list.size();
 	}
-	
-	public void clearViews(){
+
+	public void clearViews() {
 		selection = null;
 		sort = null;
 		viewPos = null;
 	}
-	
-	/*public List<Song> search(String q, int trackPlaying){
-		this.trackPlaying = -1;
-		// returns a subset of `tracks' for which track.search returns true
-		List<Song> result = new ArrayList<Song>();
-		for(int i=0; i<getList().size(); ++i){
-			if(getList().get(i).search(q)){
-					result.add(getList().get(i));
-					if(trackPlaying == i)
-						this.trackPlaying = result.size()-1;
-			}
-		}
-		return result;
-	}*/
-	int[] toIntArray(List<Integer> list)  {
-	    int[] ret = new int[list.size()];
-	    int i = 0;
-	    for (Integer e : list)  
-	        ret[i++] = e.intValue();
-	    return ret;
+
+	/*
+	 * public List<Song> search(String q, int trackPlaying){ this.trackPlaying = -1; // returns a subset of `tracks' for which track.search returns true List<Song> result = new ArrayList<Song>(); for(int i=0; i<getList().size(); ++i){ if(getList().get(i).search(q)){ result.add(getList().get(i)); if(trackPlaying == i) this.trackPlaying = result.size()-1; } } return result; }
+	 */
+	int[] toIntArray(List<Integer> list) {
+		int[] ret = new int[list.size()];
+		int i = 0;
+		for (Integer e : list)
+			ret[i++] = e.intValue();
+		return ret;
 	}
-	
-	public int[] search(String q){
+
+	public int[] search(String q) {
 		// returns a list of indices into the playlist such that result[i].search is true
 		List<Integer> result = new ArrayList<Integer>();
-		for(int i=0; i<getList().size(); ++i){
-			if(getList().get(i).search(q)){
-					result.add(i);
+		for (int i = 0; i < getList().size(); ++i) {
+			if (getList().get(i).search(q)) {
+				result.add(i);
 			}
 		}
 		return toIntArray(result);
-		//this.trackplaying = modelToView(trackplaying) ie. find the given number in the result list and return its index
+		// this.trackplaying = modelToView(trackplaying) ie. find the given number in the result list and return its index
 	}
-	
-	public Shuffle shuffle(){
+
+	public Shuffle shuffle() {
 		List<Song> res = new ArrayList<Song>(getList());
 		List<Integer> indexList = new ArrayList<Integer>();
-		for(int i=0; i<res.size(); ++i)
+		for (int i = 0; i < res.size(); ++i)
 			indexList.add(i);
 		long seed = System.nanoTime();
 		Collections.shuffle(res, new Random(seed));
@@ -181,27 +180,31 @@ public class Playlist implements Serializable {
 		Shuffle s = new Shuffle(res, indexList);
 		return s;
 	}
-	
-	public int getIndexOf(String loc){
-		for(int i=0; i<size(); ++i)
-			if(get(i).getLocation().equals(loc))
+
+	public int getIndexOf(String loc) {
+		for (int i = 0; i < size(); ++i)
+			if (get(i).getLocation().equals(loc))
 				return i;
 		return -1;
 	}
-	
-	public int getIndexOf(Song s){
-		for(int i=0; i<size(); ++i)
-			if(get(i).equals(s))
+
+	public int getIndexOf(Song s) {
+		for (int i = 0; i < size(); ++i)
+			if (get(i).equals(s))
 				return i;
 		return -1;
 	}
-	
+
 	public class Shuffle implements Serializable {
 		private static final long serialVersionUID = 1L;
 		public List<Song> tracks;
 		public List<Integer> indices;
-		//public int position = 0;
-		public Shuffle(List<Song> s, List<Integer> i){ tracks = s; indices = i; }
+
+		// public int position = 0;
+		public Shuffle(List<Song> s, List<Integer> i) {
+			tracks = s;
+			indices = i;
+		}
 	}
 
 }

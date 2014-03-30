@@ -224,7 +224,7 @@ public class TableSorter extends AbstractTableModel {
 
 	public void setFullSortingStatus(List<Directive> sorts) {
 		clearSortingState();
-		if(sorts != null){
+		if (sorts != null) {
 			for (int i = 0; i < sorts.size(); ++i) {
 				Directive d = sorts.get(i);
 				setSortingStatus(d.column, d.direction);
@@ -281,11 +281,21 @@ public class TableSorter extends AbstractTableModel {
 	}
 
 	public int modelIndex(int viewIndex) {
-		return getViewToModel()[viewIndex].modelIndex;
+		//try {
+			return getViewToModel()[viewIndex].modelIndex;
+		//} catch (ArrayIndexOutOfBoundsException e) {
+		//	e.printStackTrace();
+		//	return -1;
+		//}
 	}
 
 	public int viewIndex(int modelIndex) {
-		return getModelToView()[modelIndex];
+		//try {
+			return getModelToView()[modelIndex];
+		//} catch (ArrayIndexOutOfBoundsException e) {
+		//	e.printStackTrace();
+		//	return -1;
+		//}
 	}
 
 	public int[] modelIndices(int[] viewIndices) {
@@ -473,19 +483,19 @@ public class TableSorter extends AbstractTableModel {
 			if (column > 1) {
 				int status = getSortingStatus(column);
 				// BUT we'll call status 0 unless this was the primary sorting column
-				if(sortingColumns.size() < 1 || sortingColumns.get(0).column != column)
+				if (sortingColumns.size() < 1 || sortingColumns.get(0).column != column)
 					status = 0;
-				
+
 				// uncomment to allow Ctrl modifier
-				//if (!e.isControlDown()) {
-					cancelSorting();
-				//}
-					
+				// if (!e.isControlDown()) {
+				cancelSorting();
+				// }
+
 				// Cycle the sorting states through {NOT_SORTED, ASCENDING,
 				// DESCENDING} or
 				// {NOT_SORTED, DESCENDING, ASCENDING} depending on whether
 				// shift is pressed.
-				if(column != 4 || allow_empty_sort)
+				if (column != 4 || allow_empty_sort)
 					status = status + (e.isShiftDown() ? -1 : 1);
 				else
 					status = status + 1;
@@ -537,11 +547,11 @@ public class TableSorter extends AbstractTableModel {
 						setSortingStatus(1, 1);
 					}
 				}
-				
-				if(!isSorting()){
-					if(allow_empty_sort)
+
+				if (!isSorting()) {
+					if (allow_empty_sort)
 						clearSortingState();
-					else{
+					else {
 						setSortingStatus(4, 1);
 						setSortingStatus(3, 1);
 						setSortingStatus(1, 1);
