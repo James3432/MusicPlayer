@@ -63,6 +63,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -93,6 +94,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.plaf.basic.BasicSliderUI;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
@@ -274,6 +276,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JLabel lblBar1;
 	private JLabel lblBar2;
 	private JMenuItem mntmToggleSmartBar;
+	private JMenuItem mntmAddFiles;
 
 	/**
 	 * Create the application.
@@ -1219,9 +1222,13 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		mntmExportData.setEnabled(false);
 		mntmExportData.addActionListener(new BtnExportDataActionListener());
 
-		mntmAddAudioFiles = new JMenuItem("Add audio files...");
+		mntmAddAudioFiles = new JMenuItem("Add folder...");
 		mntmAddAudioFiles.addActionListener(new MntmAddAudioFilesActionListener());
 		mnFile.add(mntmAddAudioFiles);
+		
+		mntmAddFiles = new JMenuItem("Add files...");
+		mntmAddFiles.addActionListener(new MntmAddFilesActionListener());
+		mnFile.add(mntmAddFiles);
 		mnFile.add(mntmExportData);
 
 		mntmExit = new JMenuItem("Exit");
@@ -3297,7 +3304,35 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			btnSmartBar.doClick();
 		}
 	}
-
+	private class MntmAddFilesActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			JFileChooser chooser = new JFileChooser();
+			String startat = ".";
+			startat = System.getenv("user.home");
+			if (startat == null || startat.equals(""))
+				startat = System.getenv("USERPROFILE");
+			if (startat == null || startat.equals(""))
+				startat = ".";
+		    chooser.setCurrentDirectory(new File(startat));
+		    chooser.setMultiSelectionEnabled(true);
+		    chooser.setDialogTitle("Choose files to add to library");
+		    chooser.setFileFilter(new MP3filter());
+		    int result = chooser.showOpenDialog(frmMusicPlayer);
+			if (result == JFileChooser.APPROVE_OPTION) {
+				File[] res = chooser.getSelectedFiles();
+				LibraryParser parser = new FileScanner();
+				parser.addFileList(res);
+				if(res.length > 0){
+					parser.setValid(true);
+					AddToLibrary(parser);
+					listPlaylists.setSelectedIndex(0);
+				}
+			} else {
+				//System.out.println("No Selection ");
+			}
+		}
+	}
+	
 	private void RefreshUpNext() {
 		if (!library.hasQueue()) {
 			listUpNext.setModel(new AbstractListModel() {
@@ -3620,6 +3655,52 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}
 
 	};
+	
+	class MP3filter extends FileFilter {
+		
+		public MP3filter(){
+			super();	
+		}
+			
+		@Override
+		public String getDescription(){
+			String des = "MP3 files";
+			return des;
+		}
+		
+		@Override
+		public boolean accept(File f) {
+			if (f.isDirectory()) {
+		        return true;
+		    }
+	
+		    String extension = getExtension(f);
+		    if (extension != null) {
+		        if (extension.equals("mp3") || extension.equals("mpeg3")) {
+		                return true;
+		        } else {
+		            return false;
+		        }
+		    }
+	
+		    return false;
+		}
+	
+	}
+	/*
+     * Get the extension of a file.
+     */  
+    public static String getExtension(File f) {
+        String ext = null;
+        String s = f.getName();
+        int i = s.lastIndexOf('.');
+
+        if (i > 0 &&  i < s.length() - 1) {
+            ext = s.substring(i+1).toLowerCase();
+        }
+        return ext;
+    }
+
 
 	public class PlaylistRenderer extends JLabel implements ListCellRenderer {
 

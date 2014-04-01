@@ -14,7 +14,6 @@ import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
@@ -206,7 +205,7 @@ public class ParseItunesDialog extends JDialog {
 			}
 		}
 	}
-	public class OpenFileChooser extends JFileChooser {
+	/*public class OpenFileChooser extends JFileChooser {
 		
 		private static final long serialVersionUID = 1L;
 		public int type; // 1=ser, 2=xml
@@ -232,7 +231,7 @@ public class ParseItunesDialog extends JDialog {
 	        super.approveSelection();
 	    }
 	
-	}
+	}*/
 	class OBJfilter extends FileFilter {
 	
 		public OBJfilter(){
@@ -253,7 +252,7 @@ public class ParseItunesDialog extends JDialog {
 	
 		    String extension = getExtension(f);
 		    if (extension != null) {
-		        if (extension.equals("ser") || extension.equals("xml")) {
+		        if (extension.equals("xml")) {
 		                return true;
 		        } else {
 		            return false;

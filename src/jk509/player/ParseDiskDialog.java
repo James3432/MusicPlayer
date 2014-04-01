@@ -154,7 +154,7 @@ public class ParseDiskDialog extends JDialog {
 				if (startat == null || startat.equals(""))
 					startat = ".";
 			}
-			chooser.setCurrentDirectory(new java.io.File(startat));
+			chooser.setCurrentDirectory(new File(startat));
 			chooser.setDialogTitle("Select music folder");
 			chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 

@@ -53,6 +53,12 @@ public class FileScanner implements LibraryParser {
 		printData();
 	}
 	
+	public void addFileList(File[] ls){
+		for(int i=0; i<ls.length; ++i){
+			AddSong(ls[i]);
+		}
+	}
+	
 	private void scan(String p){
 		File f=new File(p);
 		File l[]=f.listFiles();
@@ -69,6 +75,7 @@ public class FileScanner implements LibraryParser {
 		}
 	}
 	
+	@SuppressWarnings("deprecation")
 	private void AddSong(File sourceFile){
 		Mp3File mp3file;
 		tempTrack = new Song();
@@ -136,6 +143,15 @@ public class FileScanner implements LibraryParser {
 				tempTrack.setLocation(sourceFile.getPath());
 			}
 			
+			// cleanup name
+			if(tempTrack.getName() == null || tempTrack.getName().equals("Unknown") || tempTrack.getName().equals("")){
+				String file_name = StripTitle(tempTrack.getLocation());
+				tempTrack.setName(file_name);
+			}
+			// cleanup dateadded
+			if(tempTrack.getDateAdded() == null || tempTrack.getDateAdded().getYear() + 1900 < 1970)
+				tempTrack.setDateAdded(new Date());
+			
 			tracks.add(tempTrack);
 			
 		}catch(InvalidDataException e){
@@ -166,6 +182,22 @@ public class FileScanner implements LibraryParser {
 			return "Unknown";
 		else
 			return s;
+	}
+	
+	private String StripTitle(String s){
+		String res = "";
+		int start = s.lastIndexOf("\\");
+		if(start == s.length())
+			return "Unknown";
+		start += 1;
+		int end = s.lastIndexOf(".") - 1;
+		if(end == s.length())
+			return "Unknown";
+		end += 1;
+		res = s.substring(start, end);
+		if(res == null || res.length() < 1)
+			return "Unknown";
+		return res;
 	}
 	
 	/**

@@ -1,5 +1,6 @@
 package jk509.player;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -52,6 +53,11 @@ public class ItunesParser extends DefaultHandler implements LibraryParser {
     
     public void setPath (String loc) {
     	libraryPath = loc;
+    }
+    
+    public void addFileList(File[] ls) {
+    	// this shouldn't ever be called: it's only implemented in FileScanner
+    	System.err.println("Error: parser called with invalid arguments");
     }
 
     public void runExample() {

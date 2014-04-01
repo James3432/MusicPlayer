@@ -27,6 +27,8 @@ public class Song implements Serializable {
 	private int trackNumber;
 	private int playCount;
 	private int length; // in seconds
+	
+	private AudioFeatures features;
 
 	public String getName() {
 		return name;
@@ -157,6 +159,14 @@ public class Song implements Serializable {
 
 	public void setLength(int l) {
 		length = l;
+	}
+	
+	public AudioFeatures getAudioFeatures(){
+		return features;
+	}
+	
+	public void setAudioFeatures(AudioFeatures af){
+		features = af;
 	}
 
 	public void cleanUp() {
