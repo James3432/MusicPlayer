@@ -9,5 +9,6 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="forms-1.3.0.jar" sourcepath="forms-1.3.0-src.zip"/>
 	<classpathentry kind="lib" path="mp3agic-0.8.2.jar"/>
+	<classpathentry kind="lib" path="jAudio.jar" sourcepath="jAudio_2_0_pre_release_developer/jAudio/src"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

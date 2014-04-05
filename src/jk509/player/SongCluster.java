@@ -64,21 +64,30 @@ public class SongCluster extends AbstractCluster {
 		}
 	}
 	
-	public void LearnHistory(); // TODO, for testing with artificial history data
+	// TODO, for testing with artificial history data
+	public void LearnHistory(){
+		
+	} 
 	
 	private void ClusterFirstTime(List<Song> tracks){
 		// initialise p
-		set all to 0
+		/*set all to 0
 		p.add
 		
 		// initialise clusters
 		clusters.add
 		
-		needs to be recursive. use AddTrack?  use algorithm formula from wiki for Q-learning
+		needs to be recursive. use AddTrack?  use algorithm formula from wiki for Q-learning*/
 	}
 
 	public Song next() {
 		// TODO
+		/*
+		 * choose most probable next cluster, taking into account the `randomness'. 
+		 * Use heuristic to choose track within that cluster (what if staying within cluster?). 
+		 * If all these tracks played recently, may choose next cluster.
+		 * 
+		 */
 		return new Song();
 	}
 	

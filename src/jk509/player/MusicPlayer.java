@@ -1948,16 +1948,19 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		play(rowPlaying);
 	}
 
+	@SuppressWarnings("unused")
 	private void playFirst() {
 		UpdatePlayCount();
 		play(0);
 	}
 
+	@SuppressWarnings("unused")
 	private void playAgain() {
 		UpdatePlayCount();
 		play(rowPlaying);
 	}
 
+	@SuppressWarnings("unused")
 	private void playRandom() {
 		UpdatePlayCount();
 		// int tracks = library.getPlaylist(playlistPlaying).size();

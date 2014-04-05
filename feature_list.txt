@@ -1,0 +1,138 @@
+1.  Magnitude Spectrum
+2.  Power Spectrum
+3.  FFT Bin Frequency Labels
+4.  Spectral Centroid
+5.  Derivative of Spectral Centroid
+6.  Running Mean of Spectral Centroid
+7.  Standard Deviation of Spectral Centroid
+8.  Derivative of Running Mean of Spectral Centroid
+9.  Derivative of Standard Deviation of Spectral Centroid
+10.  Spectral Rolloff Point
+11.  Derivative of Spectral Rolloff Point
+12.  Running Mean of Spectral Rolloff Point
+13.  Standard Deviation of Spectral Rolloff Point
+14.  Derivative of Running Mean of Spectral Rolloff Point
+15.  Derivative of Standard Deviation of Spectral Rolloff Point
+16.  Spectral Flux
+17.  Derivative of Spectral Flux
+18.  Running Mean of Spectral Flux
+19.  Standard Deviation of Spectral Flux
+20.  Derivative of Running Mean of Spectral Flux
+21.  Derivative of Standard Deviation of Spectral Flux
+22.  Compactness
+23.  Derivative of Compactness
+24.  Running Mean of Compactness
+25.  Standard Deviation of Compactness
+26.  Derivative of Running Mean of Compactness
+27.  Derivative of Standard Deviation of Compactness
+28.  Spectral Variability
+29.  Derivative of Spectral Variability
+30.  Running Mean of Spectral Variability
+31.  Standard Deviation of Spectral Variability
+32.  Derivative of Running Mean of Spectral Variability
+33.  Derivative of Standard Deviation of Spectral Variability
+34.  Root Mean Square
+35.  Derivative of Root Mean Square
+36.  Running Mean of Root Mean Square
+37.  Standard Deviation of Root Mean Square
+38.  Derivative of Running Mean of Root Mean Square
+39.  Derivative of Standard Deviation of Root Mean Square
+40.  Fraction Of Low Energy Windows
+41.  Derivative of Fraction Of Low Energy Windows
+42.  Running Mean of Fraction Of Low Energy Windows
+43.  Standard Deviation of Fraction Of Low Energy Windows
+44.  Derivative of Running Mean of Fraction Of Low Energy Windows
+45.  Derivative of Standard Deviation of Fraction Of Low Energy Windows
+46.  Zero Crossings
+47.  Derivative of Zero Crossings
+48.  Running Mean of Zero Crossings
+49.  Standard Deviation of Zero Crossings
+50.  Derivative of Running Mean of Zero Crossings
+51.  Derivative of Standard Deviation of Zero Crossings
+52.  Beat Histogram
+53.  Beat Histogram Bin Labels
+54.  Strongest Beat
+55.  Derivative of Strongest Beat
+56.  Running Mean of Strongest Beat
+57.  Standard Deviation of Strongest Beat
+58.  Derivative of Running Mean of Strongest Beat
+59.  Derivative of Standard Deviation of Strongest Beat
+60.  Beat Sum
+61.  Derivative of Beat Sum
+62.  Running Mean of Beat Sum
+63.  Standard Deviation of Beat Sum
+64.  Derivative of Running Mean of Beat Sum
+65.  Derivative of Standard Deviation of Beat Sum
+66.  Strength Of Strongest Beat
+67.  Derivative of Strength Of Strongest Beat
+68.  Running Mean of Strength Of Strongest Beat
+69.  Standard Deviation of Strength Of Strongest Beat
+70.  Derivative of Running Mean of Strength Of Strongest Beat
+71.  Derivative of Standard Deviation of Strength Of Strongest Beat
+72.  Strongest Frequency Via Zero Crossings
+73.  Derivative of Strongest Frequency Via Zero Crossings
+74.  Running Mean of Strongest Frequency Via Zero Crossings
+75.  Standard Deviation of Strongest Frequency Via Zero Crossings
+76.  Derivative of Running Mean of Strongest Frequency Via Zero Crossings
+77.  Derivative of Standard Deviation of Strongest Frequency Via Zero Crossings
+78.  Strongest Frequency Via Spectral Centroid
+79.  Derivative of Strongest Frequency Via Spectral Centroid
+80.  Running Mean of Strongest Frequency Via Spectral Centroid
+81.  Standard Deviation of Strongest Frequency Via Spectral Centroid
+82.  Derivative of Running Mean of Strongest Frequency Via Spectral Centroid
+83.  Derivative of Standard Deviation of Strongest Frequency Via Spectral Centroid
+84.  Strongest Frequency Via FFT Maximum
+85.  Derivative of Strongest Frequency Via FFT Maximum
+86.  Running Mean of Strongest Frequency Via FFT Maximum
+87.  Standard Deviation of Strongest Frequency Via FFT Maximum
+88.  Derivative of Running Mean of Strongest Frequency Via FFT Maximum
+89.  Derivative of Standard Deviation of Strongest Frequency Via FFT Maximum
+90.  MFCC
+91.  Derivative of MFCC
+92.  Running Mean of MFCC
+93.  Standard Deviation of MFCC
+94.  Derivative of Running Mean of MFCC
+95.  Derivative of Standard Deviation of MFCC
+96.  LPC
+97.  Derivative of LPC
+98.  Running Mean of LPC
+99.  Standard Deviation of LPC
+100.  Derivative of Running Mean of LPC
+101.  Derivative of Standard Deviation of LPC
+102.  Method of Moments
+103.  Derivative of Method of Moments
+104.  Running Mean of Method of Moments
+105.  Standard Deviation of Method of Moments
+106.  Derivative of Running Mean of Method of Moments
+107.  Derivative of Standard Deviation of Method of Moments
+108.  Peak Detection
+109.  Partial Based Spectral Centroid
+110.  Derivative of Partial Based Spectral Centroid
+111.  Running Mean of Partial Based Spectral Centroid
+112.  Standard Deviation of Partial Based Spectral Centroid
+113.  Derivative of Running Mean of Partial Based Spectral Centroid
+114.  Derivative of Standard Deviation of Partial Based Spectral Centroid
+115.  Partial Based Spectral Flux
+116.  Derivative of Partial Based Spectral Flux
+117.  Running Mean of Partial Based Spectral Flux
+118.  Standard Deviation of Partial Based Spectral Flux
+119.  Derivative of Running Mean of Partial Based Spectral Flux
+120.  Derivative of Standard Deviation of Partial Based Spectral Flux
+121.  Peak Based Spectral Smoothness
+122.  Derivative of Peak Based Spectral Smoothness
+123.  Running Mean of Peak Based Spectral Smoothness
+124.  Standard Deviation of Peak Based Spectral Smoothness
+125.  Derivative of Running Mean of Peak Based Spectral Smoothness
+126.  Derivative of Standard Deviation of Peak Based Spectral Smoothness
+127.  Relative Difference Function
+128.  Derivative of Relative Difference Function
+129.  Running Mean of Relative Difference Function
+130.  Standard Deviation of Relative Difference Function
+131.  Derivative of Running Mean of Relative Difference Function
+132.  Derivative of Standard Deviation of Relative Difference Function
+133.  Area Method of Moments
+134.  Derivative of Area Method of Moments
+135.  Running Mean of Area Method of Moments
+136.  Standard Deviation of Area Method of Moments
+137.  Derivative of Running Mean of Area Method of Moments
+138.  Derivative of Standard Deviation of Area Method of Moments
