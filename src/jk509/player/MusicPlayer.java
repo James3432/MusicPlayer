@@ -100,8 +100,23 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
-import jk509.player.SmartPlaylistDialog.SmartPlaylistResult;
-import jk509.player.TableSorter.Directive;
+import jk509.player.core.FileScanner;
+import jk509.player.core.ItunesParser;
+import jk509.player.core.JLayerPlayerPausable;
+import jk509.player.core.Library;
+import jk509.player.core.LibraryParser;
+import jk509.player.core.Playlist;
+import jk509.player.core.Song;
+import jk509.player.core.SongQueueElement;
+import jk509.player.core.SoundJLayer;
+import jk509.player.core.TableSorter;
+import jk509.player.core.TableSorter.Directive;
+import jk509.player.core.TrackTime;
+import jk509.player.gui.ParseDiskDialog;
+import jk509.player.gui.ParseItunesDialog;
+import jk509.player.gui.SmartPlaylistDialog;
+import jk509.player.gui.SmartPlaylistDialog.SmartPlaylistResult;
+import jk509.player.gui.SwingDragImages;
 
 public class MusicPlayer implements MouseListener, MouseMotionListener {
 
@@ -1281,8 +1296,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		mnHelp.add(mntmAbout);
 
 		try {
-			songFlavor = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType + ";class=\"" + jk509.player.Song.class.getName() + "\"");
-			playlistFlavor = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType + ";class=jk509.player.Playlist");
+			songFlavor = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType + ";class=\"" + jk509.player.core.Song.class.getName() + "\"");
+			playlistFlavor = new DataFlavor(DataFlavor.javaJVMLocalObjectMimeType + ";class=jk509.player.core.Playlist");
 		} catch (ClassNotFoundException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -1731,7 +1746,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			library.getPlaylists().get(pl).add(library.get(ViewToModel(tabMain.getSelectedRows()[i])));
 	}
 
-	class TableRowSortedListener implements ActionListener {
+	public class TableRowSortedListener implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent arg0) {
 			// get new row - convert back to model format then into new view
@@ -2402,7 +2417,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}
 	}
 
-	class PlaybackListener extends JLayerPlayerPausable.PlaybackAdapter {
+	public class PlaybackListener extends JLayerPlayerPausable.PlaybackAdapter {
 		// PlaybackListener members
 		@Override
 		public void playbackStarted(JLayerPlayerPausable.PlaybackEvent playbackEvent) {

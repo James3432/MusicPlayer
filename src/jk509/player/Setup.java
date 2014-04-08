@@ -35,6 +35,12 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.border.SoftBevelBorder;
 import javax.swing.filechooser.FileFilter;
 
+import jk509.player.core.FileScanner;
+import jk509.player.core.ItunesParser;
+import jk509.player.core.Library;
+import jk509.player.core.LibraryParser;
+import jk509.player.core.Song;
+
 public class Setup extends JDialog {
 	/**
 	 * 
