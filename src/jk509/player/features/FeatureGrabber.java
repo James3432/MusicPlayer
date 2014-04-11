@@ -45,6 +45,8 @@ public class FeatureGrabber implements Constants {
 	 * cached FeatureDefinitions for all available features
 	 */
 	public FeatureDefinition[] featureDefinitions;
+	
+	private GUIupdater updater;
 
 	public Cancel cancel;
 	
@@ -86,7 +88,7 @@ public class FeatureGrabber implements Constants {
 		populateMetaFeatures(metaExtractors, extractors, def);
 	}
 	
-	public static void main(String[] args){
+	/*public static void main(String[] args){
 		FeatureGrabber f = new FeatureGrabber();
 		File[] files = new File[]{ new File("C:\\Users\\James\\Desktop\\Hysteria.mp3"), new File("C:\\Users\\James\\Desktop\\Plug in Baby.mp3")} ;
 		f.run(files);
@@ -101,7 +103,7 @@ public class FeatureGrabber implements Constants {
 		if(res.size() < 1)
 			System.out.println("No data");
 		System.exit(0);
-	}
+	}*/
 	
 	public List<double[]> getNormalisedResults(){
 		return results;
@@ -115,7 +117,7 @@ public class FeatureGrabber implements Constants {
 		// take results and produce results_norm
 	}
 	
-	public void run(File[] files){
+	public void run(File[] files, GUIupdater updater){
 		
 		try {
 			
@@ -124,10 +126,22 @@ public class FeatureGrabber implements Constants {
 			FeatureProcessor processor = new FeatureProcessor(512,0.0, 16000.0, false, features, defaults, cancel);
 			
 			List<double[]> res = new ArrayList<double[]>();
-			GUIupdater updater = new GUIupdater();
 			
+			this.updater = updater;
+			this.updater.setNumberOfFiles(files.length);
+			
+			//int i=0 ; while(true){
 			for(int i=0; i<files.length; ++i){
-				res.add(featuresToArray(processor.extractFeatures(files[i], updater)));
+			//for(int i=145; i<149; ++i){
+				try{
+					res.add(featuresToArray(processor.extractFeatures(files[i], updater)));
+					//System.out.println((featuresToArray(processor.extractFeatures(files[68], updater))));
+					updater.announceUpdate(i+1, 0);
+					System.out.println("Features extracted from file #"+i);
+				}catch(Exception e){
+					res.add(null);
+					System.out.println("Feature extraction failed for file #"+i);
+				}
 			}
 			
 			SwingUtilities.invokeLater(updater.resumeGUI);
@@ -138,8 +152,8 @@ public class FeatureGrabber implements Constants {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			results = new ArrayList<double[]>();
 		}
-		results = new ArrayList<double[]>();
 		//return new ArrayList<double[]>();
 	}
 	

@@ -100,6 +100,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
+import jk509.player.clustering.AbstractClusterer;
+import jk509.player.clustering.KMeansClusterer;
 import jk509.player.core.FileScanner;
 import jk509.player.core.ItunesParser;
 import jk509.player.core.JLayerPlayerPausable;
@@ -112,6 +114,7 @@ import jk509.player.core.SoundJLayer;
 import jk509.player.core.TableSorter;
 import jk509.player.core.TableSorter.Directive;
 import jk509.player.core.TrackTime;
+import jk509.player.gui.GUIupdater;
 import jk509.player.gui.ParseDiskDialog;
 import jk509.player.gui.ParseItunesDialog;
 import jk509.player.gui.SmartPlaylistDialog;
@@ -292,6 +295,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JLabel lblBar2;
 	private JMenuItem mntmToggleSmartBar;
 	private JMenuItem mntmAddFiles;
+	private JMenuItem mntmResetSongClusters;
 
 	/**
 	 * Create the application.
@@ -1279,6 +1283,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		mntmResetFactoryDefaults = new JMenuItem("Factory Reset");
 		mntmResetFactoryDefaults.addActionListener(new MntmResetFactoryDefaultsActionListener());
 		mnSettings.add(mntmResetFactoryDefaults);
+		
+		mntmResetSongClusters = new JMenuItem("Reset Song Clusters");
+		mntmResetSongClusters.addActionListener(new MntmResetSongClustersActionListener());
+		mnSettings.add(mntmResetSongClusters);
 
 		mntmOptions_1 = new JMenuItem("Options...");
 		mntmOptions_1.setEnabled(false);
@@ -3348,6 +3356,36 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			} else {
 				//System.out.println("No Selection ");
 			}
+		}
+	}
+	private class MntmResetSongClustersActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			String homedir = System.getenv("user.home");
+			if (homedir == null)
+				homedir = System.getenv("USERPROFILE");
+			final String features = homedir + "\\Music Factory\\features.ser";
+			final String clusters = homedir + "\\Music Factory\\clusters.ser";
+			
+			(new Thread(){
+				@Override
+				public void run(){
+					AbstractClusterer clusterer = new KMeansClusterer(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList());
+					clusterer.setFeatureSavePath(features);
+					clusterer.setClusterSavePath(clusters);
+					clusterer.run(new GUIupdater(frmMusicPlayer));
+					PrintClusters(clusterer.getResult());
+				}
+			}).start();
+			
+		}
+	}
+	private void PrintClusters(List<ArrayList<Song>> cs){
+		for(int i=0; i<cs.size(); ++i){
+			System.out.println("Cluster "+i+" ---------------- ");
+			for(int j=0; j<cs.get(i).size(); ++j){
+				System.out.println(cs.get(i).get(j).getArtist() + " -- " + cs.get(i).get(j).getName());
+			}
+			System.out.println();
 		}
 	}
 	

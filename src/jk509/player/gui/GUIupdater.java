@@ -1,8 +1,8 @@
 package jk509.player.gui;
 
-import jAudioFeatureExtractor.ProgressFrame;
 import jAudioFeatureExtractor.Updater;
 
+import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
 /**
@@ -33,6 +33,8 @@ public class GUIupdater implements Updater {
 	double windowOverlap;
 
 	boolean hasRun = false;
+	
+	JFrame mainForm;
 
 	ProgressFrame progressFrame;
 
@@ -44,7 +46,7 @@ public class GUIupdater implements Updater {
 	 * @param of
 	 *            Link to outerframe of the gui. Used to disable the main frame to prevent race conditions in the feature settings.
 	 */
-	public GUIupdater() {
+	public GUIupdater(JFrame frmMain) {
 
 		suspendGUI = new Runnable() {
 			public void run() {
@@ -62,8 +64,14 @@ public class GUIupdater implements Updater {
 
 		updateGUI = new UpdateGUI();
 
+		this.mainForm = frmMain;
 		// c.dm_.setUpdater(this);
-		progressFrame = new ProgressFrame();
+		progressFrame = new ProgressFrame(mainForm);
+		progressFrame.setLocationRelativeTo(mainForm);
+		announceUpdate(0, 0);
+		//progressFrame.setVisible(true);
+		//progressFrame.setModal(true);
+		//progressFrame.setModalityType(ModalityType.APPLICATION_MODAL);
 		// errorGUI = new ErrorGUI(progressFrame);
 	}
 
@@ -101,11 +109,11 @@ public class GUIupdater implements Updater {
 	class UpdateGUI implements Runnable {
 		int numberOfFiles;
 
-		int file;
+		int file = 0;
 
 		int thisFileLength = 0;
 
-		int pos;
+		int pos = 0;
 
 		public void setLengths(int file) {
 			numberOfFiles = file;
@@ -125,7 +133,8 @@ public class GUIupdater implements Updater {
 		}
 
 		public void run() {
-			progressFrame.setVisible(true);
+			if(!progressFrame.isVisible())
+				progressFrame.setVisible(true);
 			progressFrame.fileProgressBar.setMaximum(thisFileLength);
 			progressFrame.overallProgressBar.setMaximum(numberOfFiles);
 			progressFrame.fileProgressBar.setValue(pos);

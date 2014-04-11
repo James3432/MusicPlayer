@@ -1,11 +1,14 @@
 package jk509.player.clustering;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import jk509.player.Constants;
 import jk509.player.core.Song;
+import jk509.player.gui.GUIupdater;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Attribute;
 import weka.core.FastVector;
@@ -20,26 +23,53 @@ public class KMeansClusterer extends AbstractClusterer {
 	}
 
 	@Override
-	public void run() {
-		// TODO Auto-generated method stub
-		File[] fileList = new File[tracks.size()];
-		for(int i=0; i<tracks.size(); ++i)
-			fileList[i] = new File(tracks.get(i).getLocation());
-		featureGrabber.run(fileList);
-		List<double[]> results = featureGrabber.getNormalisedResults();
-		// TODO: normalise (probably inside featureGrabber)
-		
+	public void run(GUIupdater updater) {
+		List<double[]> results = null;
+		if (Constants.DEBUG_LOAD_FEATURES_FILE) {
+			FileInputStream fin;
+			try {
+				fin = new FileInputStream(new File(features_path));
+				ObjectInputStream oos = new ObjectInputStream(fin);
+				results = (List<double[]>) oos.readObject();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} else {
+			File[] fileList = new File[tracks.size()];
+			for (int i = 0; i < tracks.size(); ++i)
+				fileList[i] = new File(tracks.get(i).getLocation());
+			System.out.println("File list ready");
+			featureGrabber.run(fileList, updater);
+			/* List<double[]> */
+			results = featureGrabber.getNormalisedResults();
+			// TODO: normalise (probably inside featureGrabber)
+
+			System.out.println("Features extracted, saving to disk");
+
+			saveFeatures(results);
+			System.out.println("Saved.");
+		}
 		FastVector atts = new FastVector();
-		for(int i=0; i<Constants.FEATURES; ++i)
-			atts.addElement(new Attribute("num"+i));
-		Instances dataset = new Instances("Feature-set", atts, tracks.size());
-		
-		//double[] weights = (new AudioFeatures()).getWeights();
+		for (int i = 0; i < Constants.FEATURES; ++i)
+			atts.addElement(new Attribute("num" + i));
+		Instances dataset = new Instances("Feature-set", atts, results.size());
+
+		// double[] weights = (new AudioFeatures()).getWeights();
 		// The weighting below is between tracks, not between features
-		
-		for(int i=0; i<tracks.size(); ++i)
-			dataset.add(new Instance(1.0, results.get(i)));
-		
+
+		// keep track of which tracks didn't succeed in feature extraction
+		// TODO: how to deal with this later??
+		boolean[] featurelessTracks = new boolean[results.size()];
+
+		for (int i = 0; i < results.size(); ++i) {
+			if (results.get(i) == null)
+				featurelessTracks[i] = true;
+			else
+				dataset.add(new Instance(1.0, results.get(i)));
+		}
+
+		System.out.println("Dataset ready");
+
 		try {
 			SimpleKMeans kmeans = new SimpleKMeans();
 
@@ -48,77 +78,62 @@ public class KMeansClusterer extends AbstractClusterer {
 			// This is the important parameter to set
 			kmeans.setPreserveInstancesOrder(true);
 			kmeans.setNumClusters(Constants.MAX_CLUSTERS);
-			
+
+			System.out.println("Start clustering...");
 			kmeans.buildClusterer(dataset);
-			
+			System.out.println("Done clustering");
+
 			// This array returns the cluster number (starting with 0) for each instance
 			// The array has as many elements as the number of instances
 			int[] assignments = kmeans.getAssignments();
 
 			clusters = new ArrayList<ArrayList<Song>>();
-			
-			int i=0;
-			for(int clusterNum : assignments) {
-				// add more clusters to result if needed
-				while(clusters.size() <= clusterNum)
-					clusters.add(new ArrayList<Song>());
-				// add track instance to cluster
-				clusters.get(clusterNum).add(tracks.get(i));
-			    System.out.printf("Instance %d -> Cluster %d", i, clusterNum);
-			    System.out.println();
-			    i++;
+
+			for (int i = 0, j=0; i < results.size(); ++i) {
+				if (!featurelessTracks[i]) {
+					int clusterNum = assignments[j];
+					// add more clusters to result if needed
+					while (clusters.size() <= clusterNum)
+						clusters.add(new ArrayList<Song>());
+					// add track instance to cluster
+					clusters.get(clusterNum).add(tracks.get(i));
+					// System.out.printf("Instance %d -> Cluster %d", i, clusterNum);
+					// System.out.println();
+					j++;
+				}
 			}
+			System.out.println("Saving to disk...");
+			saveClusters();
+			System.out.println("Saved");
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			clusters.clear();
 			e.printStackTrace();
+			clusters = new ArrayList<ArrayList<Song>>();
+			clusters.clear();
 		}
 	}
-	
+
 	/*
 	 * test weka
 	 */
-	public static void main(String[] args){
-		Attribute num1 = new Attribute("num1");
-		Attribute num2 = new Attribute("num2");
-		FastVector attributes = new FastVector();
-		attributes.addElement(num1);
-		attributes.addElement(num2);
-		Instances dataset = new Instances("Test-dataset", attributes, 5);
-		dataset.add(new Instance(1.0, new double[]{ 0.3, 0.5 }));
-		dataset.add(new Instance(1.0, new double[]{ 0.4, 0.6 }));
-		dataset.add(new Instance(1.0, new double[]{ 0.3, 0.4 }));
-		dataset.add(new Instance(1.0, new double[]{ 0.9, 0.2 }));
-		dataset.add(new Instance(1.0, new double[]{ 0.8, 0.3 }));
-		
-		
-		try {
-			SimpleKMeans kmeans = new SimpleKMeans();
-
-			kmeans.setSeed(10);
-
-			// This is the important parameter to set
-			kmeans.setPreserveInstancesOrder(true);
-			kmeans.setNumClusters(2);
-			
-			kmeans.buildClusterer(dataset);
-			
-			// This array returns the cluster number (starting with 0) for each instance
-			// The array has as many elements as the number of instances
-			int[] assignments = kmeans.getAssignments();
-
-			int i=0;
-			for(int clusterNum : assignments) {
-			    System.out.printf("Instance %d -> Cluster %d", i, clusterNum);
-			    System.out.println();
-			    i++;
-			}
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		
-	}
+	/*
+	 * public static void main(String[] args){ Attribute num1 = new Attribute("num1"); Attribute num2 = new Attribute("num2"); FastVector attributes = new FastVector(); attributes.addElement(num1); attributes.addElement(num2); Instances dataset = new Instances("Test-dataset", attributes, 5); dataset.add(new Instance(1.0, new double[]{ 0.3, 0.5 })); dataset.add(new Instance(1.0, new double[]{ 0.4, 0.6 })); dataset.add(new Instance(1.0, new double[]{ 0.3, 0.4 })); dataset.add(new Instance(1.0, new double[]{ 0.9, 0.2 })); dataset.add(new Instance(1.0, new double[]{ 0.8, 0.3 }));
+	 * 
+	 * 
+	 * try { SimpleKMeans kmeans = new SimpleKMeans();
+	 * 
+	 * kmeans.setSeed(10);
+	 * 
+	 * // This is the important parameter to set kmeans.setPreserveInstancesOrder(true); kmeans.setNumClusters(2);
+	 * 
+	 * kmeans.buildClusterer(dataset);
+	 * 
+	 * // This array returns the cluster number (starting with 0) for each instance // The array has as many elements as the number of instances int[] assignments = kmeans.getAssignments();
+	 * 
+	 * int i=0; for(int clusterNum : assignments) { System.out.printf("Instance %d -> Cluster %d", i, clusterNum); System.out.println(); i++; } } catch (Exception e) { // TODO Auto-generated catch block e.printStackTrace(); }
+	 * 
+	 * 
+	 * }
+	 */
 
 }
