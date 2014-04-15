@@ -1,8 +1,9 @@
 package jk509.player.clustering;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+
+import javax.swing.JFrame;
 
 import jk509.player.core.Song;
 
@@ -13,21 +14,45 @@ public class SongCluster extends AbstractCluster {
 
 	private int clusterPlaying = -1; // only > -1 if playing==True. Equivalent to the current "state" in a machine-learning sense
 
-	public SongCluster(int level, SongCluster parent) {
+	public SongCluster(ArrayList<Song> songs, int level, SongCluster parent, JFrame form) {
 		super(level, parent);
 		leaf = false;
-		p = new ArrayList<ArrayList<Double>>();
+		//InitPMatrix();
 		clusters = new ArrayList<AbstractCluster>();
+		
+		AbstractClusterer clusterer = new KMeansClusterer(songs);
+		clusterer.run(form);
+		List<ArrayList<Song>> cs = clusterer.getResult();
+		for(ArrayList<Song> cluster : cs){
+			if(cluster.size() > 1)
+				clusters.add(new SongCluster(cluster, level+1, this, form));
+			else if(cluster.size() == 1)
+				clusters.add(new LeafCluster(level+1, this, cluster.get(0)));
+		}
+		
+		InitPMatrix();
 	}
 	
-	public SongCluster(int level, SongCluster parent, List<Song> tracks){
-		this(level, parent);
-		ClusterFirstTime(tracks);
-	}
-	public SongCluster(LeafCluster c){
-		this(c.getLevel(), c.getParent(), new ArrayList<Song>(Arrays.asList(c.getTrack())));
+	public SongCluster(LeafCluster c, JFrame form){
+		super(c.getLevel(), c.getParent());
+		leaf = false;
+		clusters = new ArrayList<AbstractCluster>();
+		clusters.add(c);
+		InitPMatrix();
 	}
 
+	private void InitPMatrix(){
+		p = new ArrayList<ArrayList<Double>>();
+		int size = clusters.size();
+		double prob = 1. / size;
+		for(int i=0; i<size; ++i){
+			p.add(new ArrayList<Double>());
+			for(int j=0; j<size; ++j){
+				p.get(i).add(prob);
+			}
+		}
+	}
+	
 	public int getClusterPlaying() {
 		return clusterPlaying;
 	}
@@ -56,6 +81,12 @@ public class SongCluster extends AbstractCluster {
 
 	public void Update(UserAction action) {
 		// TODO
+		
+		// sample
+		int from  = 5;
+		int to = 7;
+		double pr = p.get(from).get(to);
+		
 		switch(action.type){
 		case UserAction.TRACK_FINISHED: 
 			
@@ -71,6 +102,7 @@ public class SongCluster extends AbstractCluster {
 		
 	} 
 	
+	// unused (see constructor)
 	private void ClusterFirstTime(List<Song> tracks){
 		// initialise p
 		/*set all to 0

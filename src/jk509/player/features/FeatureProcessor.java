@@ -13,17 +13,23 @@ import jAudioFeatureExtractor.Cancel;
 import jAudioFeatureExtractor.ExplicitCancel;
 import jAudioFeatureExtractor.Updater;
 import jAudioFeatureExtractor.AudioFeatures.FeatureExtractor;
-import jAudioFeatureExtractor.jAudioTools.AudioSamples;
+import jAudioFeatureExtractor.jAudioTools.DSPMethods;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.LinkedList;
 import java.util.List;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.SourceDataLine;
 
 import jk509.player.Constants;
+
+//import jAudioFeatureExtractor.jAudioTools.AudioMethods;
 
 /**
  * This class is used to pre-process and extract features from audio recordings. An object of this class should be instantiated with parameters indicating the details of how features are to be extracted.
@@ -124,7 +130,7 @@ public class FeatureProcessor {
 		this.cancel = cancel;
 		aggregator = new jk509.player.features.AggregatorContainer();
 		aggregator.add(new Aggregator[] { new Mean() });
-		
+
 		// if (feature_values_save_path.equals(""))
 		// throw new Exception("No save path specified for feature values.");
 		// if (feature_definitions_save_path.equals(""))
@@ -195,9 +201,9 @@ public class FeatureProcessor {
 	public List<double[]> extractFeatures(File recording_file, Updater updater) throws Exception {
 		// Pre-process the recording and extract the samples from the audio
 		this.updater = updater;
-		//System.out.println("about to pre");
+		// System.out.println("about to pre");
 		double[] samples = preProcessRecording(recording_file); // TODO as slow as the feature extraction...
-		//System.out.println("done pre");
+		// System.out.println("done pre");
 		if (cancel.isCancel()) {
 			throw new ExplicitCancel("Killed after loading data");
 		}
@@ -253,7 +259,7 @@ public class FeatureProcessor {
 			// aggList[3] = new MultipleFeatureHistogram(new FeatureExtractor[]{new MFCC()},4);
 
 			// aggContainer.add(aggList);
-			
+
 			aggregator.aggregate(window_feature_values);
 		}
 		// overall_feature_values = getOverallRecordingFeatures(
@@ -453,85 +459,145 @@ public class FeatureProcessor {
 	 * @throws Exception
 	 *             An exception is thrown if a problem occurs during file reading or pre- processing.
 	 */
-	private double[] preProcessRecording(File recording_file) throws Exception {
+	private double[] preProcessRecording(File recording) throws Exception {
 		// Get the original audio and its format
-		AudioInputStream original_stream = AudioSystem.getAudioInputStream(recording_file);
-		AudioFormat original_format = original_stream.getFormat();
+		try {
+			try {
+				Process p = Runtime.getRuntime().exec(new String[] { "lame.exe", "-b", Integer.toString(Constants.ENCODE_BITRATE), "--resample", Integer.toString(Constants.ENCODE_SAMPLERATE), recording.getPath(), "temp.mp3" });
+				BufferedReader input = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+				String line;
+				while ((line = input.readLine()) != null) {
+					// System.out.println(line);
+				}
+				input.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 
-		// Set the bit depth
-		int bit_depth = original_format.getSampleSizeInBits();
-		if (bit_depth != 8 && bit_depth != 16)
-			bit_depth = 16;
+			File recording_file = new File("temp.mp3");
 
-		// If the audio is not PCM signed big endian, then convert it to PCM
-		// signed
-		// This is particularly necessary when dealing with MP3s
-		AudioInputStream second_stream = original_stream;
-		if (original_format.getEncoding() != AudioFormat.Encoding.PCM_SIGNED || original_format.isBigEndian() == false) {
+			AudioInputStream original_stream = AudioSystem.getAudioInputStream(recording_file);
+			AudioFormat original_format = original_stream.getFormat();
+
+			// Set the bit depth
+			int bit_depth = original_format.getSampleSizeInBits();
+			if (bit_depth != 8 && bit_depth != 16)
+				bit_depth = 16;
+
+			// AudioInputStream new_stream = original_stream;
+
 			AudioFormat new_format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, original_format.getSampleRate(), bit_depth, original_format.getChannels(), original_format.getChannels() * (bit_depth / 8), original_format.getSampleRate(), true);
-			second_stream = AudioSystem.getAudioInputStream(new_format, original_stream);
-		}
+			AudioInputStream new_stream = AudioSystem.getAudioInputStream(new_format, original_stream);
 
-		// Convert to the set sampling rate, if it is not already at this
-		// sampling rate.
-		// Also, convert to an appropriate bit depth if necessary.
-		AudioInputStream new_stream = second_stream;
-		if (original_format.getSampleRate() != (float) sampling_rate || bit_depth != original_format.getSampleSizeInBits()) {
-			AudioFormat new_format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, (float) sampling_rate, bit_depth, original_format.getChannels(), original_format.getChannels() * (bit_depth / 8), original_format.getSampleRate(), true);
-			new_stream = AudioSystem.getAudioInputStream(new_format, second_stream);
-		}
-		
-		if(Constants.CUSTOM_FEATUREPROC_CODE){
-		//if(recording_file.getPath().equals("E:\\Users\\James\\Music\\iTunes\\iTunes Media\\Music\\Soundtrack\\Saturday Night Fever\\06 5th Symphony Disco Remix.mp3")){
-		// MY TEST BIT
-		AudioInputStream encoded = original_stream;//AudioSystem.getAudioInputStream(new File("E:\\Users\\James\\Music\\iTunes\\iTunes Media\\Music\\Soundtrack\\Saturday Night Fever\\06 5th Symphony Disco Remix.mp3"));
-        AudioFormat encodedFormat = encoded.getFormat();
-        AudioFormat decodedFormat = new AudioFormat(
-                AudioFormat.Encoding.PCM_SIGNED,  // Encoding to use
-                (float) sampling_rate,//format.getSampleRate(),           // sample rate (same as base format)
-                bit_depth,               // sample size in bits (thx to Javazoom)
-                encodedFormat.getChannels(),             // # of Channels
-                encodedFormat.getChannels()*(bit_depth/8),           // Frame Size
-                encodedFormat.getSampleRate(),           // Frame Rate
-                true                 // Big Endian
-        );
-        AudioInputStream currentDecoded = AudioSystem.getAudioInputStream(decodedFormat, encoded);
-		new_stream = currentDecoded;
-		//}
-		// END TEST
-		}
-		
-		// Extract data from the AudioInputStream
-		AudioSamples audio_data = new AudioSamples(new_stream, recording_file.getPath(), false);
+			// If the audio is not PCM signed big endian, then convert it to PCM
+			// signed
+			// This is particularly necessary when dealing with MP3s
+			/*
+			 * AudioInputStream second_stream = original_stream; if (original_format.getEncoding() != AudioFormat.Encoding.PCM_SIGNED || original_format.isBigEndian() == false) { AudioFormat new_format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, original_format.getSampleRate(), bit_depth, original_format.getChannels(), original_format.getChannels() * (bit_depth / 8), original_format.getSampleRate(), true); second_stream = AudioSystem.getAudioInputStream(new_format, original_stream); }
+			 */
 
-		if(audio_data.getSamplesMixedDown() == null || audio_data.getSamplesMixedDown().length < 1){
-			AudioInputStream encoded = AudioSystem.getAudioInputStream(recording_file);
-	        AudioFormat encodedFormat = encoded.getFormat();
-	        AudioFormat decodedFormat = new AudioFormat(
-	                AudioFormat.Encoding.PCM_SIGNED,  // Encoding to use
-	                (float) sampling_rate,//format.getSampleRate(),           // sample rate (same as base format)
-	                bit_depth,               // sample size in bits (thx to Javazoom)
-	                encodedFormat.getChannels(),             // # of Channels
-	                encodedFormat.getChannels()*(bit_depth/8),           // Frame Size
-	                encodedFormat.getSampleRate(),           // Frame Rate
-	                true                 // Big Endian
-	        );
-	        AudioInputStream currentDecoded = AudioSystem.getAudioInputStream(decodedFormat, encoded);
-			new_stream = currentDecoded;
-			audio_data = new AudioSamples(new_stream, recording_file.getPath(), false);
-		}
-		
-		// Normalise samples if this option has been requested
-		if (normalise)
-			audio_data.normalizeMixedDownSamples();
+			// Convert to the set sampling rate, if it is not already at this
+			// sampling rate.
+			// Also, convert to an appropriate bit depth if necessary.
+			/*
+			 * AudioInputStream new_stream = second_stream; if (original_format.getSampleRate() != sampling_rate || bit_depth != original_format.getSampleSizeInBits()) { AudioFormat new_format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, (float) sampling_rate, bit_depth, original_format.getChannels(), original_format.getChannels() * (bit_depth / 8), original_format.getSampleRate(), true); new_stream = AudioSystem.getAudioInputStream(new_format, second_stream); }
+			 */
 
-		// Close streams
-		original_stream.close();
-		second_stream.close();
-		new_stream.close();
-		
-		// Return all channels compressed into one
-		return audio_data.getSamplesMixedDown();
+			/*
+			 * if (original_format.getFrameRate() != 16000f) { AudioFormat new_format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, (float) sampling_rate, bit_depth, original_format.getChannels(), original_format.getChannels() * (bit_depth / 8), (float) sampling_rate, true); new_stream = AudioSystem.getAudioInputStream(new_format, second_stream); }
+			 */
+
+			double[][] channel_samples;
+			double[] samples = null;
+			
+			channel_samples = AudioMethods.extractSampleValues(new_stream);
+			if (channel_samples.length > 1)
+				samples = DSPMethods.getSamplesMixedDownIntoOneChannel(channel_samples);
+			else if(channel_samples.length == 1)
+				samples = channel_samples[0];
+			else if(channel_samples.length < 1)
+				samples = null;
+			
+
+			if (samples == null || samples.length < 1) {
+				return null;
+			}
+
+			// Close streams
+			original_stream.close();
+			// second_stream.close();
+			new_stream.close();
+
+			// Return all channels compressed into one
+			return samples;
+		} catch (java.lang.OutOfMemoryError e) {
+			e.printStackTrace();
+			return null;
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	/*
+	 * private double[] preProcessRecording(File recording_file) throws Exception { // Get the original audio and its format AudioInputStream original_stream = AudioSystem.getAudioInputStream(recording_file); AudioFormat original_format = original_stream.getFormat();
+	 * 
+	 * // Set the bit depth int bit_depth = original_format.getSampleSizeInBits(); if (bit_depth != 8 && bit_depth != 16) bit_depth = 16;
+	 * 
+	 * AudioInputStream new_stream = original_stream; if (original_format.getEncoding() != AudioFormat.Encoding.PCM_SIGNED || original_format.isBigEndian() == false || original_format.getSampleRate() != (float) sampling_rate || bit_depth != original_format.getSampleSizeInBits()) { AudioFormat new_format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, (float) sampling_rate, bit_depth, original_format.getChannels(), original_format.getChannels() * (bit_depth / 8), original_format.getSampleRate(), true); new_stream = AudioSystem.getAudioInputStream(new_format, original_stream); }
+	 * 
+	 * // Extract data from the AudioInputStream AudioSamples audio_data = new AudioSamples(new_stream, recording_file.getPath(), false);
+	 * 
+	 * 
+	 * // If the audio is not PCM signed big endian, then convert it to PCM // signed // This is particularly necessary when dealing with MP3s AudioInputStream second_stream = original_stream; if (original_format.getEncoding() != AudioFormat.Encoding.PCM_SIGNED || original_format.isBigEndian() == false) { AudioFormat new_format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, original_format.getSampleRate(), bit_depth, original_format.getChannels(), original_format.getChannels() * (bit_depth / 8), original_format.getSampleRate(), true); second_stream = AudioSystem.getAudioInputStream(new_format, original_stream); }
+	 * 
+	 * // Convert to the set sampling rate, if it is not already at this // sampling rate. // Also, convert to an appropriate bit depth if necessary. AudioInputStream new_stream = second_stream; if (original_format.getSampleRate() != (float) sampling_rate || bit_depth != original_format.getSampleSizeInBits()) { AudioFormat new_format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, (float) sampling_rate, bit_depth, original_format.getChannels(), original_format.getChannels() * (bit_depth / 8), original_format.getSampleRate(), true); new_stream = AudioSystem.getAudioInputStream(new_format, second_stream); }
+	 * 
+	 * if(Constants.CUSTOM_FEATUREPROC_CODE){ //if(recording_file.getPath().equals("E:\\Users\\James\\Music\\iTunes\\iTunes Media\\Music\\Soundtrack\\Saturday Night Fever\\06 5th Symphony Disco Remix.mp3")){ // MY TEST BIT AudioInputStream encoded = original_stream;//AudioSystem.getAudioInputStream(new File("E:\\Users\\James\\Music\\iTunes\\iTunes Media\\Music\\Soundtrack\\Saturday Night Fever\\06 5th Symphony Disco Remix.mp3")); AudioFormat encodedFormat = encoded.getFormat(); AudioFormat decodedFormat = new AudioFormat( AudioFormat.Encoding.PCM_SIGNED, // Encoding to use (float) sampling_rate,//format.getSampleRate(), // sample rate (same as base format) bit_depth, // sample size in bits (thx to Javazoom) encodedFormat.getChannels(), // # of Channels encodedFormat.getChannels()*(bit_depth/8), // Frame Size encodedFormat.getSampleRate(), // Frame Rate true // Big Endian ); AudioInputStream currentDecoded = AudioSystem.getAudioInputStream(decodedFormat, encoded); new_stream = currentDecoded; //} // END TEST }
+	 * 
+	 * // Extract data from the AudioInputStream TestPlay(new_stream); AudioSamples audio_data = new AudioSamples(new_stream, recording_file.getPath(), false);
+	 * 
+	 * if(audio_data.getSamplesMixedDown() == null || audio_data.getSamplesMixedDown().length < 1){ System.out.println("   alternative feature extraction code triggered"); AudioInputStream encoded = AudioSystem.getAudioInputStream(recording_file); AudioFormat encodedFormat = encoded.getFormat(); AudioFormat decodedFormat = new AudioFormat( AudioFormat.Encoding.PCM_SIGNED, // Encoding to use (float) sampling_rate,//format.getSampleRate(), // sample rate (same as base format) bit_depth, // sample size in bits (thx to Javazoom) encodedFormat.getChannels(), // # of Channels encodedFormat.getChannels()*(bit_depth/8), // Frame Size encodedFormat.getSampleRate(), // Frame Rate true // Big Endian ); AudioInputStream currentDecoded = AudioSystem.getAudioInputStream(decodedFormat, encoded); new_stream = currentDecoded; audio_data = new AudioSamples(new_stream, recording_file.getPath(), false); }
+	 * 
+	 * 
+	 * 
+	 * if(audio_data.getSamplesMixedDown() == null || audio_data.getSamplesMixedDown().length < 1){ return null; }
+	 * 
+	 * // Normalise samples if this option has been requested if (normalise) audio_data.normalizeMixedDownSamples();
+	 * 
+	 * // Close streams original_stream.close(); //second_stream.close(); new_stream.close();
+	 * 
+	 * // Return all channels compressed into one return audio_data.getSamplesMixedDown(); }
+	 */
+
+	private void TestPlay(AudioInputStream currentDecoded) {
+		try {
+			AudioFormat decodedFormat = currentDecoded.getFormat();
+			SourceDataLine line;
+			line = AudioSystem.getSourceDataLine(decodedFormat);
+			line.open(decodedFormat);
+			line.start();
+
+			byte[] b = new byte[4096];
+			int i = 0;
+
+			while (true) {
+
+				i = currentDecoded.read(b, 0, b.length);
+				if (i == -1)
+					break;
+
+				line.write(b, 0, i);
+			}
+
+			line.drain();
+			line.stop();
+			line.close();
+			currentDecoded.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**

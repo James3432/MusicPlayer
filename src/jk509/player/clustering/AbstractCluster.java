@@ -14,7 +14,7 @@ public abstract class AbstractCluster implements Constants {
 	protected boolean playing; // whether a track in this cluster is currently playing. If true in a leaf, then obviously its 'track' is playing
 	protected double randomness; // from 0 (not random - exploitation) to 1.0 (fully random - exploration)
 	
-	public AbstractCluster(int level, SongCluster parent){
+	protected AbstractCluster(int level, SongCluster parent){
 		this.level = level;
 		this.parent = parent;
 	}

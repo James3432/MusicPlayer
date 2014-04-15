@@ -30,7 +30,8 @@ public class Song implements Serializable {
 	private int playCount;
 	private int length; // in seconds
 	
-	private AudioFeatures features;
+	//private AudioFeatures features;
+	private double[] features;
 
 	public String getName() {
 		return name;
@@ -163,11 +164,11 @@ public class Song implements Serializable {
 		length = l;
 	}
 	
-	public AudioFeatures getAudioFeatures(){
+	public double[] getAudioFeatures(){
 		return features;
 	}
 	
-	public void setAudioFeatures(AudioFeatures af){
+	public void setAudioFeatures(double[] af){
 		features = af;
 	}
 

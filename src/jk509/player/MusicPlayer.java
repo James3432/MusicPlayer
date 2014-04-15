@@ -3369,11 +3369,13 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			(new Thread(){
 				@Override
 				public void run(){
-					AbstractClusterer clusterer = new KMeansClusterer(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList());
+					List<Song> featureless = GetSongsWithoutFeatures(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList());
+					AbstractClusterer clusterer = new KMeansClusterer(featureless);
 					clusterer.setFeatureSavePath(features);
 					clusterer.setClusterSavePath(clusters);
-					clusterer.run(new GUIupdater(frmMusicPlayer));
-					PrintClusters(clusterer.getResult());
+					clusterer.run(frmMusicPlayer);
+					//PrintClusters(clusterer.getResult());
+					UpdateLibrary();
 				}
 			}).start();
 			
@@ -3388,7 +3390,14 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			System.out.println();
 		}
 	}
-	
+	private List<Song> GetSongsWithoutFeatures(List<Song> in){
+		ArrayList<Song> out = new ArrayList<Song>();
+		for(Song s : in){
+			if(s.getAudioFeatures() == null || s.getAudioFeatures().length != Constants.FEATURES)
+				out.add(s);
+		}
+		return out;
+	}
 	private void RefreshUpNext() {
 		if (!library.hasQueue()) {
 			listUpNext.setModel(new AbstractListModel() {

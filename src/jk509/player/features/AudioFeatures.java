@@ -9,6 +9,8 @@ public class AudioFeatures implements Constants {
 
 	// TODO: is there any way of weighting this feature vector?
 	
+	public double[] values;    // All that's being used within Song class at present
+	
 	private double[] features;
 	private double[] weights;  // 0==unused 1==important
 	private int[]    indices;  // indices into jAudio features array
@@ -17,6 +19,11 @@ public class AudioFeatures implements Constants {
 		features = new double[]{ msoa, psoa, scoa, srpoa, sfoa, coa, svoa, rmsoa, flewoa, zcoa, sboa, bsoa, ssboa, mfccoa, lpcoa, mmoa, pdoa, pbscoa, pbsfoa, pbssoa, rdfoa, ammoa };
 		weights  = new double[]{  0.0, 0.0,  1.0,  1.0,    1.0, 1.0, 1.0,  1.0,   1.0,    1.0,   1.0, 1.0,   1.0,  1.0,   1.0,    1.0,  0.0,  0.0,    0.0,    0.0,    0.0,   0.0   };
 		indices  = new int[]   {  0,    1,   3,    9,      15,  21,   27,  33,    39,     45,    53,  59,   65,    89,     95,   101,   107,  108,    114,    120,    126,   132   };    
+	}
+	
+	public AudioFeatures(double[] vals){
+		this();
+		values = vals;
 	}
 	
 	public double[] getFeatures(){

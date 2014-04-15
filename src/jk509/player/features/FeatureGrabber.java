@@ -17,6 +17,7 @@ import java.util.List;
 import javax.swing.SwingUtilities;
 
 import jk509.player.Constants;
+import jk509.player.core.Song;
 import jk509.player.gui.GUIupdater;
 
 public class FeatureGrabber implements Constants {
@@ -117,7 +118,7 @@ public class FeatureGrabber implements Constants {
 		// take results and produce results_norm
 	}
 	
-	public void run(File[] files, GUIupdater updater){
+	public void run(File[] files, List<Song> tracks, GUIupdater updater){
 		
 		try {
 			
@@ -130,18 +131,23 @@ public class FeatureGrabber implements Constants {
 			this.updater = updater;
 			this.updater.setNumberOfFiles(files.length);
 			
-			//int i=0 ; while(true){
 			for(int i=0; i<files.length; ++i){
-			//for(int i=145; i<149; ++i){
+			//for(int i : new int[]{1, 3, 147, 148, 149}){
+			//for(int i=1161; i<1191; ++i){
 				try{
 					res.add(featuresToArray(processor.extractFeatures(files[i], updater)));
-					//System.out.println((featuresToArray(processor.extractFeatures(files[68], updater))));
 					updater.announceUpdate(i+1, 0);
 					System.out.println("Features extracted from file #"+i);
 				}catch(Exception e){
 					res.add(null);
 					System.out.println("Feature extraction failed for file #"+i);
 				}
+				tracks.get(i).setAudioFeatures(res.get(i));
+
+				//EXPERIMENTAL
+				//System.out.println("gc+");
+				System.gc();
+				//System.out.println("gc-");
 			}
 			
 			SwingUtilities.invokeLater(updater.resumeGUI);

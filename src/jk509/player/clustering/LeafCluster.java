@@ -6,7 +6,7 @@ public class LeafCluster extends AbstractCluster {
 
 	private Song track;
 
-	public LeafCluster(int level, SongCluster parent) {
+	private LeafCluster(int level, SongCluster parent) {
 		super(level, parent);
 		leaf = true;
 	}

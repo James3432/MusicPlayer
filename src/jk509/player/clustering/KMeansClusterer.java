@@ -6,6 +6,8 @@ import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JFrame;
+
 import jk509.player.Constants;
 import jk509.player.core.Song;
 import jk509.player.gui.GUIupdater;
@@ -23,7 +25,14 @@ public class KMeansClusterer extends AbstractClusterer {
 	}
 
 	@Override
-	public void run(GUIupdater updater) {
+	public void run(JFrame frame) {
+		if(tracks.size() < 1)
+			return;
+		if(!(new File(Constants.featureXMLLocation)).exists())
+			return;
+		
+		GUIupdater updater = new GUIupdater(frame);
+		
 		List<double[]> results = null;
 		if (Constants.DEBUG_LOAD_FEATURES_FILE) {
 			FileInputStream fin;
@@ -39,15 +48,16 @@ public class KMeansClusterer extends AbstractClusterer {
 			for (int i = 0; i < tracks.size(); ++i)
 				fileList[i] = new File(tracks.get(i).getLocation());
 			System.out.println("File list ready");
-			featureGrabber.run(fileList, updater);
+			featureGrabber.run(fileList, tracks, updater);
 			/* List<double[]> */
 			results = featureGrabber.getNormalisedResults();
 			// TODO: normalise (probably inside featureGrabber)
 
-			System.out.println("Features extracted, saving to disk");
-
-			saveFeatures(results);
-			System.out.println("Saved.");
+			if (Constants.DEBUG_SAVE_FEATURES) {
+				System.out.println("Features extracted, saving to disk");
+				saveFeatures(results);
+				System.out.println("Saved.");
+			}
 		}
 		FastVector atts = new FastVector();
 		for (int i = 0; i < Constants.FEATURES; ++i)
@@ -89,7 +99,7 @@ public class KMeansClusterer extends AbstractClusterer {
 
 			clusters = new ArrayList<ArrayList<Song>>();
 
-			for (int i = 0, j=0; i < results.size(); ++i) {
+			for (int i = 0, j = 0; i < results.size(); ++i) {
 				if (!featurelessTracks[i]) {
 					int clusterNum = assignments[j];
 					// add more clusters to result if needed
@@ -102,9 +112,11 @@ public class KMeansClusterer extends AbstractClusterer {
 					j++;
 				}
 			}
-			System.out.println("Saving to disk...");
-			saveClusters();
-			System.out.println("Saved");
+			if (Constants.DEBUG_SAVE_CLUSTERS) {
+				System.out.println("Saving to disk...");
+				saveClusters();
+				System.out.println("Saved");
+			}
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

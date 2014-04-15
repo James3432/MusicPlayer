@@ -10,9 +10,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import javax.swing.JFrame;
+
 import jk509.player.core.Song;
 import jk509.player.features.FeatureGrabber;
-import jk509.player.gui.GUIupdater;
 
 public abstract class AbstractClusterer {
 
@@ -27,7 +28,7 @@ public abstract class AbstractClusterer {
 		featureGrabber = new FeatureGrabber();
 	}
 	
-	public abstract void run(GUIupdater updater);
+	public abstract void run(JFrame frame);
 	
 	public List<ArrayList<Song>> getResult(){
 		return clusters;

@@ -4,7 +4,9 @@ public interface Constants {
 	
 	// Things we might want to tweak (for research)
 	public static final int MAX_CLUSTER_SIZE = 100; // DEFAULT: 100
-	public static final int MAX_CLUSTERS = 10;      // DEFAULT: 100
+	public static final int MAX_CLUSTERS = 100;      // DEFAULT: 100
+	public static final int ENCODE_SAMPLERATE = 16; // kHz
+	public static final int ENCODE_BITRATE = 128;   // kbps
 	
 	// Things we might want to tweak (less research-related)
 	
@@ -15,5 +17,7 @@ public interface Constants {
 	
 	// Debug
 	public static final boolean DEBUG_LOAD_FEATURES_FILE = false; // whether to load features from disk rather than scanning
+	public static final boolean DEBUG_SAVE_FEATURES = false;
+	public static final boolean DEBUG_SAVE_CLUSTERS = false;
 	public static final boolean CUSTOM_FEATUREPROC_CODE = false;   // whether to use the tweaked code which avoid errors but produces different results in feature extraction
 }
