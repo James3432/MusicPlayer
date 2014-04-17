@@ -42,6 +42,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -100,8 +101,9 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
-import jk509.player.clustering.AbstractClusterer;
-import jk509.player.clustering.KMeansClusterer;
+import jk509.player.clustering.AbstractCluster;
+import jk509.player.clustering.LeafCluster;
+import jk509.player.clustering.SongCluster;
 import jk509.player.core.FileScanner;
 import jk509.player.core.ItunesParser;
 import jk509.player.core.JLayerPlayerPausable;
@@ -114,7 +116,6 @@ import jk509.player.core.SoundJLayer;
 import jk509.player.core.TableSorter;
 import jk509.player.core.TableSorter.Directive;
 import jk509.player.core.TrackTime;
-import jk509.player.gui.GUIupdater;
 import jk509.player.gui.ParseDiskDialog;
 import jk509.player.gui.ParseItunesDialog;
 import jk509.player.gui.SmartPlaylistDialog;
@@ -296,6 +297,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JMenuItem mntmToggleSmartBar;
 	private JMenuItem mntmAddFiles;
 	private JMenuItem mntmResetSongClusters;
+	private JMenuItem mntmClearSongFeatures;
+	private JMenuItem mntmSaveClusters;
 
 	/**
 	 * Create the application.
@@ -1244,7 +1247,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		mntmAddAudioFiles = new JMenuItem("Add folder...");
 		mntmAddAudioFiles.addActionListener(new MntmAddAudioFilesActionListener());
 		mnFile.add(mntmAddAudioFiles);
-		
+
 		mntmAddFiles = new JMenuItem("Add files...");
 		mntmAddFiles.addActionListener(new MntmAddFilesActionListener());
 		mnFile.add(mntmAddFiles);
@@ -1283,10 +1286,18 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		mntmResetFactoryDefaults = new JMenuItem("Factory Reset");
 		mntmResetFactoryDefaults.addActionListener(new MntmResetFactoryDefaultsActionListener());
 		mnSettings.add(mntmResetFactoryDefaults);
-		
+
 		mntmResetSongClusters = new JMenuItem("Reset Song Clusters");
 		mntmResetSongClusters.addActionListener(new MntmResetSongClustersActionListener());
 		mnSettings.add(mntmResetSongClusters);
+		
+		mntmClearSongFeatures = new JMenuItem("Clear Song Features");
+		mntmClearSongFeatures.addActionListener(new MntmClearSongFeaturesActionListener());
+		mnSettings.add(mntmClearSongFeatures);
+		
+		mntmSaveClusters = new JMenuItem("Save Clusters");
+		mntmSaveClusters.addActionListener(new MntmSaveClustersActionListener());
+		mnSettings.add(mntmSaveClusters);
 
 		mntmOptions_1 = new JMenuItem("Options...");
 		mntmOptions_1.setEnabled(false);
@@ -1889,9 +1900,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 		if (!library.getQueue().isValid()) {
 			library.deleteQueue();
-			if(searching)
+			if (searching)
 				nextUp = ((TableSorter) tabMain.getModel()).viewIndex(library.normalToSearchModel(next.index)) + 1;
-			else{
+			else {
 				playlistPlayingSorter = getPlaylistSorter(next.playlist);
 				nextUp = playlistPlayingSorter.viewIndex(next.index) + 1;
 			}
@@ -2686,7 +2697,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					if (((Playlist) listPlaylists.getSelectedValue()).getType() == Playlist.DEFAULT)
 						library.getQueue().Delete(library.get(rowM));
 					else
-						library.getQueue().Delete(new SongQueueElement(library.get(rowM), listPlaylists.getSelectedIndex(), rowM));
+						library.getQueue().Delete(new SongQueueElement(library.get(rowM), listPlaylists.getSelectedIndex(), rowM)); // TODO: if searching, rowM as final arg is wrong? Fixed by ignoring row during delete test.
 
 				Delete(rowM);
 
@@ -2807,6 +2818,18 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				}
 			}
 		}
+	}
+	
+	/*
+	 * The machine learning methods
+	 */
+	private Song GetSmartSeedSong(){
+		// TODO just pick most likely track/cluster overall
+		return null;
+	}
+	private Song GetSmartTrack(Song seed){
+		// TODO choose next song from given seed
+		return null;
 	}
 
 	private class FrmMusicPlayerKeyListener extends KeyAdapter {
@@ -3111,9 +3134,22 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					Playlist pl = new Playlist(name, Playlist.AUTO);
 					library.addPlaylist(pl);
 					RefreshPlaylists();
+					Song seed = null;
 					if (type == 2) {
+						// smart playlist from selection
 						for (int i = 0; i < tabMain.getSelectedRowCount(); ++i)
 							pl.add(library.get(ViewToModel(tabMain.getSelectedRows()[i])));
+						seed = library.get(ViewToModel(tabMain.getSelectedRows()[tabMain.getSelectedRowCount()-1]));
+						// TODO: does 'size' mean total including the user-selected tracks?
+						size = size - tabMain.getSelectedRowCount();
+					}else{
+						// smart playlist from all
+						seed = GetSmartSeedSong();
+					}
+					for(int i=0; i<size; ++i){
+						Song next = GetSmartTrack(seed);
+						pl.add(next);
+						seed = next;
 					}
 				}
 			}
@@ -3330,6 +3366,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			btnSmartBar.doClick();
 		}
 	}
+
 	private class MntmAddFilesActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
 			JFileChooser chooser = new JFileChooser();
@@ -3339,65 +3376,99 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				startat = System.getenv("USERPROFILE");
 			if (startat == null || startat.equals(""))
 				startat = ".";
-		    chooser.setCurrentDirectory(new File(startat));
-		    chooser.setMultiSelectionEnabled(true);
-		    chooser.setDialogTitle("Choose files to add to library");
-		    chooser.setFileFilter(new MP3filter());
-		    int result = chooser.showOpenDialog(frmMusicPlayer);
+			chooser.setCurrentDirectory(new File(startat));
+			chooser.setMultiSelectionEnabled(true);
+			chooser.setDialogTitle("Choose files to add to library");
+			chooser.setFileFilter(new MP3filter());
+			int result = chooser.showOpenDialog(frmMusicPlayer);
 			if (result == JFileChooser.APPROVE_OPTION) {
 				File[] res = chooser.getSelectedFiles();
 				LibraryParser parser = new FileScanner();
 				parser.addFileList(res);
-				if(res.length > 0){
+				if (res.length > 0) {
 					parser.setValid(true);
 					AddToLibrary(parser);
 					listPlaylists.setSelectedIndex(0);
 				}
 			} else {
-				//System.out.println("No Selection ");
+				// System.out.println("No Selection ");
 			}
 		}
 	}
+
 	private class MntmResetSongClustersActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
-			String homedir = System.getenv("user.home");
-			if (homedir == null)
-				homedir = System.getenv("USERPROFILE");
-			final String features = homedir + "\\Music Factory\\features.ser";
-			final String clusters = homedir + "\\Music Factory\\clusters.ser";
-			
-			(new Thread(){
+
+			(new Thread() {
 				@Override
-				public void run(){
-					List<Song> featureless = GetSongsWithoutFeatures(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList());
-					AbstractClusterer clusterer = new KMeansClusterer(featureless);
-					clusterer.setFeatureSavePath(features);
-					clusterer.setClusterSavePath(clusters);
-					clusterer.run(frmMusicPlayer);
-					//PrintClusters(clusterer.getResult());
+				public void run() {
+					SongCluster clusters = new SongCluster(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList(), frmMusicPlayer);
+					library.setClusters(clusters);
+					PrintClusters(clusters, "");
 					UpdateLibrary();
 				}
 			}).start();
-			
+
 		}
 	}
-	private void PrintClusters(List<ArrayList<Song>> cs){
-		for(int i=0; i<cs.size(); ++i){
-			System.out.println("Cluster "+i+" ---------------- ");
-			for(int j=0; j<cs.get(i).size(); ++j){
-				System.out.println(cs.get(i).get(j).getArtist() + " -- " + cs.get(i).get(j).getName());
+	private class MntmClearSongFeaturesActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			for(int i=0; i<library.getPlaylists().get(Library.MAIN_PLAYLIST).size(); ++i)
+				library.getPlaylists().get(Library.MAIN_PLAYLIST).get(i).setAudioFeatures(null);
+			UpdateLibrary();
+		}
+	}
+	private class MntmSaveClustersActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			SongCluster cs = library.getClusters();
+			PrintClustersToFile(cs, "clustering.txt");
+		}
+	}
+	
+	//@SuppressWarnings("unused")
+	private void PrintClusters(SongCluster cs, String branch) {
+		List<AbstractCluster> nested = cs.getChildren();
+		int i = 0;
+		for(AbstractCluster c : nested){
+			if(c instanceof LeafCluster){
+				Song s = ((LeafCluster) c).getTrack();
+				System.out.println("Branch "+(branch+"."+i)+" Track: "+s.getName()+" - "+s.getArtist());
+			}else{
+				PrintClusters((SongCluster) c, branch+"."+i);
+				System.out.println("--------------------------------------");
 			}
-			System.out.println();
+			i++;
 		}
 	}
-	private List<Song> GetSongsWithoutFeatures(List<Song> in){
-		ArrayList<Song> out = new ArrayList<Song>();
-		for(Song s : in){
-			if(s.getAudioFeatures() == null || s.getAudioFeatures().length != Constants.FEATURES)
-				out.add(s);
+	
+	private void PrintClustersToFile(SongCluster cs, String file) {
+		File out = new File(file);
+		try {
+			PrintWriter writer = new PrintWriter(out);
+			writer.println("Music Factory clusters, generated on " + (new Date()));
+			writer.println();
+			writer.println();
+			PrintSubClustersToFile(cs, "", writer);
+			writer.close();
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
 		}
-		return out;
 	}
+	private void PrintSubClustersToFile(SongCluster cs, String branch, PrintWriter out){
+		List<AbstractCluster> nested = cs.getChildren();
+		int i = 0;
+		for(AbstractCluster c : nested){
+			if(c instanceof LeafCluster){
+				Song s = ((LeafCluster) c).getTrack();
+				out.println("Branch "+(branch+"."+i)+" Track: "+s.getName()+" - "+s.getArtist());
+			}else{
+				PrintSubClustersToFile((SongCluster) c, branch+"."+i, out);
+				out.println("--------------------------------------");
+			}
+			i++;
+		}
+	}
+
 	private void RefreshUpNext() {
 		if (!library.hasQueue()) {
 			listUpNext.setModel(new AbstractListModel() {
@@ -3421,7 +3492,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		// if at end of upnext queue
 		if (upnext2.length == 0 && library.getQueue().isValid() && library.getQueue().position == library.getQueue().size() - 1 && library.getQueue().getStart() != null)
 			try {
-				if(searching && playlistSearching == library.getQueue().getStart().playlist && library.normalToSearchModel(library.getQueue().getStart().index) > -1)
+				if (searching && playlistSearching == library.getQueue().getStart().playlist && library.normalToSearchModel(library.getQueue().getStart().index) > -1)
 					upnext2 = new Song[] { library.getPlaylists().get(Library.HIDDEN_PLAYLISTS + library.getQueue().getStart().playlist).get(library.searchToNormalModel(((TableSorter) tabMain.getModel()).modelIndex(((TableSorter) tabMain.getModel()).viewIndex(library.normalToSearchModel(library.getQueue().getStart().index)) + 1))) };
 				else
 					upnext2 = new Song[] { library.getPlaylists().get(Library.HIDDEN_PLAYLISTS + library.getQueue().getStart().playlist).get((getPlaylistSorter(library.getQueue().getStart().playlist)).modelIndex((getPlaylistSorter(library.getQueue().getStart().playlist)).viewIndex(library.getQueue().getStart().index) + 1)) };
@@ -3720,52 +3791,52 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}
 
 	};
-	
+
 	class MP3filter extends FileFilter {
-		
-		public MP3filter(){
-			super();	
+
+		public MP3filter() {
+			super();
 		}
-			
+
 		@Override
-		public String getDescription(){
+		public String getDescription() {
 			String des = "MP3 files";
 			return des;
 		}
-		
+
 		@Override
 		public boolean accept(File f) {
 			if (f.isDirectory()) {
-		        return true;
-		    }
-	
-		    String extension = getExtension(f);
-		    if (extension != null) {
-		        if (extension.equals("mp3") || extension.equals("mpeg3")) {
-		                return true;
-		        } else {
-		            return false;
-		        }
-		    }
-	
-		    return false;
+				return true;
+			}
+
+			String extension = getExtension(f);
+			if (extension != null) {
+				if (extension.equals("mp3") || extension.equals("mpeg3")) {
+					return true;
+				} else {
+					return false;
+				}
+			}
+
+			return false;
 		}
-	
+
 	}
+
 	/*
-     * Get the extension of a file.
-     */  
-    public static String getExtension(File f) {
-        String ext = null;
-        String s = f.getName();
-        int i = s.lastIndexOf('.');
+	 * Get the extension of a file.
+	 */
+	public static String getExtension(File f) {
+		String ext = null;
+		String s = f.getName();
+		int i = s.lastIndexOf('.');
 
-        if (i > 0 &&  i < s.length() - 1) {
-            ext = s.substring(i+1).toLowerCase();
-        }
-        return ext;
-    }
-
+		if (i > 0 && i < s.length() - 1) {
+			ext = s.substring(i + 1).toLowerCase();
+		}
+		return ext;
+	}
 
 	public class PlaylistRenderer extends JLabel implements ListCellRenderer {
 

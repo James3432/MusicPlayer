@@ -554,7 +554,6 @@ public class AudioMethods
 	{
 		// Converts the contents of audio_input_stream into an array of bytes
 		byte[] audio_bytes = getBytesFromAudioInputStream(audio_input_stream);
-		int number_bytes = audio_bytes.length;
 
 		// Note the AudioFormat
 		AudioFormat this_audio_format = audio_input_stream.getFormat();

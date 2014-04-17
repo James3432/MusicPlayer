@@ -56,12 +56,12 @@ public class Playlist implements Serializable {
 	}
 
 	public Song get(int i) {
-		//try {
-			return list.get(i);
-		//} catch (IndexOutOfBoundsException e) {
-		//	e.printStackTrace();
-		//	return null;
-		//}
+		// try {
+		return list.get(i);
+		// } catch (IndexOutOfBoundsException e) {
+		// e.printStackTrace();
+		// return null;
+		// }
 	}
 
 	public void remove(int i) {

@@ -3,8 +3,6 @@ package jk509.player.core;
 import java.io.Serializable;
 import java.util.Date;
 
-import jk509.player.features.AudioFeatures;
-
 /**
  * A representation of audio tracks which may have data drawn from ID3 tags or an iTunes database
  */
@@ -29,9 +27,10 @@ public class Song implements Serializable {
 	private int trackNumber;
 	private int playCount;
 	private int length; // in seconds
-	
-	//private AudioFeatures features;
+
+	// private AudioFeatures features;
 	private double[] features;
+	private int[] cluster; // cluster[level] gives the cluster index at 'level'. -1 for null (ie. level is too deep)
 
 	public String getName() {
 		return name;
@@ -163,13 +162,25 @@ public class Song implements Serializable {
 	public void setLength(int l) {
 		length = l;
 	}
-	
-	public double[] getAudioFeatures(){
+
+	public double[] getAudioFeatures() {
 		return features;
 	}
-	
-	public void setAudioFeatures(double[] af){
+
+	public void setAudioFeatures(double[] af) {
 		features = af;
+	}
+
+	public int getCluster(int level) {
+		return cluster[level];
+	}
+
+	public void setCluster(int level, int c) {
+		cluster[level] = c;
+	}
+
+	public void setCluster(int[] cs) {
+		cluster = cs;
 	}
 
 	public void cleanUp() {
@@ -183,12 +194,10 @@ public class Song implements Serializable {
 		if (added == null)
 			added = new Date();
 	}
-	
-	public boolean search(String q){
+
+	public boolean search(String q) {
 		q = q.toLowerCase();
-		if((name != null && name.toLowerCase().contains(q)) || 
-				(artist != null && artist.toLowerCase().contains(q)) || 
-				(album != null && album.toLowerCase().contains(q)))
+		if ((name != null && name.toLowerCase().contains(q)) || (artist != null && artist.toLowerCase().contains(q)) || (album != null && album.toLowerCase().contains(q)))
 			return true;
 		else
 			return false;
@@ -204,18 +213,18 @@ public class Song implements Serializable {
 			s = s.substring(0, 2);
 		return (length / 60 + ":" + s);
 	}
-	
+
 	@Override
-	public String toString(){
+	public String toString() {
 		String str;
 		str = name + "  \u2014  " + album + "  \u2014  " + artist;
 		return str;
 	}
-	
+
 	@Override
-	public boolean equals(Object o){
+	public boolean equals(Object o) {
 		Song other = (Song) o;
-		if(this.getLocation() != null && other.getLocation() != null && this.getLocation().equals(other.getLocation()))
+		if (this.getLocation() != null && other.getLocation() != null && this.getLocation().equals(other.getLocation()))
 			return true;
 		else
 			return false;

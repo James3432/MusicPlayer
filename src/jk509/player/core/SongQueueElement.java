@@ -14,7 +14,7 @@ public class SongQueueElement {
 	@Override
 	public boolean equals(Object o) {
 		SongQueueElement other = (SongQueueElement) o;
-		if (other.playlist == this.playlist && other.index == this.index && other.song.equals(this.song))
+		if (other.playlist == this.playlist /*&& other.index == this.index*/ && other.song.equals(this.song))
 			return true;
 		else
 			return false;

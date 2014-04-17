@@ -31,6 +31,7 @@ import javax.swing.Timer;
  * moves the image to its original location prior to invoking 
  * {@link #dispose}.
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class GhostedDragImage extends AbstractComponentDecorator {
 
     private Icon icon;

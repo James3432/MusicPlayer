@@ -1,10 +1,13 @@
 package jk509.player.clustering;
 
+import java.io.Serializable;
+
 import jk509.player.Constants;
 
+public abstract class AbstractCluster implements Constants, Serializable {
 
-public abstract class AbstractCluster implements Constants {
-
+	private static final long serialVersionUID = 1L;
+	
 	// private int id; // needed?
 	protected SongCluster parent;
 	protected int level; // level within cluster hierarchy: 0 = root, n = leaf
@@ -13,24 +16,24 @@ public abstract class AbstractCluster implements Constants {
 	// Other audio feature data here
 	protected boolean playing; // whether a track in this cluster is currently playing. If true in a leaf, then obviously its 'track' is playing
 	protected double randomness; // from 0 (not random - exploitation) to 1.0 (fully random - exploration)
-	
-	protected AbstractCluster(int level, SongCluster parent){
+
+	protected AbstractCluster(int level, SongCluster parent) {
 		this.level = level;
 		this.parent = parent;
 	}
-	
+
 	public int getLevel() {
 		return level;
 	}
-	
+
 	public void setLevel(int l) {
 		level = l;
 	}
-	
+
 	public double getRandomness() {
 		return randomness;
 	}
-	
+
 	public void setRandomness(double r) {
 		randomness = r;
 	}
@@ -38,20 +41,20 @@ public abstract class AbstractCluster implements Constants {
 	public boolean isLeaf() {
 		return leaf;
 	}
-	
-	public boolean isPlaying(){
+
+	public boolean isPlaying() {
 		return playing;
 	}
-	
-	public void setPlaying(boolean b){
+
+	public void setPlaying(boolean b) {
 		playing = b;
 	}
-	
-	public SongCluster getParent(){
+
+	public SongCluster getParent() {
 		return parent;
 	}
-	
-	public void setParent(SongCluster c){
+
+	public void setParent(SongCluster c) {
 		parent = c;
 	}
 

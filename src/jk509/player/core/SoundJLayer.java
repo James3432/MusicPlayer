@@ -104,12 +104,9 @@ public class SoundJLayer implements Runnable {
 	}
 
 	/*
-	 * private void playerInitialize(){ try{ String urlAsString = "file:///" +
-	 * new java.io.File(".").getCanonicalPath() + "/" + this.filePath;
+	 * private void playerInitialize(){ try{ String urlAsString = "file:///" + new java.io.File(".").getCanonicalPath() + "/" + this.filePath;
 	 * 
-	 * this.player = new JLayerPlayerPausable(new java.net.URL(urlAsString));
-	 * this.player.setPlaybackListener(this.playbackListener); } catch
-	 * (JavaLayerException e){ e.printStackTrace(); } }
+	 * this.player = new JLayerPlayerPausable(new java.net.URL(urlAsString)); this.player.setPlaybackListener(this.playbackListener); } catch (JavaLayerException e){ e.printStackTrace(); } }
 	 */
 	private void playerInitialize(MusicPlayer.PlaybackListener pl) {
 		try {
@@ -121,8 +118,7 @@ public class SoundJLayer implements Runnable {
 	}
 
 	/*
-	 * public FloatControl getFloatControl() throws JavaLayerException{ return
-	 * player.getFloatControl(); }
+	 * public FloatControl getFloatControl() throws JavaLayerException{ return player.getFloatControl(); }
 	 */
 
 	// IRunnable members
@@ -138,16 +134,12 @@ public class SoundJLayer implements Runnable {
 	}
 
 	/*
-	 * private static class PlaybackListener extends
-	 * JLayerPlayerPausable.PlaybackAdapter { // PlaybackListener members
+	 * private static class PlaybackListener extends JLayerPlayerPausable.PlaybackAdapter { // PlaybackListener members
 	 * 
-	 * @Override public void playbackStarted(JLayerPlayerPausable.PlaybackEvent
-	 * playbackEvent) { // System.err.println("PlaybackStarted()"); }
+	 * @Override public void playbackStarted(JLayerPlayerPausable.PlaybackEvent playbackEvent) { // System.err.println("PlaybackStarted()"); }
 	 * 
-	 * @Override public void playbackPaused(JLayerPlayerPausable.PlaybackEvent
-	 * playbackEvent) { // System.err.println("PlaybackPaused()"); }
+	 * @Override public void playbackPaused(JLayerPlayerPausable.PlaybackEvent playbackEvent) { // System.err.println("PlaybackPaused()"); }
 	 * 
-	 * @Override public void playbackFinished(JLayerPlayerPausable.PlaybackEvent
-	 * playbackEvent) { // System.err.println("PlaybackStopped()"); } }
+	 * @Override public void playbackFinished(JLayerPlayerPausable.PlaybackEvent playbackEvent) { // System.err.println("PlaybackStopped()"); } }
 	 */
 }

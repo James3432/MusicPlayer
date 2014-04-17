@@ -4,6 +4,8 @@ import jk509.player.core.Song;
 
 public class LeafCluster extends AbstractCluster {
 
+	private static final long serialVersionUID = 1L;
+	
 	private Song track;
 
 	private LeafCluster(int level, SongCluster parent) {

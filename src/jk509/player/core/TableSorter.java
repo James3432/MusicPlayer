@@ -83,7 +83,7 @@ import jk509.player.MusicPlayer.TableRowSortedListener;
  * @author Parwinder Sekhon
  * @version 2.0 02/27/04
  */
-
+@SuppressWarnings({ "unchecked", "rawtypes" })
 public class TableSorter extends AbstractTableModel {
 	/**
 	 * 
@@ -297,21 +297,21 @@ public class TableSorter extends AbstractTableModel {
 	}
 
 	public int modelIndex(int viewIndex) {
-		//try {
-			return getViewToModel()[viewIndex].modelIndex;
-		//} catch (ArrayIndexOutOfBoundsException e) {
-		//	e.printStackTrace();
-		//	return -1;
-		//}
+		// try {
+		return getViewToModel()[viewIndex].modelIndex;
+		// } catch (ArrayIndexOutOfBoundsException e) {
+		// e.printStackTrace();
+		// return -1;
+		// }
 	}
 
 	public int viewIndex(int modelIndex) {
-		//try {
-			return getModelToView()[modelIndex];
-		//} catch (ArrayIndexOutOfBoundsException e) {
-		//	e.printStackTrace();
-		//	return -1;
-		//}
+		// try {
+		return getModelToView()[modelIndex];
+		// } catch (ArrayIndexOutOfBoundsException e) {
+		// e.printStackTrace();
+		// return -1;
+		// }
 	}
 
 	public int[] modelIndices(int[] viewIndices) {

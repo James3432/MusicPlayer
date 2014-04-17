@@ -366,11 +366,7 @@ public class JLayerPlayerPausable {
 			// System.err.println("Frame Decoded: " + event.frameIndex);
 
 			/*
-			 * System.out.println("fps: "+event.frame_per_s);
-			 * System.out.println("index/ms: "+event.frameIndex);
-			 * System.out.println("ms/f: "+event.ms_per_frame);
-			 * System.out.println("tot ms: "+event.total_ms);
-			 * System.out.println("------------------------------------");
+			 * System.out.println("fps: "+event.frame_per_s); System.out.println("index/ms: "+event.frameIndex); System.out.println("ms/f: "+event.ms_per_frame); System.out.println("tot ms: "+event.total_ms); System.out.println("------------------------------------");
 			 */
 
 			// if (event.frameIndex % 1000 < 50)

@@ -592,9 +592,7 @@ public class Setup extends JDialog {
 		listPlaylists.setToolTipText("Select one or more playlists and press delete to remove them");
 		scrollPane_1.setViewportView(listPlaylists);
 		/*
-		 * listPlaylists.setModel(new AbstractListModel() { String[] values =
-		 * new String[] {}; public int getSize() { return values.length; }
-		 * public Object getElementAt(int index) { return values[index]; } });
+		 * listPlaylists.setModel(new AbstractListModel() { String[] values = new String[] {}; public int getSize() { return values.length; } public Object getElementAt(int index) { return values[index]; } });
 		 */
 
 		chckbxImportPlaylists = new JCheckBox("Import playlists");
@@ -1062,14 +1060,16 @@ public class Setup extends JDialog {
 			btnBrowseMusic.setEnabled(false);
 			listTracksDisk.setModel(new AbstractListModel() {
 				private static final long serialVersionUID = 1L;
+
 				public int getSize() {
 					return 1;
 				}
+
 				public Object getElementAt(int index) {
 					return "Loading... this may take several minutes for large collections, please wait.";
 				}
 			});
-			
+
 			btnImportMusic.setEnabled(false);
 			btnImportMusic.setText("Importing...");
 			btnImportMusic.invalidate();
@@ -1084,7 +1084,7 @@ public class Setup extends JDialog {
 					parser.setPath(folder);
 					parser.setValid(true);
 					if (Import(parser)) {
-						//btnImportMusic.setEnabled(false);
+						// btnImportMusic.setEnabled(false);
 						btnImportMusic.setText("Done");
 						btnNext4.setEnabled(true);
 						btnPrevious4.setEnabled(true);

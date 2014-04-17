@@ -14,11 +14,15 @@ public class AudioFeatures implements Constants {
 	private double[] features;
 	private double[] weights;  // 0==unused 1==important
 	private int[]    indices;  // indices into jAudio features array
+	private double[] maxs;     // maximum values for each field
+	private double[] mins;     // minimum values for each field
 	
-	public AudioFeatures(){
+	public AudioFeatures(){    //                                                                                    x13    x10    x5
 		features = new double[]{ msoa, psoa, scoa, srpoa, sfoa, coa, svoa, rmsoa, flewoa, zcoa, sboa, bsoa, ssboa, mfccoa, lpcoa, mmoa, pdoa, pbscoa, pbsfoa, pbssoa, rdfoa, ammoa };
 		weights  = new double[]{  0.0, 0.0,  1.0,  1.0,    1.0, 1.0, 1.0,  1.0,   1.0,    1.0,   1.0, 1.0,   1.0,  1.0,   1.0,    1.0,  0.0,  0.0,    0.0,    0.0,    0.0,   0.0   };
-		indices  = new int[]   {  0,    1,   3,    9,      15,  21,   27,  33,    39,     45,    53,  59,   65,    89,     95,   101,   107,  108,    114,    120,    126,   132   };    
+		indices  = new int[]   {  0,    1,   3,    9,      15,  21,   27,  33,    39,     45,    53,  59,   65,    89,     95,   101,   107,  108,    114,    120,    126,   132   };
+		maxs     = new double[]{ /* TODO */ };
+		mins     = new double[]{ /* TODO */ };
 	}
 	
 	public AudioFeatures(double[] vals){
@@ -29,13 +33,61 @@ public class AudioFeatures implements Constants {
 	public double[] getFeatures(){
 		return features;
 	}
+	
 	public double[] getWeights(){
 		double[] ws = new double[Constants.FEATURES];
 		int next = 0;
-		for(int i=0; i<weights.length; ++i)
-			if(weights[i] > 0.0)
+		for(int i=0; i<weights.length; ++i){
+			if(indices[i] == 89)
+				for(int j=0; j<13; ++j)
+					ws[next++] = weights[i];
+			else if(indices[i] == 95)
+				for(int j=0; j<10; ++j)
+					ws[next++] = weights[i];
+			else if(indices[i] == 101)
+				for(int j=0; j<5; ++j)
+					ws[next++] = weights[i];
+			else if(weights[i] > 0.0)
 				ws[next++] = weights[i];
+		}
 		return ws;
+	}
+	
+	public double[] getMaxs(){
+		double[] ms = new double[Constants.FEATURES];
+		int next = 0;
+		for(int i=0; i<maxs.length; ++i){
+			if(indices[i] == 89)
+				for(int j=0; j<13; ++j)
+					ms[next++] = maxs[i];
+			if(indices[i] == 95)
+				for(int j=0; j<10; ++j)
+					ms[next++] = maxs[i];
+			if(indices[i] == 101)
+				for(int j=0; j<5; ++j)
+					ms[next++] = maxs[i];
+			if(weights[i] > 0.0)
+				ms[next++] = maxs[i];
+		}
+		return ms;
+	}
+	public double[] getMins(){
+		double[] ms = new double[Constants.FEATURES];
+		int next = 0;
+		for(int i=0; i<mins.length; ++i){
+			if(indices[i] == 89)
+				for(int j=0; j<13; ++j)
+					ms[next++] = mins[i];
+			if(indices[i] == 95)
+				for(int j=0; j<10; ++j)
+					ms[next++] = mins[i];
+			if(indices[i] == 101)
+				for(int j=0; j<5; ++j)
+					ms[next++] = mins[i];
+			if(weights[i] > 0.0)
+				ms[next++] = mins[i];
+		}
+		return ms;
 	}
 	
 	public double get(int i){

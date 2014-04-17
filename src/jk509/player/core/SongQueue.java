@@ -74,8 +74,8 @@ public class SongQueue {
 			position = size();
 			valid = false;
 		}
-		
-		if(start.equals(el))
+
+		if (start.equals(el))
 			start = null;
 	}
 
@@ -97,8 +97,8 @@ public class SongQueue {
 			position = size();
 			valid = false;
 		}
-		
-		if(start.song.equals(s))
+
+		if (start.song.equals(s))
 			start = null;
 	}
 
@@ -135,7 +135,5 @@ public class SongQueue {
 	public boolean isValid() {
 		return valid;
 	}
-	
-	
-	
+
 }

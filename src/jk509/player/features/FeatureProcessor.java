@@ -25,9 +25,9 @@ import java.util.List;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.SourceDataLine;
 
 import jk509.player.Constants;
+import jk509.player.core.Song;
 
 //import jAudioFeatureExtractor.jAudioTools.AudioMethods;
 
@@ -190,6 +190,17 @@ public class FeatureProcessor {
 		aggregator.add(feature_extractors, features_to_save);
 	}
 
+	private double[] featuresToArray(List<double[]> arr){
+		double[] res = new double[Constants.FEATURES];
+		int x=0;
+		for(int i=0; i<arr.size(); ++i){
+			for(int j=0; j<arr.get(i).length; ++j){
+				res[x++] = arr.get(i)[j];
+			}
+		}
+		return res;
+	}
+	
 	/* PUBLIC METHODS ********************************************************* */
 
 	/**
@@ -198,11 +209,49 @@ public class FeatureProcessor {
 	 * @param recording_file
 	 *            The audio file to extract features from.
 	 */
+	
+	public void extractFeatures(Song track, Updater updater, File temp) throws Exception {
+		File recording_file = new File(track.getLocation());
+		
+		// Pre-process the recording and extract the samples from the audio
+		this.updater = updater;
+		// System.out.println("about to pre");
+		double[] samples = preProcessRecording(recording_file, temp); // TODO as slow as the feature extraction...
+		// System.out.println("done pre");
+		if (cancel.isCancel()) {
+			throw new ExplicitCancel("Killed after loading data");
+		}
+		// Calculate the window start indices
+		LinkedList<Integer> window_start_indices_list = new LinkedList<Integer>();
+		int this_start = 0;
+		while (this_start < samples.length) {
+			window_start_indices_list.add(new Integer(this_start));
+			this_start += window_size - window_overlap_offset;
+		}
+		Integer[] window_start_indices_I = window_start_indices_list.toArray(new Integer[1]);
+		int[] window_start_indices = new int[window_start_indices_I.length];
+
+		// if were using a progress bar, set its max update
+		if (updater != null) {
+			updater.setFileLength(window_start_indices.length);
+		}
+
+		for (int i = 0; i < window_start_indices.length; i++)
+			window_start_indices[i] = window_start_indices_I[i].intValue();
+
+		// Extract the feature values from the samples
+		double[][][] window_feature_values = getFeatures(samples, window_start_indices);
+		
+		if (save_overall_recording_features) {
+			aggregator.aggregate(window_feature_values);
+		}
+		track.setAudioFeatures(featuresToArray(aggregator.getResult()));
+	}
 	public List<double[]> extractFeatures(File recording_file, Updater updater) throws Exception {
 		// Pre-process the recording and extract the samples from the audio
 		this.updater = updater;
 		// System.out.println("about to pre");
-		double[] samples = preProcessRecording(recording_file); // TODO as slow as the feature extraction...
+		double[] samples = preProcessRecording(recording_file, new File("temp.mp3")); // TODO as slow as the feature extraction...
 		// System.out.println("done pre");
 		if (cancel.isCancel()) {
 			throw new ExplicitCancel("Killed after loading data");
@@ -459,14 +508,14 @@ public class FeatureProcessor {
 	 * @throws Exception
 	 *             An exception is thrown if a problem occurs during file reading or pre- processing.
 	 */
-	private double[] preProcessRecording(File recording) throws Exception {
+	private double[] preProcessRecording(File recording, File temp) throws Exception {
 		// Get the original audio and its format
 		try {
 			try {
-				Process p = Runtime.getRuntime().exec(new String[] { "lame.exe", "-b", Integer.toString(Constants.ENCODE_BITRATE), "--resample", Integer.toString(Constants.ENCODE_SAMPLERATE), recording.getPath(), "temp.mp3" });
+				Process p = Runtime.getRuntime().exec(new String[] { "lame.exe", "-b", Integer.toString(Constants.ENCODE_BITRATE), "--resample", Integer.toString(Constants.SAMPLING_RATE), recording.getPath(), temp.getPath() });
 				BufferedReader input = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-				String line;
-				while ((line = input.readLine()) != null) {
+				//String line;
+				while (input.readLine() != null) {
 					// System.out.println(line);
 				}
 				input.close();
@@ -474,7 +523,7 @@ public class FeatureProcessor {
 				e.printStackTrace();
 			}
 
-			File recording_file = new File("temp.mp3");
+			File recording_file = temp;
 
 			AudioInputStream original_stream = AudioSystem.getAudioInputStream(recording_file);
 			AudioFormat original_format = original_stream.getFormat();
@@ -518,6 +567,8 @@ public class FeatureProcessor {
 			else if(channel_samples.length < 1)
 				samples = null;
 			
+			if (normalise) 
+				samples = DSPMethods.normalizeSamples(samples);
 
 			if (samples == null || samples.length < 1) {
 				return null;
@@ -540,6 +591,7 @@ public class FeatureProcessor {
 		}
 	}
 
+	// This is the original method
 	/*
 	 * private double[] preProcessRecording(File recording_file) throws Exception { // Get the original audio and its format AudioInputStream original_stream = AudioSystem.getAudioInputStream(recording_file); AudioFormat original_format = original_stream.getFormat();
 	 * 
@@ -570,35 +622,6 @@ public class FeatureProcessor {
 	 * 
 	 * // Return all channels compressed into one return audio_data.getSamplesMixedDown(); }
 	 */
-
-	private void TestPlay(AudioInputStream currentDecoded) {
-		try {
-			AudioFormat decodedFormat = currentDecoded.getFormat();
-			SourceDataLine line;
-			line = AudioSystem.getSourceDataLine(decodedFormat);
-			line.open(decodedFormat);
-			line.start();
-
-			byte[] b = new byte[4096];
-			int i = 0;
-
-			while (true) {
-
-				i = currentDecoded.read(b, 0, b.length);
-				if (i == -1)
-					break;
-
-				line.write(b, 0, i);
-			}
-
-			line.drain();
-			line.stop();
-			line.close();
-			currentDecoded.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 
 	/**
 	 * Breaks the given samples into the appropriate windows and extracts features from each window.

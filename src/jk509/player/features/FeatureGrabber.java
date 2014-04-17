@@ -13,6 +13,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.SwingUtilities;
 
@@ -52,7 +56,7 @@ public class FeatureGrabber implements Constants {
 	public Cancel cancel;
 	
 	private List<double[]> results;
-	private List<double[]> results_norm;
+	private List<double[]> results_w;
 	
 	@SuppressWarnings("unchecked")
 	public FeatureGrabber(){
@@ -106,61 +110,148 @@ public class FeatureGrabber implements Constants {
 		System.exit(0);
 	}*/
 	
-	public List<double[]> getNormalisedResults(){
+	public List<double[]> getResults(){
 		return results;
-		// TODO!
-		//return results_norm; 
+	}
+	public List<double[]> getWeightedResults(){
+		ApplyWeights();
+		return results_w; 
 	}
 	
 	public void Normalise(){
-		// TODO!
-		double[] weights = (new AudioFeatures()).getWeights();
-		// take results and produce results_norm
+		
 	}
 	
-	public void run(File[] files, List<Song> tracks, GUIupdater updater){
+	private void ApplyWeights(){
+		double[] weights = (new AudioFeatures()).getWeights();
+		for(double[] weighted : results){
+			for(int i=0; i<weighted.length; ++i)
+				weighted[i] = weighted[i] * weights[i];
+			results_w.add(weighted);
+		}
+	}
+	
+	public void run(final List<Song> tracks, final GUIupdater updater){
 		
-		try {
+		if(Constants.MULTITHREADED){
 			
-			//PrintFeatures();
-			defaults = (new AudioFeatures()).getFeatureArray();
-			FeatureProcessor processor = new FeatureProcessor(512,0.0, 16000.0, false, features, defaults, cancel);
-			
-			List<double[]> res = new ArrayList<double[]>();
-			
-			this.updater = updater;
-			this.updater.setNumberOfFiles(files.length);
-			
-			for(int i=0; i<files.length; ++i){
-			//for(int i : new int[]{1, 3, 147, 148, 149}){
-			//for(int i=1161; i<1191; ++i){
-				try{
-					res.add(featuresToArray(processor.extractFeatures(files[i], updater)));
-					updater.announceUpdate(i+1, 0);
-					System.out.println("Features extracted from file #"+i);
-				}catch(Exception e){
-					res.add(null);
-					System.out.println("Feature extraction failed for file #"+i);
+			try {
+				
+				int threadCount = Constants.PARALELLISM;
+				
+				int procs = Runtime.getRuntime().availableProcessors();
+				// may wish to initialise threadCount to this instead?
+				threadCount = procs; // TODO.. put bool switch into constants
+				
+				//PrintFeatures();
+				defaults = (new AudioFeatures()).getFeatureArray();
+				final FeatureProcessor processor = new FeatureProcessor(Constants.WINDOW_SIZE, Constants.WINDOW_OVERLAP, Constants.SAMPLING_RATE*1000, Constants.NORMALISE_AUDIO, features, defaults, cancel);
+				
+				List<double[]> res = new ArrayList<double[]>();
+				
+				// may need to change updater code? (remove mid-way announces)
+				this.updater = updater;
+				this.updater.setNumberOfFiles(tracks.size());
+				
+				ExecutorService threadPool = Executors.newFixedThreadPool(threadCount);
+				
+				for(int i=0; i<tracks.size(); ++i){
+					final int t = i;
+					
+					threadPool.execute(new Runnable() {
+						@Override
+						public void run() {
+							try{
+								String temp_name = GenerateString(Constants.TEMP_FILE_NAME_LENGTH);
+								File temp = new File(temp_name+".mp3");
+								processor.extractFeatures(tracks.get(t), updater, temp);
+								try{
+									temp.delete();
+								}catch(Exception e){ }
+								updater.announceUpdate(t+1, 0);
+								System.out.println("Features extracted from file #"+t);
+							}catch(Exception e){
+								System.out.println("Feature extraction failed for file #"+t);
+							}
+							System.gc();
+						}
+					});
+					
 				}
-				tracks.get(i).setAudioFeatures(res.get(i));
-
-				//EXPERIMENTAL
-				//System.out.println("gc+");
-				System.gc();
-				//System.out.println("gc-");
+				
+				threadPool.shutdown();
+				threadPool.awaitTermination(Integer.MAX_VALUE, TimeUnit.HOURS); // wait as long as it takes...
+				
+				SwingUtilities.invokeLater(updater.resumeGUI);
+				//return res;
+				if(Constants.NORMALISE_FEATURES)
+					results = Normalise(res);
+				else
+					results = res;
+				//TODO
+				// invoke Normalise();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				results = new ArrayList<double[]>();
 			}
 			
-			SwingUtilities.invokeLater(updater.resumeGUI);
-			//return res;
-			results = res;
-			//TODO
-			// invoke Normalise();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			results = new ArrayList<double[]>();
+		}else{
+		
+			try {
+				
+				//PrintFeatures();
+				defaults = (new AudioFeatures()).getFeatureArray();
+				FeatureProcessor processor = new FeatureProcessor(Constants.WINDOW_SIZE, Constants.WINDOW_OVERLAP, Constants.SAMPLING_RATE*1000, Constants.NORMALISE_AUDIO, features, defaults, cancel);
+				
+				List<double[]> res = new ArrayList<double[]>();
+				
+				this.updater = updater;
+				this.updater.setNumberOfFiles(tracks.size());
+				
+				for(int i=0; i<tracks.size(); ++i){
+				//for(int i : new int[]{1, 3, 147, 148, 149}){
+				//for(int i=1161; i<1191; ++i){
+					try{
+						res.add(featuresToArray(processor.extractFeatures(new File(tracks.get(i).getLocation()), updater)));
+						updater.announceUpdate(i+1, 0);
+						System.out.println("Features extracted from file #"+i);
+					}catch(Exception e){
+						res.add(null);
+						System.out.println("Feature extraction failed for file #"+i);
+					}
+					tracks.get(i).setAudioFeatures(res.get(i));
+	
+					//EXPERIMENTAL
+					//System.out.println("gc+");
+					System.gc();
+					//System.out.println("gc-");
+				}
+				
+				SwingUtilities.invokeLater(updater.resumeGUI);
+				//return res;
+				if(Constants.NORMALISE_FEATURES)
+					results = Normalise(res);
+				else
+					results = res;
+				//TODO
+				// invoke Normalise();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				results = new ArrayList<double[]>();
+			}
 		}
-		//return new ArrayList<double[]>();
+	}
+	
+	private String GenerateString(int n){
+		String s = "";
+		for(int i=0; i<n; ++i){
+			Random r = new Random();
+			char c = (char)(r.nextInt(26) + 'a');
+			s = s + c;
+		}
+		return s;
 	}
 	
 	void PrintFeatures(){
@@ -169,8 +260,14 @@ public class FeatureGrabber implements Constants {
 		}
 	}
 	
+	private List<double[]> Normalise(List<double[]> fs){
+		List<double[]> res = new ArrayList<double[]>();
+		// TODO
+		return res;
+	}
+	
 	double[] featuresToArray(List<double[]> arr){
-		double[] res = new double[FEATURES];
+		double[] res = new double[Constants.FEATURES];
 		int x=0;
 		for(int i=0; i<arr.size(); ++i){
 			for(int j=0; j<arr.get(i).length; ++j){

@@ -44,11 +44,12 @@ import javax.swing.SwingUtilities;
 // TODO: synch underlying cursor when decorator covers more than 
 // one component; the cursor should change if the decoration exceeds the 
 // component's bounds
+@SuppressWarnings({"rawtypes", "unchecked"})
 public abstract class AbstractComponentDecorator {
     public static final Rectangle DEFAULT_BOUNDS = null;
     public static final int TOP = 0;
     // Disabled for now, since it doesn't work properly
-    private static final int BOTTOM = -1;
+   // private static final int BOTTOM = -1;
     /** Account for the difference between the decorator actual origin
      * and the logical origin we want to pass to the {@link #paint} method.
      */
@@ -365,9 +366,11 @@ public abstract class AbstractComponentDecorator {
 
     /** Used to hook into the Swing painting architecture. */
     private class Painter extends JComponent {
-        private int base;
+		private static final long serialVersionUID = 1L;
+		private int base;
         private Cursor cursor;
-        public JComponent getComponent() {
+        @SuppressWarnings("unused")
+		public JComponent getComponent() {
             return AbstractComponentDecorator.this.getComponent();
         }
         public void setDecoratedLayer(int base) {

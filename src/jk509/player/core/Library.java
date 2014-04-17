@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import jk509.player.MusicPlayer;
+import jk509.player.clustering.SongCluster;
 import jk509.player.core.Playlist.Shuffle;
 import jk509.player.core.TableSorter.Directive;
 
@@ -33,6 +34,7 @@ public class Library implements Serializable, Cloneable {
 	private int[] normalToSearch;
 	private int[] searchToNormal;
 	private SongQueue queue;
+	private SongCluster clusters;
 
 	public Library() {
 		// tracks = new ArrayList<Song>();
@@ -297,6 +299,7 @@ public class Library implements Serializable, Cloneable {
 	public int getTrackIndex(String loc/* ID */, int playlist) {
 		return getPlaylist(playlist).getIndexOf(loc);
 	}
+
 	public int getTrackIndex(Song s, int playlist) {
 		return getPlaylist(playlist).getIndexOf(s);
 	}
@@ -335,4 +338,12 @@ public class Library implements Serializable, Cloneable {
 		return queue != null;
 	}
 
+	public SongCluster getClusters(){
+		return clusters;
+	}
+	
+	public void setClusters(SongCluster sc){
+		clusters = sc;
+	}
+	
 }

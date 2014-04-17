@@ -10,11 +10,9 @@ import javax.swing.JFrame;
 
 import jk509.player.Constants;
 import jk509.player.core.Song;
+import jk509.player.features.FeatureGrabber;
 import jk509.player.gui.GUIupdater;
 import weka.clusterers.SimpleKMeans;
-import weka.core.Attribute;
-import weka.core.FastVector;
-import weka.core.Instance;
 import weka.core.Instances;
 
 public class KMeansClusterer extends AbstractClusterer {
@@ -24,74 +22,75 @@ public class KMeansClusterer extends AbstractClusterer {
 		// TODO Auto-generated constructor stub
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void run(JFrame frame) {
-		if(tracks.size() < 1)
+		if (tracks.size() < 1)
 			return;
-		if(!(new File(Constants.featureXMLLocation)).exists())
+		if (!(new File(Constants.featureXMLLocation)).exists())
 			return;
-		
-		GUIupdater updater = new GUIupdater(frame);
-		
-		List<double[]> results = null;
-		if (Constants.DEBUG_LOAD_FEATURES_FILE) {
-			FileInputStream fin;
-			try {
-				fin = new FileInputStream(new File(features_path));
-				ObjectInputStream oos = new ObjectInputStream(fin);
-				results = (List<double[]>) oos.readObject();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		} else {
-			File[] fileList = new File[tracks.size()];
-			for (int i = 0; i < tracks.size(); ++i)
-				fileList[i] = new File(tracks.get(i).getLocation());
-			System.out.println("File list ready");
-			featureGrabber.run(fileList, tracks, updater);
-			/* List<double[]> */
-			results = featureGrabber.getNormalisedResults();
-			// TODO: normalise (probably inside featureGrabber)
 
-			if (Constants.DEBUG_SAVE_FEATURES) {
-				System.out.println("Features extracted, saving to disk");
-				saveFeatures(results);
-				System.out.println("Saved.");
+		List<Song> featureless = GetSongsWithoutFeatures(tracks);
+		
+		if(featureless.size() > 0){
+			GUIupdater updater = new GUIupdater(frame);
+			List<double[]> results = null;
+			if (Constants.DEBUG_LOAD_FEATURES_FILE) {
+				FileInputStream fin;
+				try {
+					fin = new FileInputStream(new File(features_path));
+					ObjectInputStream oos = new ObjectInputStream(fin);
+					results = (List<double[]>) oos.readObject();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else {
+				System.out.println("Starting feature extraction for "+featureless.size()+" tracks.");
+				featureGrabber = new FeatureGrabber();
+				featureGrabber.run(featureless, updater);
+				/* List<double[]> */
+				results = featureGrabber.getWeightedResults();
+				featureGrabber = null;
+				// TODO: normalise (probably inside featureGrabber)
+	
+				if (Constants.DEBUG_SAVE_FEATURES) {
+					System.out.println("Features extracted, saving to disk");
+					saveFeatures(results);
+					System.out.println("Saved.");
+				}
 			}
 		}
-		FastVector atts = new FastVector();
-		for (int i = 0; i < Constants.FEATURES; ++i)
-			atts.addElement(new Attribute("num" + i));
-		Instances dataset = new Instances("Feature-set", atts, results.size());
 
 		// double[] weights = (new AudioFeatures()).getWeights();
 		// The weighting below is between tracks, not between features
 
 		// keep track of which tracks didn't succeed in feature extraction
 		// TODO: how to deal with this later??
-		boolean[] featurelessTracks = new boolean[results.size()];
+		/*boolean[] featurelessTracks = new boolean[results.size()];
 
 		for (int i = 0; i < results.size(); ++i) {
 			if (results.get(i) == null)
 				featurelessTracks[i] = true;
 			else
 				dataset.add(new Instance(1.0, results.get(i)));
-		}
+		}*/
 
-		System.out.println("Dataset ready");
+		Instances dataset = getSongFeatures(tracks);
+		// TODO: need to deal with any songs still without features here
+		//System.out.println("Dataset ready");
 
 		try {
 			SimpleKMeans kmeans = new SimpleKMeans();
 
-			kmeans.setSeed(10); // TODO: change?
+			kmeans.setSeed(Constants.KMEANS_SEED); // TODO: change?
 
 			// This is the important parameter to set
 			kmeans.setPreserveInstancesOrder(true);
 			kmeans.setNumClusters(Constants.MAX_CLUSTERS);
 
-			System.out.println("Start clustering...");
+			//System.out.println("Start clustering...");
 			kmeans.buildClusterer(dataset);
-			System.out.println("Done clustering");
+			//System.out.println("Done clustering");
 
 			// This array returns the cluster number (starting with 0) for each instance
 			// The array has as many elements as the number of instances
@@ -99,9 +98,9 @@ public class KMeansClusterer extends AbstractClusterer {
 
 			clusters = new ArrayList<ArrayList<Song>>();
 
-			for (int i = 0, j = 0; i < results.size(); ++i) {
-				if (!featurelessTracks[i]) {
-					int clusterNum = assignments[j];
+			for (int i = 0; i < tracks.size(); ++i) {
+				//if (!featurelessTracks[i]) {
+					int clusterNum = assignments[i];
 					// add more clusters to result if needed
 					while (clusters.size() <= clusterNum)
 						clusters.add(new ArrayList<Song>());
@@ -109,8 +108,8 @@ public class KMeansClusterer extends AbstractClusterer {
 					clusters.get(clusterNum).add(tracks.get(i));
 					// System.out.printf("Instance %d -> Cluster %d", i, clusterNum);
 					// System.out.println();
-					j++;
-				}
+					//j++;
+				//}
 			}
 			if (Constants.DEBUG_SAVE_CLUSTERS) {
 				System.out.println("Saving to disk...");
