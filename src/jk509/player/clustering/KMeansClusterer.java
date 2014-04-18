@@ -94,7 +94,7 @@ public class KMeansClusterer extends AbstractClusterer {
 
 			// This array returns the cluster number (starting with 0) for each instance
 			// The array has as many elements as the number of instances
-			int[] assignments = kmeans.getAssignments();
+			assignments = kmeans.getAssignments();
 
 			clusters = new ArrayList<ArrayList<Song>>();
 

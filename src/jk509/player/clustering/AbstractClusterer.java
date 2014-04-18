@@ -24,6 +24,7 @@ public abstract class AbstractClusterer {
 
 	protected List<Song> tracks;
 	protected List<ArrayList<Song>> clusters;
+	protected int[] assignments;
 	protected FeatureGrabber featureGrabber;
 	protected String features_path; // TODO: private
 	private String clusters_path;
@@ -42,6 +43,10 @@ public abstract class AbstractClusterer {
 
 	public List<ArrayList<Song>> getResult() {
 		return clusters;
+	}
+	
+	public int[] getAssignments(){
+		return assignments;
 	}
 
 	public void setFeatureSavePath(String fp) {
