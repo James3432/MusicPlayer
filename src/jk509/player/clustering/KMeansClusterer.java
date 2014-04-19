@@ -17,6 +17,8 @@ import weka.core.Instances;
 
 public class KMeansClusterer extends AbstractClusterer {
 
+	private SimpleKMeans kmeans;
+	
 	public KMeansClusterer(List<Song> s) {
 		super(s);
 		// TODO Auto-generated constructor stub
@@ -80,7 +82,7 @@ public class KMeansClusterer extends AbstractClusterer {
 		//System.out.println("Dataset ready");
 
 		try {
-			SimpleKMeans kmeans = new SimpleKMeans();
+			kmeans = new SimpleKMeans();
 
 			kmeans.setSeed(Constants.KMEANS_SEED); // TODO: change?
 
@@ -122,6 +124,10 @@ public class KMeansClusterer extends AbstractClusterer {
 			clusters = new ArrayList<ArrayList<Song>>();
 			clusters.clear();
 		}
+	}
+	
+	public SimpleKMeans getClusterer(){
+		return kmeans;
 	}
 
 	/*

@@ -7,16 +7,18 @@ public interface Constants {
 	 */
 	
 	// Learning - most values 0 <= v <= 1
-	public static final double LEARNING_RATE = 0.8;             // Learning Rate
-	public static final double DISCOUNT_FACTOR = 0.8;           // Discount Factor
+	public static final double LEARNING_RATE = 0.8;                    // Learning Rate
+	public static final double DISCOUNT_FACTOR = 0.8;                  // Discount Factor
+	public static final boolean PROBABILITIES_INITIALLY_SPREAD = true; // If true, P matrix initialised with all values = 1/size. If false, initialised to Identity
+	public static final int HISTORY_SIZE = 20;
 	// Rewards:
-	public static final double REWARD_TRACK_FINISHED = 0.6;     // track played all way through
-	public static final double REWARD_TRACK_SKIPPED_MIN = -0.6; // track skipped straight away
-	public static final double REWARD_TRACK_SKIPPED_MAX = 0.6;  // track barely skipped
-	public static final double REWARD_TRACK_CHOSEN_MIN = 0.0;   // track changed straight away
-	public static final double REWARD_TRACK_CHOSEN_MAX = 0.8;   // track changed after full play
-	public static final double REWARD_TRACK_PLAYLIST = 0.4;     // tracks share a playlist
-	public static final double REWARD_TRACK_PLAYLIST_ADJ = 0.8; // tracks adajcent in playlist
+	public static final double REWARD_TRACK_FINISHED = 0.6;            // track played all way through
+	public static final double REWARD_TRACK_SKIPPED_MIN = -0.6;        // track skipped straight away
+	public static final double REWARD_TRACK_SKIPPED_MAX = 0.6;         // track barely skipped
+	public static final double REWARD_TRACK_CHOSEN_MIN = 0.0;          // track changed straight away
+	public static final double REWARD_TRACK_CHOSEN_MAX = 0.8;          // track changed after full play
+	public static final double REWARD_TRACK_PLAYLIST = 0.4;            // tracks share a playlist
+	public static final double REWARD_TRACK_PLAYLIST_ADJ = 0.8;        // tracks adajcent in playlist
 	
 	// Clustering
 	public static final int MAX_CLUSTER_SIZE = 10;  // DEFAULT: 100  redundant??

@@ -18,6 +18,7 @@ public abstract class AbstractCluster implements Constants, Serializable {
 	// Other audio feature data here
 	protected boolean playing; // whether a track in this cluster is currently playing. If true in a leaf, then obviously its 'track' is playing
 	protected double randomness; // from 0 (not random - exploitation) to 1.0 (fully random - exploration)
+	protected double[] centroid;
 	
 	protected List<Song> tracks;
 
@@ -33,6 +34,13 @@ public abstract class AbstractCluster implements Constants, Serializable {
 
 	public void setLevel(int l) {
 		level = l;
+	}
+	
+	public double[] getCentroid(){
+		return centroid;
+	}
+	public void setCentroid(double[] d){
+		centroid = d;
 	}
 
 	public double getRandomness() {

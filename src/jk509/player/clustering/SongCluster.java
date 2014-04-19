@@ -3,10 +3,14 @@ package jk509.player.clustering;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.swing.JFrame;
 
+import weka.clusterers.SimpleKMeans;
+import weka.core.Instance;
 import jk509.player.Constants;
 import jk509.player.core.Song;
 
@@ -28,7 +32,9 @@ public class SongCluster extends AbstractCluster {
 	private int[] assignments;   // song->cluster indices
 	private double[] preferred;  // similar to one row in 'p', but gives overall chance of being in one cluster.
 	                             // like a STATIONARY DISTRIBUTION :)  except measured directly
-
+	private Deque<Song> history;
+	private SimpleKMeans clusterController;
+	
 	private int clusterPlaying = -1; // only > -1 if playing==True. Equivalent to the current "state" in a machine-learning sense
 
 	public SongCluster(List<Song> songs, JFrame form){
@@ -60,7 +66,9 @@ public class SongCluster extends AbstractCluster {
 		if(tracks.size() <= Constants.MAX_CLUSTERS){
 			assignments = new int[tracks.size()];
 			for(int i=0; i<tracks.size(); ++i){
-				clusters.add(new LeafCluster(level + 1, this, tracks.get(i)));
+				LeafCluster leaf = new LeafCluster(level + 1, this, tracks.get(i));
+				leaf.setCentroid(tracks.get(i).getAudioFeatures());
+				clusters.add(leaf);
 				assignments[i] = i;
 			}
 		}else{
@@ -69,15 +77,27 @@ public class SongCluster extends AbstractCluster {
 			clusterer.run(form);
 			// PrintClusters(clusterer.getResult());
 			assignments = clusterer.getAssignments();
+			clusterController = ((KMeansClusterer) clusterer).getClusterer();
+			System.out.println(clusterController.getOptions());
+			System.out.println("=========*******************=============");
+			System.out.println(clusterController.listOptions());
 			
 			List<ArrayList<Song>> cs = clusterer.getResult();
+			int i=0;
 			for (ArrayList<Song> cluster : cs) {
-				if (cluster.size() > 1)
-					clusters.add(new SongCluster(cluster, level + 1, this, form));
-				else if (cluster.size() == 1)
-					clusters.add(new LeafCluster(level + 1, this, cluster.get(0)));
+				Instance in = clusterController.getClusterCentroids().instance(i);
+				double[] centroid = in.toDoubleArray();
+				AbstractCluster newCluster = null;
+				if (cluster.size() > 1){
+					newCluster = /*clusters.add(*/new SongCluster(cluster, level + 1, this, form);
+				}else if (cluster.size() == 1){
+					newCluster = /*clusters.add(*/new LeafCluster(level + 1, this, cluster.get(0));
+				}
+				clusters.add(newCluster);
+				newCluster.setCentroid(centroid);
 				//if(level==0)
 					//System.out.println("Root cluster added");
+				++i;
 			}
 		}
 		
@@ -96,9 +116,30 @@ public class SongCluster extends AbstractCluster {
 		for (int i = 0; i < size; ++i) {
 			p.add(new ArrayList<Double>());
 			for (int j = 0; j < size; ++j) {
-				p.get(i).add(prob);
+				if(Constants.PROBABILITIES_INITIALLY_SPREAD)
+					p.get(i).add(prob);
+				else
+					p.get(i).add((i==j ? 1.0 : 0.0));
 			}
 		}
+	}
+	
+	public List<ArrayList<Double>> getP(){
+		return p;
+	}
+	
+	public void clearHistory(){
+		history = new LinkedList<Song>();
+	}
+	
+	public Deque<Song> getHistory(){
+		return history;
+	}
+	
+	public void addHistory(Song s){
+		history.add(s);
+		while(history.size() > Constants.HISTORY_SIZE)
+			history.pop();
 	}
 	
 	/*
@@ -116,11 +157,14 @@ public class SongCluster extends AbstractCluster {
 				}
 				tot += p.get(i).get(j);
 			}
-			// If total was negative
+			// If total was zero, re-initialise
 			if(tot == 0.0){
 				double prob = 1. / p.get(i).size();
 				for (int j = 0; j < p.get(i).size(); ++j) {
-					p.get(i).set(j, prob);
+					if(Constants.PROBABILITIES_INITIALLY_SPREAD)
+						p.get(i).set(j, prob);
+					else
+						p.get(i).set(j, (i==j ? 1.0 : 0.0));
 				}
 			}else{
 			// Otherwise, scale up to normalise
@@ -145,6 +189,19 @@ public class SongCluster extends AbstractCluster {
 		}else
 			return null;
 	}
+	public Song getClusterPlayingSong(){
+		Song res = null;
+		List<Integer> path = getClusterPlayingPath();
+		if(path == null)
+			return null;
+		SongCluster next = this;
+		for(int i=0; i<path.size()-1; ++i){
+			next = (SongCluster) next.getChildren().get(path.get(i));
+		}
+		LeafCluster last = (LeafCluster) next.getChildren().get(path.get(path.size()-1));
+		res = last.getTrack();
+		return res;
+	}
 	
 	@SuppressWarnings("unused")
 	private void setClusterPlaying(int c) {
@@ -153,6 +210,10 @@ public class SongCluster extends AbstractCluster {
 
 	public void AddTrack(Song s) {
 		// TODO
+		/*
+		clusterController.clusterInstance(instance);
+		clusterController.distributionForInstance(instance);
+		*/
 	}
 
 	public void AddTracks(Song[] s) {
@@ -199,25 +260,99 @@ public class SongCluster extends AbstractCluster {
 		 * choose most probable next cluster, taking into account the `randomness'. Use heuristic to choose track within that cluster (what if staying within cluster?). If all these tracks played recently, may choose next cluster.
 		 * update clusterPlaying, or let calling method do that? (we don't know if it plays it or not...although we'll hardly be changing it upon every pause/play)
 		 */
+		//start at root, pick clusters traversing down. Heuristic if different branch from currplaying.
 		
 		// Don't allow call unless we are at root
 		if(this.level != 0)
 			return null;
-				
-		//start at root, pick clusters traversing down. Heuristic if different branch from currplaying.
 		
-		return new Song();
+		Song choice = null;
+		
+		if(clusterPlaying < 0 || clusterPlaying >= clusters.size()){
+			choice = heuristicChoice(null, this);
+		}else{
+			// Location of what was previously playing
+			List<Integer> sourcePath = getClusterPlayingPath();
+			AbstractCluster next = this;
+			int nextCluster = 0;
+			for(int level = 0; level < sourcePath.size(); ++level){
+				if(!(next instanceof SongCluster)){
+					// base case: need to step back up a level probably
+					// TODO set choice here
+					// several cases: source a leaf but next isnt, next a leaf but source isn't, both leaves. stepping up a level
+					// account for all factors in heuristic method
+				}else{
+					SongCluster current = (SongCluster) next;
+					//choose next cluster
+					ArrayList<Double> row = current.getP().get(sourcePath.get(level));
+					nextCluster = chooseNextCluster(row);
+					if(nextCluster == sourcePath.get(level))
+						next = current.getChildren().get(nextCluster);
+					else{
+						choice = heuristicChoice(current.getClusterPlayingSong(), current.getChildren().get(nextCluster));
+						break;
+					}
+				}
+			}
+		}
+		
+		setPlayingCluster(choice);
+		return choice;
+	}
+	
+	/*
+	 * TODO maybe incorporate 'recently played' here too, so we never explore a cluster we've played through?
+	 */
+	private int chooseNextCluster(ArrayList<Double> row){
+		/*
+		 * Randomness is the key variable here: from 0 (not random - exploitation) to 1.0 (fully random - exploration)
+		 */
+		
+		// Find the most probable next cluster
+		int maxrow = -1;
+		double max = 0.;
+		for(int i=0; i<row.size(); ++i){
+			if(row.get(i) > max){
+				max = row.get(i);
+				maxrow = i;
+			}
+		}
+	
+		// TODO: the inbetween choice, using randomness to skew probabilities from {0, 0, 1, 0, 0} (ie. the above) to fully random (ie. more extreme than below)
+		
+		// Pick cluster based on probabilities
+		double rand = Math.random();
+		double tot = 0.;
+		int choice = -1;
+		for(int i=0; i<row.size(); ++i){
+			tot += row.get(i);
+			if(rand < tot){
+				choice = i;
+				break;
+			}
+		}
+		return choice;
 	}
 	
 	//TODO Heuristic method using preferred
+	/*
+	 * Factors to account for:
+	 *  - 'preferred'
+	 *  - randomnesss
+	 *  - recent play list (how to do this? don't want to change weights)
+	 *  - audio features (just distance between feature vectors. future option of grabbing start/end audio features)
+	 */
 	private Song heuristicChoice(Song source, SongCluster cluster){
 		Song choice = null;
-		/*
-		 * Factors to account for:
-		 *  - 'preffered'
-		 *  - recent play list (how to do this? don't want to change weights)
-		 *  - audio features (just distance between feature vectors. future option of grabbing start/end audio features)
-		 */
+		
+		if(source == null){
+			// we are choosing from all songs
+			
+		}else{
+			// heuristic called because we've made a long jump between clusters so no P matrix is available
+			
+		}
+		
 		return choice;
 	}
 	
@@ -248,7 +383,7 @@ public class SongCluster extends AbstractCluster {
 		for(int level = 0; level <= lca; level++){
 			SongCluster current = (SongCluster) next;
 			current.localUpdate(action, TrackLink.SOURCE_TO_TARGET);
-			next = this.clusters.get(sourceBranch.get(level));
+			next = current.getChildren().get(sourceBranch.get(level));
 		}
 		
 		if(action.requiresChosen()){
@@ -260,19 +395,19 @@ public class SongCluster extends AbstractCluster {
 			for(int level = 0; level <= lca1; level++){
 				SongCluster current = (SongCluster) next;
 				current.localUpdate(action, TrackLink.SOURCE_TO_TARGET);
-				next = this.clusters.get(sourceBranch.get(level));
+				next = current.getChildren().get(sourceBranch.get(level));
 			}
 			next = this;
 			for(int level = 0; level <= lca2; level++){
 				SongCluster current = (SongCluster) next;
 				current.localUpdate(action, TrackLink.SOURCE_TO_CHOSEN);
-				next = this.clusters.get(sourceBranch.get(level));
+				next = current.getChildren().get(sourceBranch.get(level));
 			}
 			next = this;
 			for(int level = 0; level <= lca3; level++){
 				SongCluster current = (SongCluster) next;
 				current.localUpdate(action, TrackLink.TARGET_TO_CHOSEN);
-				next = this.clusters.get(sourceBranch.get(level));
+				next = current.getChildren().get(sourceBranch.get(level));
 			}
 		}
 		
@@ -472,6 +607,18 @@ public class SongCluster extends AbstractCluster {
 			}
 			System.out.println();
 		}
+	}
+	
+	public void PrintP(){
+		System.out.println("Probability matrix at level "+level+":");
+		System.out.println();
+		for(int i=0; i<p.size(); ++i){
+			for(int j=0; j<p.get(i).size(); ++j){
+				System.out.print(p.get(i).get(j) + " | ");
+			}
+			System.out.println();
+		}
+		System.out.println();
 	}
 	
 
