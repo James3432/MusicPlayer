@@ -19,6 +19,7 @@
 	<classpathentry kind="lib" path="lib/tritonus_jorbis-0.3.6.jar"/>
 	<classpathentry kind="lib" path="lib/tritonus_share-0.3.6.jar"/>
 	<classpathentry kind="lib" path="lib/tritonus_remaining-0.3.6.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path="bin"/>
 	<referencedentry kind="lib" path="lib/tritonus_remaining-0.3.6.jar" sourcepath="C:/Users/James/Downloads/tritonus/tritonus/tritonus/src"/>
 </classpath>

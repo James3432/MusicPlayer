@@ -1,6 +1,7 @@
 package jk509.player.clustering;
 
 import java.io.Serializable;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -71,6 +72,7 @@ public class SongCluster extends AbstractCluster {
 	 * Rebuild entire clustering from here downwards, creating new child clusters
 	 */
 	public void ResetClusters(JFrame form){
+		history = new ArrayDeque<Song>(); // TODO best place to set this?
 		clusters = new ArrayList<AbstractCluster>();
 		
 		if(tracks.size() <= Constants.MAX_CLUSTERS){
@@ -88,9 +90,9 @@ public class SongCluster extends AbstractCluster {
 			// PrintClusters(clusterer.getResult());
 			assignments = clusterer.getAssignments();
 			clusterController = ((KMeansClusterer) clusterer).getClusterer();
-			System.out.println(clusterController.getOptions());
-			System.out.println("=========*******************=============");
-			System.out.println(clusterController.listOptions());
+			//System.out.println(clusterController.getOptions());
+			//System.out.println("=========*******************=============");
+			//System.out.println(clusterController.listOptions());
 			
 			List<ArrayList<Song>> cs = clusterer.getResult();
 			int i=0;
@@ -139,6 +141,10 @@ public class SongCluster extends AbstractCluster {
 					p.get(i).add((i==j ? 1.0 : 0.0));
 			}
 		}
+		preferred = new double[size];
+		double pr = 1. / size;
+		for(int i=0; i<size; ++i)
+			preferred[i] = pr;
 	}
 	
 	public List<ArrayList<Double>> getP(){
@@ -290,9 +296,10 @@ public class SongCluster extends AbstractCluster {
 		}else{
 			// Location of what was previously playing
 			List<Integer> sourcePath = getClusterPlayingPath();
+			Song source = getClusterPlayingSong();
 			AbstractCluster next = this;
 			int nextCluster = 0;
-			for(int level = 0; level < sourcePath.size(); ++level){
+			for(int level = 0; level <= sourcePath.size(); ++level){
 				if(!(next instanceof SongCluster)){
 					// base case: need to step back up a level probably
 					// TODO set choice here
@@ -301,7 +308,7 @@ public class SongCluster extends AbstractCluster {
 					SongCluster nextup = next.getParent();
 					while (choice == null){
 						// Hop back up the cluster tree until heuristicChoice is successful
-						choice = heuristicChoice(getClusterPlayingSong(), nextup);
+						choice = heuristicChoice(source, nextup);
 						nextup = nextup.getParent();
 					}
 					break;
@@ -314,10 +321,10 @@ public class SongCluster extends AbstractCluster {
 						next = current.getChildren().get(nextCluster); // the only recursive case
 					else{
 						if(current.getChildren().get(nextCluster) instanceof LeafCluster)
-							choice = heuristicChoice(current.getClusterPlayingSong(), current);
+							choice = heuristicChoice(source, current);
 							//choice = ((LeafCluster) current.getChildren().get(nextCluster)).getTrack(); // TODO what if played that recently?
 						else
-							choice = heuristicChoice(current.getClusterPlayingSong(), (SongCluster) current.getChildren().get(nextCluster));
+							choice = heuristicChoice(source, (SongCluster) current.getChildren().get(nextCluster));
 						break;
 					}
 				}
@@ -376,8 +383,8 @@ public class SongCluster extends AbstractCluster {
 	private Song heuristicChoice(Song source, SongCluster cluster){
 		Song choice = null;
 		
-		Song[] songs = (Song[]) cluster.getTracks().toArray();
-		double[] votes = new double[songs.length];
+		List<Song> songs = cluster.getTracks();
+		double[] votes = new double[songs.size()];
 		
 		//TODO PROBLEM: features aren't normalised!! are centroids? have a look...
 		
@@ -391,17 +398,17 @@ public class SongCluster extends AbstractCluster {
 			}*/
 			
 			// Basic implementation which uses 'preferred'
-			int i=0;
 			Stack<SongCluster> next = new Stack<SongCluster>();
 			next.push(this);
 			while(!next.empty()){
 				SongCluster current = next.pop();
+				int i=0;
 				for(AbstractCluster c : current.getChildren()){
 					double prefs = current.preferred[i++];
 					if(c instanceof SongCluster){
 						List<Song> local = c.getTracks();
-						for(int j=0; j<songs.length; ++j)
-							if(local.contains(songs[j]))
+						for(int j=0; j<songs.size(); ++j)
+							if(local.contains(songs.get(j)))
 								votes[j] *= prefs;
 						next.push((SongCluster) c);
 					}
@@ -428,9 +435,9 @@ public class SongCluster extends AbstractCluster {
 			
 			// Basic implementation which uses feature distances
 			double[] features = source.getAudioFeatures();
-			double[] dists = new double[songs.length];
-			for(int i=0; i<songs.length; ++i){
-				dists[i] = StaticMethods.computeDistance(features, songs[i].getAudioFeatures());
+			double[] dists = new double[songs.size()];
+			for(int i=0; i<songs.size(); ++i){
+				dists[i] = StaticMethods.computeDistance(features, songs.get(i).getAudioFeatures());
 				votes[i] = 1. / dists[i]; // a higher vote is better, which corresponds to a shorter distance
 			}
 		}
@@ -440,14 +447,14 @@ public class SongCluster extends AbstractCluster {
 		 * 
 		 * TODO: could weight them here with a tailoff function!!
 		 */
-		for(int i=0; i<songs.length; ++i)
-			if(history.contains(songs[i]))
+		for(int i=0; i<songs.size(); ++i)
+			if(history.contains(songs.get(i)))
 				votes[i] = 0;
 		
 		/*
 		 * Now pick the top ranked song
 		 */
-		final Integer[] indices = new Integer[songs.length];
+		final Integer[] indices = new Integer[songs.size()];
 		for(int i=0;i<indices.length;++i)
 			indices[i] = i;
 		final double[] weights = votes;
@@ -458,7 +465,7 @@ public class SongCluster extends AbstractCluster {
 		    }
 		});
 		int top_song = indices[indices.length-1];
-		choice = songs[top_song];
+		choice = songs.get(top_song);
 		
 		return choice;
 	}
@@ -676,7 +683,9 @@ public class SongCluster extends AbstractCluster {
 	 * Set which track is playing by passing the track
 	 */
 	public void setPlayingCluster(Song s){
-		// TODO: clear previous clusterplaying from any lower branches
+		if(s == null)
+			clearPlaying();
+		
 		int index = getClusterIndex(s);
 		if(clusterPlaying > -1 && clusterPlaying != index && clusters.get(clusterPlaying) instanceof SongCluster)
 			((SongCluster) clusters.get(clusterPlaying)).clearPlaying();

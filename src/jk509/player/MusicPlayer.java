@@ -122,7 +122,7 @@ import jk509.player.gui.ParseItunesDialog;
 import jk509.player.gui.SmartPlaylistDialog;
 import jk509.player.gui.SmartPlaylistDialog.SmartPlaylistResult;
 import jk509.player.gui.SwingDragImages;
-import jk509.player.learning.TestUserHistory;
+import jk509.player.learning.UserHistoryDemo;
 
 public class MusicPlayer implements MouseListener, MouseMotionListener {
 
@@ -3460,7 +3460,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 	private class MntmLearnTestHistoryActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			library.getClusters().LearnHistory(Arrays.asList((new TestUserHistory(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList()).array)));
+			library.getClusters().LearnHistory(Arrays.asList((new UserHistoryDemo(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList()).array)));
 		}
 	}
 	

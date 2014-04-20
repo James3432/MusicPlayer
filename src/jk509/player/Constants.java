@@ -9,7 +9,7 @@ public interface Constants {
 	// Learning - most values 0 <= v <= 1
 	public static final double LEARNING_RATE = 0.8;                    // Learning Rate
 	public static final double DISCOUNT_FACTOR = 0.8;                  // Discount Factor
-	public static final boolean PROBABILITIES_INITIALLY_SPREAD = true; // If true, P matrix initialised with all values = 1/size. If false, initialised to Identity
+	public static final boolean PROBABILITIES_INITIALLY_SPREAD = false; // If true, P matrix initialised with all values = 1/size. If false, initialised to Identity
 	public static final int HISTORY_SIZE = 20;
 	// Rewards:
 	public static final double REWARD_TRACK_FINISHED = 0.6;            // track played all way through
