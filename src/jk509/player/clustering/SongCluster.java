@@ -3,16 +3,20 @@ package jk509.player.clustering;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Stack;
 
 import javax.swing.JFrame;
 
-import weka.clusterers.SimpleKMeans;
-import weka.core.Instance;
 import jk509.player.Constants;
 import jk509.player.core.Song;
+import jk509.player.core.StaticMethods;
+import jk509.player.learning.UserAction;
+import weka.clusterers.SimpleKMeans;
+import weka.core.Instance;
 
 public class SongCluster extends AbstractCluster {
 
@@ -54,12 +58,18 @@ public class SongCluster extends AbstractCluster {
 		InitPMatrix();
 	}
 	
+	/*
+	 * Reset features and rebuild clustering
+	 */
 	public void ResetAll(JFrame form){
 		for(Song s : tracks)
 			s.setAudioFeatures(null);
 		ResetClusters(form);
 	}
 	
+	/*
+	 * Rebuild entire clustering from here downwards, creating new child clusters
+	 */
 	public void ResetClusters(JFrame form){
 		clusters = new ArrayList<AbstractCluster>();
 		
@@ -100,13 +110,20 @@ public class SongCluster extends AbstractCluster {
 				++i;
 			}
 		}
-		
+
+		// Don't need to call ResetLearning because each level's constructor calls this function, so initP gets called at every level
 		InitPMatrix();
 	}
 	
+	/*
+	 * Reset all P matrices in this and child clusters
+	 */
 	public void ResetLearning(){
 		p = null;
 		InitPMatrix();
+		for(AbstractCluster c : clusters)
+			if(c instanceof SongCluster)
+				((SongCluster) c).ResetLearning();
 	}
 
 	private void InitPMatrix() {
@@ -281,21 +298,33 @@ public class SongCluster extends AbstractCluster {
 					// TODO set choice here
 					// several cases: source a leaf but next isnt, next a leaf but source isn't, both leaves. stepping up a level
 					// account for all factors in heuristic method
+					SongCluster nextup = next.getParent();
+					while (choice == null){
+						// Hop back up the cluster tree until heuristicChoice is successful
+						choice = heuristicChoice(getClusterPlayingSong(), nextup);
+						nextup = nextup.getParent();
+					}
+					break;
 				}else{
 					SongCluster current = (SongCluster) next;
 					//choose next cluster
 					ArrayList<Double> row = current.getP().get(sourcePath.get(level));
 					nextCluster = chooseNextCluster(row);
 					if(nextCluster == sourcePath.get(level))
-						next = current.getChildren().get(nextCluster);
+						next = current.getChildren().get(nextCluster); // the only recursive case
 					else{
-						choice = heuristicChoice(current.getClusterPlayingSong(), current.getChildren().get(nextCluster));
+						if(current.getChildren().get(nextCluster) instanceof LeafCluster)
+							choice = heuristicChoice(current.getClusterPlayingSong(), current);
+							//choice = ((LeafCluster) current.getChildren().get(nextCluster)).getTrack(); // TODO what if played that recently?
+						else
+							choice = heuristicChoice(current.getClusterPlayingSong(), (SongCluster) current.getChildren().get(nextCluster));
 						break;
 					}
 				}
 			}
 		}
 		
+		addHistory(choice); // TODO any other places we should update history? maybe have a prev() method too, and check at start of next() whether to just use history buffer (keep position index)
 		setPlayingCluster(choice);
 		return choice;
 	}
@@ -309,6 +338,7 @@ public class SongCluster extends AbstractCluster {
 		 */
 		
 		// Find the most probable next cluster
+		@SuppressWarnings("unused")
 		int maxrow = -1;
 		double max = 0.;
 		for(int i=0; i<row.size(); ++i){
@@ -334,24 +364,101 @@ public class SongCluster extends AbstractCluster {
 		return choice;
 	}
 	
-	//TODO Heuristic method using preferred
 	/*
 	 * Factors to account for:
 	 *  - 'preferred'
 	 *  - randomnesss
 	 *  - recent play list (how to do this? don't want to change weights)
 	 *  - audio features (just distance between feature vectors. future option of grabbing start/end audio features)
+	 *  
+	 *  This method searches for tracks within cluster. Won't step up a level (relies on calling method)
 	 */
 	private Song heuristicChoice(Song source, SongCluster cluster){
 		Song choice = null;
 		
+		Song[] songs = (Song[]) cluster.getTracks().toArray();
+		double[] votes = new double[songs.length];
+		
+		//TODO PROBLEM: features aren't normalised!! are centroids? have a look...
+		
+		
 		if(source == null){
 			// we are choosing from all songs
+			/*while(choice == null || history.contains(choice)){
+				randomness, preferred. don't go up at all, only down
+				if(exhausted)
+					break; // return null;
+			}*/
 			
+			// Basic implementation which uses 'preferred'
+			int i=0;
+			Stack<SongCluster> next = new Stack<SongCluster>();
+			next.push(this);
+			while(!next.empty()){
+				SongCluster current = next.pop();
+				for(AbstractCluster c : current.getChildren()){
+					double prefs = current.preferred[i++];
+					if(c instanceof SongCluster){
+						List<Song> local = c.getTracks();
+						for(int j=0; j<songs.length; ++j)
+							if(local.contains(songs[j]))
+								votes[j] *= prefs;
+						next.push((SongCluster) c);
+					}
+				}
+			}
 		}else{
 			// heuristic called because we've made a long jump between clusters so no P matrix is available
+			/*while(choice == null || history.contains(choice)){
+				distances, randomness, preferred. don't go up at all, only down
+				recurse into child clusters and recompute distances
+				if(exhausted)
+					break; // return null;
+			}*/
 			
+			// distance-to-cluster-centroid traversing code (needs to be made recursive)
+			/*int childClusters = cluster.getChildren().size();
+			double[][] centroids = new double[childClusters][];
+			for(int i=0; i<childClusters; ++i)
+				centroids[i] = cluster.getChildren().get(i).getCentroid();
+			
+			double[] distances = new double[childClusters];
+			for(int i=0; i<childClusters; ++i)
+				distances[i] = StaticMethods.computeDistance(features, centroids[i]);*/
+			
+			// Basic implementation which uses feature distances
+			double[] features = source.getAudioFeatures();
+			double[] dists = new double[songs.length];
+			for(int i=0; i<songs.length; ++i){
+				dists[i] = StaticMethods.computeDistance(features, songs[i].getAudioFeatures());
+				votes[i] = 1. / dists[i]; // a higher vote is better, which corresponds to a shorter distance
+			}
 		}
+		
+		/*
+		 * Remove any tracks in history
+		 * 
+		 * TODO: could weight them here with a tailoff function!!
+		 */
+		for(int i=0; i<songs.length; ++i)
+			if(history.contains(songs[i]))
+				votes[i] = 0;
+		
+		/*
+		 * Now pick the top ranked song
+		 */
+		final Integer[] indices = new Integer[songs.length];
+		for(int i=0;i<indices.length;++i)
+			indices[i] = i;
+		final double[] weights = votes;
+
+		Arrays.sort(indices, new Comparator<Integer>() {
+		    @Override public int compare(final Integer o1, final Integer o2) {
+		        return Double.compare(weights[o1], weights[o2]);
+		    }
+		});
+		int top_song = indices[indices.length-1];
+		choice = songs[top_song];
 		
 		return choice;
 	}
@@ -416,7 +523,7 @@ public class SongCluster extends AbstractCluster {
 	/*
 	 * Update just this level's p matrix for the given action
 	 */
-	private void localUpdate(UserAction action, int link){
+	private void localUpdate(UserAction action, TrackLink link){
 		int type = action.type;
 		double val = action.value;
 		Song source = action.source;
@@ -449,7 +556,7 @@ public class SongCluster extends AbstractCluster {
 			{
 				// User changed track manually. Use val and source,target,chosen
 				switch(link){
-				case TrackLink.SOURCE_TO_TARGET:
+				case SOURCE_TO_TARGET:
 					{
 						// User chose new track so 'target' got skipped. Use val.
 						from = source;
@@ -462,7 +569,7 @@ public class SongCluster extends AbstractCluster {
 				// The influence of the next two depends on how far through the track the user was. They behave in the same way.
 				// ie. skipped straight away -> no inference target-to-chosen, but skipped later -> no inference source-to-chosen
 				// No negative rewards here. Total reward given is currently max+min, since same ranges used for both links
-				case TrackLink.SOURCE_TO_CHOSEN:
+				case SOURCE_TO_CHOSEN:
 					{
 						// NB: (val = 1 - val) below
 						from = source;
@@ -472,7 +579,7 @@ public class SongCluster extends AbstractCluster {
 						double time_played = val;
 						reward =  min + ((1 - time_played) * (max - min));
 					} break;
-				case TrackLink.TARGET_TO_CHOSEN:
+				case TARGET_TO_CHOSEN:
 					{
 						from = target;
 						to = chosen;
@@ -620,44 +727,21 @@ public class SongCluster extends AbstractCluster {
 		}
 		System.out.println();
 	}
-	
-
-	// The "actions" in the Markov Decision Process
-	public class UserAction implements Serializable {
-		private static final long serialVersionUID = 1L;
-		
-		/*
-		 * The types of user action which may affect the learning in different ways
-		 */
-		final static int TRACK_FINISHED = 0;    // user listened to 'target' all the way through: positive link with 'source' 
-		final static int TRACK_SKIPPED = 1;     // user skipped 'target' when chosen after 'source' after (value * target.length) seconds through song
-		final static int TRACK_CHANGED = 2;     // user picked song 'chosen' after (value * target.length) seconds through 'target' which was chosen after 'source'
-		final static int PLAYLIST_SHARED = 3;   // 'source' and 'target' are in the same user-playlist (imported or otherwise)
-		final static int PLAYLIST_ADJACENT = 4; // 'target' directly follows 'source' in a user-playlist (imported or otherwise)
-		
-		public int type; // one of the above
-		public double value; // 0.0 - 1.0  eg. fraction of way through track at which user skipped
-		public Song source;
-		public Song target;
-		public Song chosen;
-		
-		public UserAction(int type, double val, Song s, Song t, Song c){
-			this.type = type;
-			this.value = val;
-			this.source = s;
-			this.target = t;
-			this.chosen = c;
-		}
-		
-		public boolean requiresChosen(){
-			return (type == TRACK_CHANGED);
+	public void PrintAllP(int cluster){
+		System.out.println();
+		System.out.println("Cluster "+cluster+":");
+		PrintP();
+		int i=0;
+		for(AbstractCluster c : getChildren()){
+			if(c instanceof SongCluster)
+				((SongCluster) c).PrintAllP(i);
+			i++;
 		}
 	}
 	
-	private static class TrackLink implements Serializable {
-		private static final long serialVersionUID = 1L;
-		final static int SOURCE_TO_TARGET = 0;   
-		final static int SOURCE_TO_CHOSEN = 1;  
-		final static int TARGET_TO_CHOSEN = 2; 
+	private enum TrackLink implements Serializable {
+		SOURCE_TO_TARGET, 
+		SOURCE_TO_CHOSEN, 
+		TARGET_TO_CHOSEN
 	}
 }

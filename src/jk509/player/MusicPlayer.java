@@ -45,6 +45,7 @@ import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -121,6 +122,7 @@ import jk509.player.gui.ParseItunesDialog;
 import jk509.player.gui.SmartPlaylistDialog;
 import jk509.player.gui.SmartPlaylistDialog.SmartPlaylistResult;
 import jk509.player.gui.SwingDragImages;
+import jk509.player.learning.TestUserHistory;
 
 public class MusicPlayer implements MouseListener, MouseMotionListener {
 
@@ -299,6 +301,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JMenuItem mntmResetSongClusters;
 	private JMenuItem mntmClearSongFeatures;
 	private JMenuItem mntmSaveClusters;
+	private JMenu mnDeveloper;
+	private JMenuItem mntmPrintProbabilities;
+	private JMenuItem mntmResetProbabilities;
+	private JMenuItem mntmLearnTestHistory;
 
 	/**
 	 * Create the application.
@@ -1287,21 +1293,38 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		mntmResetFactoryDefaults.addActionListener(new MntmResetFactoryDefaultsActionListener());
 		mnSettings.add(mntmResetFactoryDefaults);
 
-		mntmResetSongClusters = new JMenuItem("Reset Song Clusters");
-		mntmResetSongClusters.addActionListener(new MntmResetSongClustersActionListener());
-		mnSettings.add(mntmResetSongClusters);
-		
-		mntmClearSongFeatures = new JMenuItem("Clear Song Features");
-		mntmClearSongFeatures.addActionListener(new MntmClearSongFeaturesActionListener());
-		mnSettings.add(mntmClearSongFeatures);
-		
-		mntmSaveClusters = new JMenuItem("Save Clusters");
-		mntmSaveClusters.addActionListener(new MntmSaveClustersActionListener());
-		mnSettings.add(mntmSaveClusters);
-
 		mntmOptions_1 = new JMenuItem("Options...");
 		mntmOptions_1.setEnabled(false);
 		mnSettings.add(mntmOptions_1);
+		
+		mnDeveloper = new JMenu("Developer");
+		menuBar.add(mnDeveloper);
+		
+				mntmResetSongClusters = new JMenuItem("Reset Song Clusters");
+				mnDeveloper.add(mntmResetSongClusters);
+				mntmResetSongClusters.addActionListener(new MntmResetSongClustersActionListener());
+		
+		mntmPrintProbabilities = new JMenuItem("Print probabilities");
+		mntmPrintProbabilities.addActionListener(new MntmPrintProbabilitiesActionListener());
+		mnDeveloper.add(mntmPrintProbabilities);
+		
+		mntmResetProbabilities = new JMenuItem("Reset probabilities");
+		mntmResetProbabilities.addActionListener(new MntmResetProbabilitiesActionListener());
+		mnDeveloper.add(mntmResetProbabilities);
+		
+		mntmLearnTestHistory = new JMenuItem("Learn test history");
+		mntmLearnTestHistory.addActionListener(new MntmLearnTestHistoryActionListener());
+		mnDeveloper.add(mntmLearnTestHistory);
+		
+		mntmSaveClusters = new JMenuItem("Save Clusters");
+		mnDeveloper.add(mntmSaveClusters);
+		
+		mnDeveloper.addSeparator();
+		
+		mntmClearSongFeatures = new JMenuItem("Clear Song Features");
+		mnDeveloper.add(mntmClearSongFeatures);
+		mntmClearSongFeatures.addActionListener(new MntmClearSongFeaturesActionListener());
+		mntmSaveClusters.addActionListener(new MntmSaveClustersActionListener());
 
 		mnHelp = new JMenu("Help");
 		menuBar.add(mnHelp);
@@ -3422,6 +3445,22 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		public void actionPerformed(ActionEvent arg0) {
 			SongCluster cs = library.getClusters();
 			PrintClustersToFile(cs, "clustering.txt");
+		}
+	}
+	private class MntmResetProbabilitiesActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			library.getClusters().ResetLearning();
+		}
+	}
+	private class MntmPrintProbabilitiesActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+			//library.getClusters().PrintP();
+			library.getClusters().PrintAllP(0);
+		}
+	}
+	private class MntmLearnTestHistoryActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+			library.getClusters().LearnHistory(Arrays.asList((new TestUserHistory(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList()).array)));
 		}
 	}
 	

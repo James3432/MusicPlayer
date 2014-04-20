@@ -63,6 +63,14 @@ public abstract class AbstractCluster implements Constants, Serializable {
 		playing = b;
 	}
 
+	public List<Song> getTracks(){
+		return tracks;
+	}
+	
+	public void setTracks(List<Song> ts){
+		tracks = ts;
+	}
+	
 	public SongCluster getParent() {
 		return parent;
 	}
