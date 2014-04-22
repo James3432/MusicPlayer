@@ -11,12 +11,17 @@ public interface Constants {
 	public static final double DISCOUNT_FACTOR = 0.8;                  // Discount Factor
 	public static final boolean PROBABILITIES_INITIALLY_SPREAD = false; // If true, P matrix initialised with all values = 1/size. If false, initialised to Identity
 	public static final int HISTORY_SIZE = 20;
+	public static final boolean BACK_UPDATES = true;                   // whether to update in reverse direction too
+	public static final double BACK_UPDATE_SCALAR = 0.5;               // multiple to apply to reward for update in opposite direction
+	public static final double RANDOMNESS_MIN = 0.2;                   // overall min value for randomness, taken at time=RANDOMNESS_SHIFT_TIME. User settings can't go below this.
+	public static final double RANDOMNESS_MAX = 0.8;                   // overall max value for randomness, taken at time=0. User settings can't exceed this.
+	public static final int RANDOMNESS_SHIFT_TIME = 10;                // number of days (or ops - I havn't decided) over which 'randomness' changes from exploration -> exploitation
 	// Rewards:
 	public static final double REWARD_TRACK_FINISHED = 0.6;            // track played all way through
+	public static final double REWARD_TRACK_SKIPPED_MAX = 0.6;         // track barely skipped: should equal track_finished unless good reason otherwise
 	public static final double REWARD_TRACK_SKIPPED_MIN = -0.6;        // track skipped straight away
-	public static final double REWARD_TRACK_SKIPPED_MAX = 0.6;         // track barely skipped
-	public static final double REWARD_TRACK_CHOSEN_MIN = 0.0;          // track changed straight away
 	public static final double REWARD_TRACK_CHOSEN_MAX = 0.8;          // track changed after full play
+	public static final double REWARD_TRACK_CHOSEN_MIN = 0.0;          // track changed straight away
 	public static final double REWARD_TRACK_PLAYLIST = 0.4;            // tracks share a playlist
 	public static final double REWARD_TRACK_PLAYLIST_ADJ = 0.8;        // tracks adajcent in playlist
 	
@@ -35,6 +40,9 @@ public interface Constants {
 	public static final boolean MULTITHREADED = true;       // whether to attempt feature extraction with multiple-core exploitation
 	public static final int PARALELLISM = 4;                // see above: default number of threads to try (decremented upon failure)
 	
+	// Other
+	public static final int UPLOAD_FREQUENCY = 3;    // Data will be uploaded to server (url below) every n days
+	
 	// ------------------------------------------------------------------
 	
 	/*
@@ -45,6 +53,7 @@ public interface Constants {
 	public static final int FEATURES = 39; // 11 + 13 + 10 + 5 (last 3 are compound feature vectors which get linearised into array)
 	public static final String featureXMLLocation = "features.xml";
 	public static final int TEMP_FILE_NAME_LENGTH = 10;
+	public static final String UPLOAD_URL = "http://www.james.eu.org/upload.php";
 
 	// ------------------------------------------------------------------
 	
@@ -58,5 +67,7 @@ public interface Constants {
 	public static final String FEATURES_PATH = "\\Music Factory\\features.ser"; // location for the above
 	public static final String CLUSTERS_PATH = "\\Music Factory\\clusters.ser"; // location for the above
 	public static final boolean CUSTOM_FEATUREPROC_CODE = false;  // whether to use the tweaked code which avoid errors but produces different results in feature extraction
+	public static final boolean DEBUG_DISPLAY_UPDATES = true;     // display learning updates as they are processed
+	public static final boolean DEBUG_NEXTTRACKPATHS = true;      // display details of track chosen by next()
 	
 }

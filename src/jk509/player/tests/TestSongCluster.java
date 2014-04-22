@@ -80,7 +80,7 @@ public class TestSongCluster {
 	@Test
 	public void testUpdate() {
 		cluster.Update(new UserAction(UserAction.TRACK_FINISHED, 0, library.get(10), library.get(0), null));
-		cluster.PrintAllP(0);
+		cluster.PrintAllP(10);
 	}
 	
 	@Test

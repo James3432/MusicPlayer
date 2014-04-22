@@ -16,9 +16,9 @@ public abstract class AbstractCluster implements Constants, Serializable {
 	protected boolean leaf; // if True, this cluster is just 1 song
 	// private Song track; // only non-null if leaf==True
 	// Other audio feature data here
-	protected boolean playing; // whether a track in this cluster is currently playing. If true in a leaf, then obviously its 'track' is playing
+	//protected boolean playing; // whether a track in this cluster is currently playing. If true in a leaf, then obviously its 'track' is playing
+	//TODO playing isn't used
 	protected double randomness; // from 0 (not random - exploitation) to 1.0 (fully random - exploration)
-	protected double[] centroid;
 	
 	protected List<Song> tracks;
 
@@ -36,12 +36,9 @@ public abstract class AbstractCluster implements Constants, Serializable {
 		level = l;
 	}
 	
-	public double[] getCentroid(){
-		return centroid;
-	}
-	public void setCentroid(double[] d){
-		centroid = d;
-	}
+	public abstract double[] getCentroid();
+	
+	public abstract void setCentroid(double[] d);
 
 	public double getRandomness() {
 		return randomness;
@@ -55,13 +52,13 @@ public abstract class AbstractCluster implements Constants, Serializable {
 		return leaf;
 	}
 
-	public boolean isPlaying() {
+	/*public boolean isPlaying() {
 		return playing;
 	}
 
 	public void setPlaying(boolean b) {
 		playing = b;
-	}
+	}*/
 
 	public List<Song> getTracks(){
 		return tracks;

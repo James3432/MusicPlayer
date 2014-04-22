@@ -34,4 +34,22 @@ public class UserAction implements Serializable {
 	public boolean requiresChosen() {
 		return (type == TRACK_CHANGED);
 	}
+	
+	@Override
+	public String toString(){
+		String str = "";
+		switch(this.type){
+		case TRACK_FINISHED: str += "Track finished"; break;
+		case TRACK_SKIPPED: str += "Track skipped"; break;
+		case TRACK_CHANGED: str += "Track changed"; break;
+		case PLAYLIST_SHARED: str += "Tracks in playlist"; break;
+		case PLAYLIST_ADJACENT: str += "Tracks adjacent"; break;
+		}
+		str += "  Value: "+value;
+		str += "  Source: "+source.getName();
+		str += "  Target: "+target.getName();
+		if(chosen != null)
+			str += "  Chosen: "+chosen.getName();
+		return str;
+	}
 }

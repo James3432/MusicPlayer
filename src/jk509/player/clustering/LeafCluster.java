@@ -31,4 +31,13 @@ public class LeafCluster extends AbstractCluster {
 		tracks = new ArrayList<Song>();
 		tracks.add(s);
 	}
+	
+	public double[] getCentroid(){
+		return getTrack().getAudioFeatures();
+	}
+	
+	public void setCentroid(double[] d){
+		//getTrack().setAudioFeatures(d);
+		return; // never want to set a leaf's centroid like this: it should always just be the track's audio features
+	}
 }

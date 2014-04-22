@@ -122,6 +122,7 @@ import jk509.player.gui.ParseItunesDialog;
 import jk509.player.gui.SmartPlaylistDialog;
 import jk509.player.gui.SmartPlaylistDialog.SmartPlaylistResult;
 import jk509.player.gui.SwingDragImages;
+import jk509.player.learning.UserAction;
 import jk509.player.learning.UserHistoryDemo;
 
 public class MusicPlayer implements MouseListener, MouseMotionListener {
@@ -239,6 +240,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private boolean spaceDown = false;
 	private DataFlavor songFlavor;
 	private DataFlavor playlistFlavor;
+	// Learning:
+	private Song previousTrack;
+	private Song currentTrack;
 
 	// DEBUG FLAGS
 	boolean HIDE_SETUP_DIALOG = false;
@@ -305,6 +309,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JMenuItem mntmPrintProbabilities;
 	private JMenuItem mntmResetProbabilities;
 	private JMenuItem mntmLearnTestHistory;
+	private JMenuItem mntmLearnPlaylists;
 
 	/**
 	 * Create the application.
@@ -1314,6 +1319,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		
 		mntmLearnTestHistory = new JMenuItem("Learn test history");
 		mntmLearnTestHistory.addActionListener(new MntmLearnTestHistoryActionListener());
+		
+		mntmLearnPlaylists = new JMenuItem("Learn playlists");
+		mntmLearnPlaylists.addActionListener(new MntmLearnPlaylistsActionListener());
+		mnDeveloper.add(mntmLearnPlaylists);
 		mnDeveloper.add(mntmLearnTestHistory);
 		
 		mntmSaveClusters = new JMenuItem("Save Clusters");
@@ -1727,6 +1736,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 	private class BtnExitActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
+			library.setSelection(tabMain.getSelectedRows());
+			library.setViewPos(((JViewport) tabMain.getParent()).getViewPosition());
+			library.setSort(((TableSorter) tabMain.getModel()).getFullSortingStatus());
+			UpdateLibrary();
 			System.exit(0);
 		}
 	}
@@ -1979,6 +1992,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		// rowPlaying = ((TableSorter)
 		// tabMain.getModel()).modelIndex(tabMain.getSelectedRow());
 		UpdatePlayCount();
+		
+		SendUserAction(UserAction.TRACK_CHANGED);
+		
 		// This is the only method which can start playing tracks from a
 		// different playlist. So save the new playlistPlaying and table model
 		playlistPlaying = listPlaylists.getSelectedIndex();
@@ -2025,7 +2041,88 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		int nextUp = playlistPlayingSorter.viewIndex(library.shuffleIndexToModel(library.modelIndexToShuffle(playlistPlayingSorter.modelIndex(rowPlaying)) + 1));
 		play(nextUp);
 	}
+	
+	private void SendUserAction(final int ac){
+		if(previousTrack == null || currentTrack == null)
+			return;
+		
+		(new Thread() {
+			@Override
+			public	void run(){
+				
+				switch(ac){
+					case UserAction.TRACK_FINISHED: { //TODO this just gets called as track_skipped in the play method, with val = 1.0
+						library.getClusters().Update(new UserAction(UserAction.TRACK_FINISHED, 0., previousTrack, currentTrack, null));
+						
+					} break;
+					case UserAction.TRACK_SKIPPED: // IMPORTANT
+					{
+						double val = ((double) seconds + (timing_offset / 1000.0)) / (double) library.getPlaylist(playlistPlaying).get(trackPlaying).getLengthS();
+						library.getClusters().Update(new UserAction(UserAction.TRACK_SKIPPED, val, previousTrack, currentTrack, null));
+					} break;
+					case UserAction.TRACK_CHANGED: { // TODO: probably doubling up here, since the above is called for source->target, so just need the other two
+						if(playlistPlaying < 0 || trackPlaying < 0)
+							return;
+						double val = ((double) seconds + (timing_offset / 1000.0)) / (double) library.getPlaylist(playlistPlaying).get(trackPlaying).getLengthS();
+						Song selectedTrack = library.getPlaylist(listPlaylists.getSelectedIndex()).get(currentTableSorter.modelIndex(tabMain.getSelectedRow()));
+						if(selectedTrack == null)
+							return;
+						library.getClusters().Update(new UserAction(UserAction.TRACK_CHANGED, val, previousTrack, currentTrack, selectedTrack));
+					} break;
+					case UserAction.PLAYLIST_ADJACENT: {} break;
+					
+					case UserAction.PLAYLIST_SHARED: {} break;
+				}
+		
+			}
+		}).start();
+		
+	}
+	
+	private void SendPlaylistUserAction(final int ac, final List<Song> pl){
+		(new Thread() {
+			@Override
+			public	void run(){
+			
+				switch(ac){
+					case UserAction.PLAYLIST_ADJACENT: {
+						for(int i=0; i<pl.size() - 1; ++i){
+							Song a = pl.get(i);
+							Song b = pl.get(i+1);
+							library.getClusters().Update(new UserAction(UserAction.PLAYLIST_ADJACENT, 0., a, b, null));
+						}
+					} break;
+					case UserAction.PLAYLIST_SHARED: {
+						for(int i=0; i<pl.size(); ++i){
+							for(int j=i+1; j<pl.size(); ++j){
+								Song a = pl.get(i);
+								Song b = pl.get(j);
+								// Both directions
+								library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., a, b, null));
+								library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., b, a, null));
+							}
+						}
+					} break;
+				}
+			}
+		}).start();
+	}
 
+	private int GetViewIndexOf(Song s){
+		int view = -1;
+		int model = GetModelIndexOf(s);
+		view = currentTableSorter.viewIndex(model);
+		return view;
+	}
+	
+	private int GetModelIndexOf(Song s){
+		for(int i=0; i<library.getPlaylist(listPlaylists.getSelectedIndex()).size(); ++i){
+			if(library.getPlaylist(listPlaylists.getSelectedIndex()).get(i).equals(s))
+				return i;
+		}
+		return -1;
+	}
+	
 	private void playNext() {
 
 		if (player == null || stopped)
@@ -2037,6 +2134,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}
 
 		UpdatePlayCount();
+		
+		SendUserAction(UserAction.TRACK_SKIPPED);
 
 		int nextUp;
 		// if (stopped)
@@ -2046,6 +2145,15 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		} else {
 			if (library.hasQueue()) {
 				nextUp = GetNextInQueue();
+			} else if (smartPlay){
+				Song n = null;
+				if(currentTrack != null)
+					n = GetSmartTrack(currentTrack);
+				else
+					n = GetSmartSeedSong();
+				listPlaylists.setSelectedIndex(0); // TODO changelistener should then force display to update
+				nextUp = GetViewIndexOf(n);
+				// TODO change to main view and play song there
 			} else if (shuffle) {
 				// nextUp = (int) (Math.random() * library.getPlaylist(playlistPlaying).size());
 				nextUp = playlistPlayingSorter.viewIndex(library.shuffleIndexToModel(library.modelIndexToShuffle(playlistPlayingSorter.modelIndex(rowPlaying)) + 1));
@@ -2193,10 +2301,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					btnFwd.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/fwd.png")));
 					btnBack.setPressedIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/back_down.png")));
 					btnFwd.setPressedIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/fwd_down.png")));
+					previousTrack = currentTrack;
 					rowPlaying = r;
-					// trackPlaying = ((TableSorter)
-					// tabMain.getModel()).modelIndex(rowPlaying);
 					trackPlaying = playlistPlayingSorter.modelIndex(rowPlaying);
+					currentTrack = library.getPlaylist(playlistPlaying).get(trackPlaying);
 					RefreshMainList();
 					UpdateTrackDisplay();
 				} else {
@@ -2661,6 +2769,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		if (shuffle) {
 			btnShuffle.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/shuffle.png")));
 		} else {
+			if(smartPlay)
+				btnSmart.doClick();
 			btnShuffle.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/shuffle_on.png")));
 			if (playlistPlaying < 0)
 				library.shuffle(0); // probably shouldn't be shuffling if nothing playing...
@@ -2848,11 +2958,13 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	 */
 	private Song GetSmartSeedSong(){
 		// TODO just pick most likely track/cluster overall
-		return null;
+		library.getClusters().setPlayingCluster(null);
+		return library.getClusters().next();
 	}
 	private Song GetSmartTrack(Song seed){
 		// TODO choose next song from given seed
-		return null;
+		library.getClusters().setPlayingCluster(seed);
+		return library.getClusters().next();
 	}
 
 	private class FrmMusicPlayerKeyListener extends KeyAdapter {
@@ -3168,6 +3280,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					}else{
 						// smart playlist from all
 						seed = GetSmartSeedSong();
+						pl.add(seed);
+						size--;
 					}
 					for(int i=0; i<size; ++i){
 						Song next = GetSmartTrack(seed);
@@ -3363,6 +3477,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				btnSmart.setPressedIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/brain_press.png")));
 				lblSmartMode.setText("Smart mode off");
 			} else {
+				if(shuffle)
+					btnShuffle.doClick();
 				btnSmart.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/brain_down.png")));
 				btnSmart.setPressedIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/brain_down_press.png")));
 				lblSmartMode.setText("Smart mode on");
@@ -3455,12 +3571,21 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private class MntmPrintProbabilitiesActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			//library.getClusters().PrintP();
-			library.getClusters().PrintAllP(0);
+			library.getClusters().PrintAllP(1);
 		}
 	}
 	private class MntmLearnTestHistoryActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			library.getClusters().LearnHistory(Arrays.asList((new UserHistoryDemo(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList()).array)));
+		}
+	}
+	private class MntmLearnPlaylistsActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			for(int i=Library.MAIN_PLAYLIST+1; i<listPlaylists.getModel().getSize()+Library.MAIN_PLAYLIST; ++i){
+				List<Song> pl = library.getPlaylists().get(i).getList();
+				SendPlaylistUserAction(UserAction.PLAYLIST_ADJACENT, pl);
+				SendPlaylistUserAction(UserAction.PLAYLIST_SHARED, pl);
+			}
 		}
 	}
 	
