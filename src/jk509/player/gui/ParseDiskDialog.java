@@ -32,12 +32,14 @@ public class ParseDiskDialog extends JDialog {
 	private JTextField txtPath;
 	LibraryParser parser;
 	private JLabel lblWarningThisWill;
+	private JFileChooser chooser;
 
 	/**
 	 * Create the dialog.
 	 */
-	public ParseDiskDialog(LibraryParser parser, boolean hideWarning) {
+	public ParseDiskDialog(LibraryParser parser, boolean hideWarning, JFileChooser chooser) {
 		this.parser = parser;
+		this.chooser = chooser;
 		setTitle("Import from Disk");
 		setResizable(false);
 		setModalityType(ModalityType.APPLICATION_MODAL);
@@ -137,27 +139,27 @@ public class ParseDiskDialog extends JDialog {
 
 	private class BtnBrowseActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
-			JFileChooser chooser = new JFileChooser();
-			
 			String startat = "";
-			// choose initial folder (first check textfield, otherwise try user home dir)
+			if(chooser == null){
+				chooser = new JFileChooser();
+				
+				// choose initial folder (first check textfield, otherwise try user home dir)
+				if(startat.equals("")){
+					startat = System.getenv("user.home");
+					if (startat == null || startat.equals(""))
+						startat = System.getenv("USERPROFILE");
+					if (startat == null || startat.equals(""))
+						startat = ".";
+				}
+				chooser.setCurrentDirectory(new File(startat));
+			}
 			try{
 				if((new File(txtPath.getText())).exists() && (new File(txtPath.getText())).isDirectory())
-					startat = (new File(txtPath.getText())).getPath();
-				else
-					startat = "";
+					chooser.setCurrentDirectory(new File((txtPath.getText())));
 			}catch(Exception e){
-				startat = "";
 			}
 			
-			if(startat.equals("")){
-				startat = System.getenv("user.home");
-				if (startat == null || startat.equals(""))
-					startat = System.getenv("USERPROFILE");
-				if (startat == null || startat.equals(""))
-					startat = ".";
-			}
-			chooser.setCurrentDirectory(new File(startat));
+			chooser.setFileFilter(null);
 			chooser.setDialogTitle("Select music folder");
 			chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 

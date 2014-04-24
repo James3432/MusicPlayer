@@ -114,6 +114,7 @@ import jk509.player.core.Playlist;
 import jk509.player.core.Song;
 import jk509.player.core.SongQueueElement;
 import jk509.player.core.SoundJLayer;
+import jk509.player.core.StaticMethods;
 import jk509.player.core.TableSorter;
 import jk509.player.core.TableSorter.Directive;
 import jk509.player.core.TrackTime;
@@ -124,6 +125,8 @@ import jk509.player.gui.SmartPlaylistDialog.SmartPlaylistResult;
 import jk509.player.gui.SwingDragImages;
 import jk509.player.learning.UserAction;
 import jk509.player.learning.UserHistoryDemo;
+
+import javax.swing.JCheckBoxMenuItem;
 
 public class MusicPlayer implements MouseListener, MouseMotionListener {
 
@@ -216,6 +219,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 											// lose it otherwise)
 	private int rowSelectionRoot; // changes according to sort
 	// private int playlistSelected = 0;
+	private JFileChooser fileChooser;
 	public static int FIXED_PLAYLIST_ELEMENTS = 1; // number of system-set
 													// playlists (ie. tracks,
 													// artists, albums)
@@ -310,6 +314,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JMenuItem mntmResetProbabilities;
 	private JMenuItem mntmLearnTestHistory;
 	private JMenuItem mntmLearnPlaylists;
+	private JCheckBoxMenuItem chckbxmntmAutoSendUsage;
 
 	/**
 	 * Create the application.
@@ -1248,6 +1253,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		mnFile.add(mntmImportTracks);
 
 		mntmImportFromDisk = new JMenuItem("Import from Disk");
+		mntmImportFromDisk.setEnabled(false);
 		mntmImportFromDisk.addActionListener(new BtnImportFromDiskActionListener());
 		mnFile.add(mntmImportFromDisk);
 
@@ -1293,14 +1299,19 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 		mnSettings = new JMenu("Settings");
 		menuBar.add(mnSettings);
-
-		mntmResetFactoryDefaults = new JMenuItem("Factory Reset");
-		mntmResetFactoryDefaults.addActionListener(new MntmResetFactoryDefaultsActionListener());
-		mnSettings.add(mntmResetFactoryDefaults);
+		
+		chckbxmntmAutoSendUsage = new JCheckBoxMenuItem("Auto send usage data");
+		chckbxmntmAutoSendUsage.setSelected(true);
+		mnSettings.add(chckbxmntmAutoSendUsage);
 
 		mntmOptions_1 = new JMenuItem("Options...");
 		mntmOptions_1.setEnabled(false);
 		mnSettings.add(mntmOptions_1);
+		
+				mntmResetFactoryDefaults = new JMenuItem("Factory Reset");
+				mntmResetFactoryDefaults.addActionListener(new MntmResetFactoryDefaultsActionListener());
+				mnSettings.addSeparator();
+				mnSettings.add(mntmResetFactoryDefaults);
 		
 		mnDeveloper = new JMenu("Developer");
 		menuBar.add(mnDeveloper);
@@ -1368,10 +1379,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 		// first-time run checks
 
-		String homedir = System.getenv("user.home");
-		if (homedir == null)
-			homedir = System.getenv("USERPROFILE");
-		File settings = new File(homedir + "\\Music Factory\\library.ser");
+		File settings = new File(Constants.settings_path);
 
 		if (!settings.exists()) {
 			library = new Library();
@@ -1428,12 +1436,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 
 	private void UpdateLibrary() {
-		String homedir = System.getenv("user.home");
-		if (homedir == null)
-			homedir = System.getenv("USERPROFILE");
-		File settings = new File(homedir + "\\Music Factory\\library.ser");
+		File settings = new File(Constants.settings_path);
 
-		File theDir = new File(homedir + "\\Music Factory");
+		File theDir = new File(StaticMethods.getHomeDir() + "\\Music Factory");
 
 		// if the directory does not exist, create it
 		if (!theDir.exists()) {
@@ -1475,7 +1480,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private class BtnImportFromDiskActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
 			final LibraryParser parser = new FileScanner();
-			ParseDiskDialog worker = new ParseDiskDialog(parser, false);
+			ParseDiskDialog worker = new ParseDiskDialog(parser, false, null);
 			worker.setLocationRelativeTo(frmMusicPlayer);
 			worker.setVisible(true);
 
@@ -2046,28 +2051,30 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		if(previousTrack == null || currentTrack == null)
 			return;
 		
+		final Song t1 = previousTrack;
+		final Song t2 = currentTrack;
+		final Song t3 = library.getPlaylist(listPlaylists.getSelectedIndex()).get(currentTableSorter.modelIndex(tabMain.getSelectedRow()));
+		
+		final double val = ((double) seconds + (timing_offset / 1000.0)) / (double) library.getPlaylist(playlistPlaying).get(trackPlaying).getLengthS();
+		
 		(new Thread() {
 			@Override
 			public	void run(){
 				
 				switch(ac){
 					case UserAction.TRACK_FINISHED: { //TODO this just gets called as track_skipped in the play method, with val = 1.0
-						library.getClusters().Update(new UserAction(UserAction.TRACK_FINISHED, 0., previousTrack, currentTrack, null));
-						
+						library.getClusters().Update(new UserAction(UserAction.TRACK_FINISHED, 0., t1, t2, null));
 					} break;
 					case UserAction.TRACK_SKIPPED: // IMPORTANT
 					{
-						double val = ((double) seconds + (timing_offset / 1000.0)) / (double) library.getPlaylist(playlistPlaying).get(trackPlaying).getLengthS();
-						library.getClusters().Update(new UserAction(UserAction.TRACK_SKIPPED, val, previousTrack, currentTrack, null));
+						library.getClusters().Update(new UserAction(UserAction.TRACK_SKIPPED, val, t1, t2, null));
 					} break;
 					case UserAction.TRACK_CHANGED: { // TODO: probably doubling up here, since the above is called for source->target, so just need the other two
 						if(playlistPlaying < 0 || trackPlaying < 0)
 							return;
-						double val = ((double) seconds + (timing_offset / 1000.0)) / (double) library.getPlaylist(playlistPlaying).get(trackPlaying).getLengthS();
-						Song selectedTrack = library.getPlaylist(listPlaylists.getSelectedIndex()).get(currentTableSorter.modelIndex(tabMain.getSelectedRow()));
-						if(selectedTrack == null)
+						if(t3 == null)
 							return;
-						library.getClusters().Update(new UserAction(UserAction.TRACK_CHANGED, val, previousTrack, currentTrack, selectedTrack));
+						library.getClusters().Update(new UserAction(UserAction.TRACK_CHANGED, val, t1, t2, t3));
 					} break;
 					case UserAction.PLAYLIST_ADJACENT: {} break;
 					
@@ -2080,9 +2087,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 	
 	private void SendPlaylistUserAction(final int ac, final List<Song> pl){
-		(new Thread() {
-			@Override
-			public	void run(){
+		//(new Thread() {
+			//@Override
+			//public	void run(){
 			
 				switch(ac){
 					case UserAction.PLAYLIST_ADJACENT: {
@@ -2104,8 +2111,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 						}
 					} break;
 				}
-			}
-		}).start();
+		//	}
+		//}).start();
 	}
 
 	private int GetViewIndexOf(Song s){
@@ -2295,6 +2302,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					player = null; // try to force gc?
 					player = new SoundJLayer(loc, playbackListener);
 					player.play();
+					
 					btnPlay.setIcon(new ImageIcon(this.getClass().getResource("/jk509/player/res/pause.png")));
 					btnPlay.setPressedIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/pause_down.png")));
 					btnBack.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/back.png")));
@@ -2305,6 +2313,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					rowPlaying = r;
 					trackPlaying = playlistPlayingSorter.modelIndex(rowPlaying);
 					currentTrack = library.getPlaylist(playlistPlaying).get(trackPlaying);
+					if(Constants.DEBUG_NEXTTRACKPATHS)
+						System.out.println(library.getClusters().getIndexList(currentTrack));
+					
 					RefreshMainList();
 					UpdateTrackDisplay();
 				} else {
@@ -3367,10 +3378,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		public void actionPerformed(ActionEvent e) {
 			int response = JOptionPane.showConfirmDialog(frmMusicPlayer, "Are you sure you want to revert to factory defaults?\nAll library data, settings and learned preferences will be deleted.", "Confirm factory reset", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 			if (response == JOptionPane.YES_OPTION) {
-				String homedir = System.getenv("user.home");
-				if (homedir == null)
-					homedir = System.getenv("USERPROFILE");
-				File settings = new File(homedir + "\\Music Factory\\library.ser");
+				File settings = new File(Constants.settings_path);
 				if (settings.exists()) {
 					settings.delete();
 				}
@@ -3462,7 +3470,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private class MntmAddAudioFilesActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
 			final LibraryParser parser = new FileScanner();
-			ParseDiskDialog worker = new ParseDiskDialog(parser, true);
+			ParseDiskDialog worker = new ParseDiskDialog(parser, true, fileChooser);
 			worker.setLocationRelativeTo(frmMusicPlayer);
 			worker.setVisible(true);
 
@@ -3508,20 +3516,29 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 	private class MntmAddFilesActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
-			JFileChooser chooser = new JFileChooser();
-			String startat = ".";
-			startat = System.getenv("user.home");
-			if (startat == null || startat.equals(""))
-				startat = System.getenv("USERPROFILE");
-			if (startat == null || startat.equals(""))
-				startat = ".";
-			chooser.setCurrentDirectory(new File(startat));
-			chooser.setMultiSelectionEnabled(true);
-			chooser.setDialogTitle("Choose files to add to library");
-			chooser.setFileFilter(new MP3filter());
-			int result = chooser.showOpenDialog(frmMusicPlayer);
+			if(fileChooser == null){
+				fileChooser = new JFileChooser();
+			
+				String startat = ".";
+				startat = System.getenv("user.home");
+				if (startat == null || startat.equals(""))
+					startat = System.getenv("USERPROFILE");
+				if (startat == null || startat.equals(""))
+					startat = ".";
+				fileChooser.setCurrentDirectory(new File(startat));
+				fileChooser.setFileFilter(new MP3filter());
+			}
+			
+			if(fileChooser.getFileFilter() == null)
+				fileChooser.setFileFilter(new MP3filter());
+			fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+			fileChooser.setAcceptAllFileFilterUsed(false);
+			fileChooser.setMultiSelectionEnabled(true);
+			fileChooser.setDialogTitle("Choose files to add to library");
+			
+			int result = fileChooser.showOpenDialog(frmMusicPlayer);
 			if (result == JFileChooser.APPROVE_OPTION) {
-				File[] res = chooser.getSelectedFiles();
+				File[] res = fileChooser.getSelectedFiles();
 				LibraryParser parser = new FileScanner();
 				parser.addFileList(res);
 				if (res.length > 0) {

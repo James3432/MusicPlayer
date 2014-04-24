@@ -17,4 +17,14 @@ public class StaticMethods {
 		return res;
 	}
 	
+	/*
+	 * Get user's home directory path
+	 */
+	public static String getHomeDir(){
+		String homedir = System.getenv("user.home");
+		if (homedir == null)
+			homedir = System.getenv("USERPROFILE");
+		return homedir;
+	}
+	
 }

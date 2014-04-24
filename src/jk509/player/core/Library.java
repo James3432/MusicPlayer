@@ -339,6 +339,8 @@ public class Library implements Serializable, Cloneable {
 	}
 
 	public SongCluster getClusters(){
+		if(clusters == null)
+			clusters = new SongCluster(new ArrayList<Song>(), null);
 		return clusters;
 	}
 	

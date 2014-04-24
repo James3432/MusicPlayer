@@ -40,6 +40,7 @@ import jk509.player.core.ItunesParser;
 import jk509.player.core.Library;
 import jk509.player.core.LibraryParser;
 import jk509.player.core.Song;
+import jk509.player.core.StaticMethods;
 
 public class Setup extends JDialog {
 	/**
@@ -337,10 +338,7 @@ public class Setup extends JDialog {
 		lblYourMusicPreferences.setBounds(22, 30, 445, 17);
 		panel.add(lblYourMusicPreferences);
 
-		String homedir = System.getenv("user.home");
-		if (homedir == null)
-			homedir = System.getenv("USERPROFILE");
-		lblcusersjamesmusicplayer = new JTextField("\"" + homedir + "\\Music Factory\"");
+		lblcusersjamesmusicplayer = new JTextField("\"" + StaticMethods.getHomeDir() + "\\Music Factory\"");
 		lblcusersjamesmusicplayer.setEditable(false);
 		lblcusersjamesmusicplayer.setBounds(22, 62, 485, 25);
 		panel.add(lblcusersjamesmusicplayer);
@@ -537,10 +535,7 @@ public class Setup extends JDialog {
 
 		txtMusicItunes = new JTextField();
 		txtMusicItunes.setBounds(30, 101, 445, 21);
-		homedir = System.getenv("user.home");
-		if (homedir == null)
-			homedir = System.getenv("USERPROFILE");
-		txtMusicItunes.setText(homedir + "\\Music\\iTunes");
+		txtMusicItunes.setText(StaticMethods.getHomeDir() + "\\Music\\iTunes");
 		panel_31.add(txtMusicItunes);
 		txtMusicItunes.setColumns(10);
 
@@ -548,7 +543,7 @@ public class Setup extends JDialog {
 		lblItunesLocate.setBounds(30, 76, 170, 14);
 		panel_31.add(lblItunesLocate);
 
-		String path = homedir + "\\Music\\iTunes\\iTunes Music Library.xml";
+		String path = StaticMethods.getHomeDir() + "\\Music\\iTunes\\iTunes Music Library.xml";
 		if ((new File(path)).exists()) {
 			lblFoundItunesLibrary = new JLabel("Found an iTunes library: " + path);
 			lblFoundItunesLibrary.setBounds(30, 76, 500, 14);
@@ -686,7 +681,7 @@ public class Setup extends JDialog {
 
 		txtMusicRoot = new JTextField();
 		txtMusicRoot.setBounds(60, 129, 415, 21);
-		txtMusicRoot.setText(homedir + "\\Music");
+		txtMusicRoot.setText(StaticMethods.getHomeDir() + "\\Music");
 		panel_41.add(txtMusicRoot);
 		txtMusicRoot.setColumns(10);
 

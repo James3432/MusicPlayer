@@ -23,6 +23,7 @@ import javax.swing.filechooser.FileFilter;
 
 import jk509.player.MusicPlayer;
 import jk509.player.core.LibraryParser;
+import jk509.player.core.StaticMethods;
 
 public class ParseItunesDialog extends JDialog {
 
@@ -118,10 +119,7 @@ public class ParseItunesDialog extends JDialog {
 			}
 		}
 		{
-			String homedir = System.getenv("user.home");
-			if (homedir == null)
-				homedir = System.getenv("USERPROFILE");
-			String path = homedir + "\\Music\\iTunes\\iTunes Music Library.xml";
+			String path = StaticMethods.getHomeDir() + "\\Music\\iTunes\\iTunes Music Library.xml";
 			if((new File(path)).exists()){
 				JLabel lblFound = new JLabel("Found an iTunes library: "+path);
 				lblFound.setBounds(35, 24, 450, 14);

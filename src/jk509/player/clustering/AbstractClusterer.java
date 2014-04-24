@@ -14,6 +14,7 @@ import javax.swing.JFrame;
 
 import jk509.player.Constants;
 import jk509.player.core.Song;
+import jk509.player.core.StaticMethods;
 import jk509.player.features.FeatureGrabber;
 import weka.core.Attribute;
 import weka.core.FastVector;
@@ -32,11 +33,8 @@ public abstract class AbstractClusterer {
 	public AbstractClusterer(List<Song> s) {
 		tracks = s;
 		
-		String homedir = System.getenv("user.home");
-		if (homedir == null)
-			homedir = System.getenv("USERPROFILE");
-		setFeatureSavePath(homedir + Constants.FEATURES_PATH);
-		setClusterSavePath(homedir + Constants.CLUSTERS_PATH);
+		setFeatureSavePath(StaticMethods.getHomeDir() + Constants.FEATURES_PATH);
+		setClusterSavePath(StaticMethods.getHomeDir() + Constants.CLUSTERS_PATH);
 	}
 
 	public abstract void run(JFrame frame);

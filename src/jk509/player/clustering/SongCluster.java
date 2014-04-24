@@ -330,9 +330,6 @@ public class SongCluster extends AbstractCluster {
 		addHistory(choice); // TODO any other places we should update history? maybe have a prev() method too, and check at start of next() whether to just use history buffer (keep position index)
 		setPlayingCluster(choice);
 		
-		if(Constants.DEBUG_NEXTTRACKPATHS)
-			System.out.println(getIndexList(choice));
-		
 		return choice;
 	}
 	
@@ -670,7 +667,7 @@ public class SongCluster extends AbstractCluster {
 	/*
 	 * Get path from root to a song in the clustering. e.g [5, 0, 2] means it's in level0 cluster 5, then level1 cluster 0, then in level2 cluster 2 is the LeafCluster
 	 */
-	private List<Integer> getIndexList(Song s){
+	public List<Integer> getIndexList(Song s){
 		if(s == null)
 			return null;
 		int c = getClusterIndex(s);
