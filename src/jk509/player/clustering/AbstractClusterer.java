@@ -27,7 +27,7 @@ public abstract class AbstractClusterer {
 	protected List<ArrayList<Song>> clusters;
 	protected int[] assignments;
 	protected FeatureGrabber featureGrabber;
-	protected String features_path; // TODO: private
+	protected String features_path; // because kmeans accessed this for loading
 	private String clusters_path;
 
 	public AbstractClusterer(List<Song> s) {
@@ -77,7 +77,7 @@ public abstract class AbstractClusterer {
 				writer.println("No data");
 			writer.close();
 		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
+			// Auto-generated catch block
 			e1.printStackTrace();
 		}
 
@@ -91,10 +91,10 @@ public abstract class AbstractClusterer {
 			oos.writeObject(fs);
 			oos.close();
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
+			// Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			// Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -119,7 +119,7 @@ public abstract class AbstractClusterer {
 				writer.println("No data");
 			writer.close();
 		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
+			// Auto-generated catch block
 			e1.printStackTrace();
 		}
 
@@ -133,10 +133,10 @@ public abstract class AbstractClusterer {
 			oos.writeObject(clusters);
 			oos.close();
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
+			// Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			// Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

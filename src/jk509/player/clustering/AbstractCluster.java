@@ -10,14 +10,9 @@ public abstract class AbstractCluster implements Constants, Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
-	// private int id; // needed?
 	protected SongCluster parent;
 	protected int level; // level within cluster hierarchy: 0 = root, n = leaf
 	protected boolean leaf; // if True, this cluster is just 1 song
-	// private Song track; // only non-null if leaf==True
-	// Other audio feature data here
-	//protected boolean playing; // whether a track in this cluster is currently playing. If true in a leaf, then obviously its 'track' is playing
-	//TODO playing isn't used
 	protected double randomness; // from 0 (not random - exploitation) to 1.0 (fully random - exploration)
 	
 	protected List<Song> tracks;

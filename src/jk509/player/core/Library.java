@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import jk509.player.Constants;
 import jk509.player.MusicPlayer;
 import jk509.player.clustering.SongCluster;
 import jk509.player.core.Playlist.Shuffle;
@@ -35,6 +36,10 @@ public class Library implements Serializable, Cloneable {
 	private int[] searchToNormal;
 	private SongQueue queue;
 	private SongCluster clusters;
+	
+	public int lastUpdateDay = 0;
+	public boolean smartPlay = Constants.SMART_PLAY_DEFAULT;
+	//private Deque<Song> history; // from oldest--->recent
 
 	public Library() {
 		// tracks = new ArrayList<Song>();
@@ -132,11 +137,11 @@ public class Library implements Serializable, Cloneable {
 		playlists.get(currentPlaylist).add(s);
 	}
 
-	public void addTracks(List<Song> list) {
-		// TODO: append
+	// append is used instead now
+	/*public void addTracks(List<Song> list) {
 		// tracks = list;
 		playlists.get(currentPlaylist).setList(list);
-	}
+	}*/
 
 	public int[] getSelection() {
 		return playlists.get(currentPlaylist).getSelection();
@@ -313,7 +318,7 @@ public class Library implements Serializable, Cloneable {
 			return null;
 		}
 		lib.artwork = this.artwork;
-		lib.playlists = this.playlists; // TODO: deep clone?
+		lib.playlists = this.playlists; // deep clone not required because we don't edit playlists after cloning (for lib file save)
 		return lib;
 	}
 
@@ -329,7 +334,6 @@ public class Library implements Serializable, Cloneable {
 		queue = new SongQueue(start);
 	}
 
-	// TODO: use this! when next passes end of queue (but not through use of prev)
 	public void deleteQueue() {
 		queue = null;
 	}

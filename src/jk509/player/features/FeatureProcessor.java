@@ -216,7 +216,7 @@ public class FeatureProcessor {
 		// Pre-process the recording and extract the samples from the audio
 		this.updater = updater;
 		// System.out.println("about to pre");
-		double[] samples = preProcessRecording(recording_file, temp); // TODO as slow as the feature extraction...
+		double[] samples = preProcessRecording(recording_file, temp);
 		// System.out.println("done pre");
 		if (cancel.isCancel()) {
 			throw new ExplicitCancel("Killed after loading data");
@@ -247,11 +247,11 @@ public class FeatureProcessor {
 		}
 		track.setAudioFeatures(featuresToArray(aggregator.getResult()));
 	}
-	public List<double[]> extractFeatures(File recording_file, Updater updater) throws Exception {
+	/*public List<double[]> extractFeatures(File recording_file, Updater updater) throws Exception {
 		// Pre-process the recording and extract the samples from the audio
 		this.updater = updater;
 		// System.out.println("about to pre");
-		double[] samples = preProcessRecording(recording_file, new File("temp.mp3")); // TODO as slow as the feature extraction...
+		double[] samples = preProcessRecording(recording_file, new File("temp.mp3"));
 		// System.out.println("done pre");
 		if (cancel.isCancel()) {
 			throw new ExplicitCancel("Killed after loading data");
@@ -319,7 +319,7 @@ public class FeatureProcessor {
 		// window_start_indices, recording_file.getPath(),
 		// aggregator);
 		return aggregator.getResult();
-	}
+	}*/
 
 	/**
 	 * Write the ending tags to the feature_vector_file XML file. Close the DataOutputStreams that were used to write it.
@@ -512,7 +512,7 @@ public class FeatureProcessor {
 		// Get the original audio and its format
 		try {
 			try {
-				Process p = Runtime.getRuntime().exec(new String[] { "lame.exe", "-b", Integer.toString(Constants.ENCODE_BITRATE), "--resample", Integer.toString(Constants.SAMPLING_RATE), recording.getPath(), temp.getPath() });
+				Process p = Runtime.getRuntime().exec(new String[] { Constants.PATH_TO_LAME, "-b", Integer.toString(Constants.ENCODE_BITRATE), "--resample", Integer.toString(Constants.SAMPLING_RATE), recording.getPath(), temp.getPath() });
 				BufferedReader input = new BufferedReader(new InputStreamReader(p.getErrorStream()));
 				//String line;
 				while (input.readLine() != null) {
@@ -581,11 +581,10 @@ public class FeatureProcessor {
 
 			// Return all channels compressed into one
 			return samples;
-		} catch (java.lang.OutOfMemoryError e) {
+		} catch (java.lang.OutOfMemoryError e) {   // TODO return these errors
 			e.printStackTrace();
 			return null;
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			return null;
 		}

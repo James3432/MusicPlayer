@@ -1,11 +1,9 @@
 package jk509.player.clustering;
 
 import java.io.Serializable;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -37,7 +35,7 @@ public class SongCluster extends AbstractCluster {
 	private int[] assignments;   // song->cluster indices
 	private double[] preferred;  // similar to one row in 'p', but gives overall chance of being in one cluster.
 	                             // like a STATIONARY DISTRIBUTION :)  except measured directly
-	private Deque<Song> history;
+	//private Deque<Song> history;
 	//private SimpleKMeans clusterController;
 	protected double[] centroid;
 	
@@ -73,7 +71,7 @@ public class SongCluster extends AbstractCluster {
 	 * Rebuild entire clustering from here downwards, creating new child clusters
 	 */
 	public void ResetClusters(JFrame form){
-		history = new ArrayDeque<Song>(); // TODO best place to set this?
+
 		clusters = new ArrayList<AbstractCluster>();
 		
 		if(tracks.size() <= Constants.MAX_CLUSTERS){
@@ -152,7 +150,7 @@ public class SongCluster extends AbstractCluster {
 		return p;
 	}
 	
-	public void clearHistory(){
+	/*public void clearHistory(){
 		history = new ArrayDeque<Song>();
 	}
 	
@@ -164,21 +162,32 @@ public class SongCluster extends AbstractCluster {
 		history.add(s);
 		while(history.size() > Constants.HISTORY_SIZE)
 			history.pop();
-	}
+	}*/
 	
 	/*
 	 *  Normalises the matrix P. Also corrects any negative values to 0, and re-initialises a row if it's sum = 0
 	 */
 	private void NormaliseP() {
+		// For each row...
 		for (int i = 0; i < p.size(); ++i) {
-			double tot = 0.0;
+			
+			// Deal with negatives by adding least value to all
+			double smallest = 0.0;
 			for (int j = 0; j < p.get(i).size(); ++j) {
 				double val = p.get(i).get(j);
-				// deal with negative values
-				if(val < 0){
-					val = 0;
-					p.get(i).set(j, val);
+				if(val < smallest){
+					smallest = val;
 				}
+			}
+			// add least value to all only if needed
+			if(smallest < 0.0){
+				for (int j = 0; j < p.get(i).size(); ++j) {
+					p.get(i).set(j, p.get(i).get(j) + (- smallest));
+				}
+			}
+			// Now find row sum (for scaling later)
+			double tot = 0.0;
+			for (int j = 0; j < p.get(i).size(); ++j) {
 				tot += p.get(i).get(j);
 			}
 			// If total was zero, re-initialise
@@ -191,7 +200,7 @@ public class SongCluster extends AbstractCluster {
 						p.get(i).set(j, (i==j ? 1.0 : 0.0));
 				}
 			}else{
-			// Otherwise, scale up to normalise
+			// Otherwise, scale to normalise
 				double scale = 1. / tot;
 				for (int j = 0; j < p.get(i).size(); ++j) {
 					p.get(i).set(j, p.get(i).get(j) * scale);
@@ -278,8 +287,7 @@ public class SongCluster extends AbstractCluster {
 	 * 
 	 * This method should only be called on the root tree. Recursion down to lower levels is performed internally
 	 */
-	public Song next() {
-		// TODO
+	public Song next(List<Song> history, List<Double> history_weights) {
 		/*
 		 * choose most probable next cluster, taking into account the `randomness'. Use heuristic to choose track within that cluster (what if staying within cluster?). If all these tracks played recently, may choose next cluster.
 		 * update clusterPlaying, or let calling method do that? (we don't know if it plays it or not...although we'll hardly be changing it upon every pause/play)
@@ -290,10 +298,17 @@ public class SongCluster extends AbstractCluster {
 		if(this.level != 0)
 			return null;
 		
+		if(history == null){
+			history = new ArrayList<Song>();
+			history_weights = new ArrayList<Double>();
+		}
+		else if(history_weights == null)
+			history_weights = generateHistoryWeights(history.size());
+		
 		Song choice = null;
 		
 		if(clusterPlaying < 0 || clusterPlaying >= clusters.size()){
-			choice = heuristicChoice(null, this);
+			choice = heuristicChoice(null, this, history, history_weights);
 		}else{
 			// Location of what was previously playing
 			List<Integer> sourcePath = getClusterPlayingPath();
@@ -303,11 +318,10 @@ public class SongCluster extends AbstractCluster {
 			for(int level = 0; level <= sourcePath.size(); ++level){
 				if(!(next instanceof SongCluster)){
 					// base case: need to step back up a level probably
-					// TODO set choice here
 					// several cases: source a leaf but next isnt, next a leaf but source isn't, both leaves. stepping up a level
 					// account for all factors in heuristic method
 					SongCluster nextup = next.getParent();
-					choice = heuristicChoice(source, nextup);
+					choice = heuristicChoice(source, nextup, history, history_weights);
 					break;
 				}else{
 					SongCluster current = (SongCluster) next;
@@ -318,16 +332,15 @@ public class SongCluster extends AbstractCluster {
 						next = current.getChildren().get(nextCluster); // the only recursive case
 					else{
 						if(current.getChildren().get(nextCluster) instanceof LeafCluster)
-							choice = heuristicChoice(source, current);
+							choice = heuristicChoice(source, current, history, history_weights);
 						else
-							choice = heuristicChoice(source, (SongCluster) current.getChildren().get(nextCluster));
+							choice = heuristicChoice(source, (SongCluster) current.getChildren().get(nextCluster), history, history_weights);
 						break;
 					}
 				}
 			}
 		}
 		
-		addHistory(choice); // TODO any other places we should update history? maybe have a prev() method too, and check at start of next() whether to just use history buffer (keep position index)
 		setPlayingCluster(choice);
 		
 		return choice;
@@ -377,7 +390,7 @@ public class SongCluster extends AbstractCluster {
 	 *  
 	 *  This method searches for tracks within cluster. Will step up a level to parent cluster if none found
 	 */
-	private Song heuristicChoice(Song source, SongCluster startcluster){
+	private Song heuristicChoice(Song source, SongCluster startcluster, List<Song> history, List<Double> history_weights){
 		Song choice = null;
 		SongCluster cluster = startcluster;
 		while (choice == null && cluster != null){
@@ -386,7 +399,6 @@ public class SongCluster extends AbstractCluster {
 			double[] votes = new double[songs.size()];
 			
 			//TODO PROBLEM: features aren't normalised!! are centroids? have a look...
-			
 			
 			if(source == null){
 				// we are choosing from all songs
@@ -444,13 +456,15 @@ public class SongCluster extends AbstractCluster {
 			}
 			
 			/*
-			 * Remove any tracks in history
-			 * 
-			 * TODO: could weight them here with a tailoff function!!
+			 * Weight any tracks in history
 			 */
-			for(int i=0; i<songs.size(); ++i)
-				if(history.contains(songs.get(i)) || songs.get(i) == source || songs.get(i) == null)
+			for(int i=0; i<songs.size(); ++i){
+				if(songs.get(i) == source || songs.get(i) == null)
 					votes[i] = 0;
+				int pos = history.indexOf(songs.get(i));
+				if(pos > -1)
+					votes[i] *= history_weights.get(pos);
+			}
 			
 			/*
 			 * Now pick the top ranked song
@@ -468,7 +482,7 @@ public class SongCluster extends AbstractCluster {
 			int top_song = indices[indices.length-1];
 			choice = songs.get(top_song);
 			
-			//TODO really?
+			// Fine because, infinte loop impossible
 			if(weights[top_song] <= 0.0)
 				choice = null;
 			
@@ -486,7 +500,6 @@ public class SongCluster extends AbstractCluster {
 	 * 
 	 */
 	public void Update(UserAction action) {
-		// TODO
 		
 		// Don't allow call unless we are at root
 		if(this.level != 0)
@@ -516,16 +529,17 @@ public class SongCluster extends AbstractCluster {
 		}else{
 		//if(action.requiresChosen()){
 			List<Integer> chosenBranch = getIndexList(chosen);
-			//int lca1 = lca;
+			int lca1 = lca;
 			int lca2 = getLowestCommonAncestor(sourceBranch, chosenBranch);
 			int lca3 = getLowestCommonAncestor(targetBranch, chosenBranch);
 			next = this;
 			// Turns out this was getting duplicated since any track change calls TRACK_SKIPPED
-			/*for(int level = 0; level <= lca1; level++){
+			// Update: not any more!
+			for(int level = 0; level <= lca1; level++){
 				SongCluster current = (SongCluster) next;
 				current.localUpdate(action, TrackLink.SOURCE_TO_TARGET);
 				next = current.getChildren().get(sourceBranch.get(level));
-			}*/
+			}
 			next = this;
 			for(int level = 0; level <= lca2; level++){
 				SongCluster current = (SongCluster) next;
@@ -695,6 +709,15 @@ public class SongCluster extends AbstractCluster {
 			}
 		}
 		return level;
+	}
+	
+	private List<Double> generateHistoryWeights(int l){
+		// first element is oldest, last is most recent
+		ArrayList<Double> res = new ArrayList<Double>();
+		for(int i=0; i<l; ++i){
+			res.add(Math.min(1.0, Math.max(0.0, Constants.HISTORY_WEIGHT_STEP * ((l-1) - i - Constants.HISTORY_NONREPEAT))));
+		}
+		return res;
 	}
 	
 	/*

@@ -8,7 +8,7 @@ public class LeafCluster extends AbstractCluster {
 
 	private static final long serialVersionUID = 1L;
 	
-	private Song track;
+	//private Song track;
 
 	private LeafCluster(int level, SongCluster parent) {
 		super(null, level, parent);
@@ -21,13 +21,14 @@ public class LeafCluster extends AbstractCluster {
 	}
 
 	public Song getTrack() {
-		if(tracks.size() == 1)
+		if(tracks.size() > 0)
 			return tracks.get(0);
-		return track;
+		else return null;
+		//return track;
 	}
 
 	public void setTrack(Song s) {
-		track = s;
+		//track = s;
 		tracks = new ArrayList<Song>();
 		tracks.add(s);
 	}

@@ -12,7 +12,6 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 
 import javax.swing.AbstractListModel;
-import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -23,16 +22,14 @@ import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
-import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
-import javax.swing.border.BevelBorder;
 import javax.swing.border.EtchedBorder;
-import javax.swing.border.SoftBevelBorder;
 import javax.swing.filechooser.FileFilter;
 
 import jk509.player.core.FileScanner;
@@ -98,6 +95,7 @@ public class Setup extends JDialog {
 	private JDialog dialog;
 	private int stage = 1; // which screen, 1-6, we are on
 	private Library library;
+	private Boolean[] success;
 
 	private JLabel lblItLooksLike;
 	private JLabel lblHi;
@@ -139,22 +137,14 @@ public class Setup extends JDialog {
 	private JLabel lblTakesUpVery;
 	private JLabel lblVBuild;
 	private JLabel label;
-	private JLabel lblDefaultSortOrder;
-	private JCheckBox chckbxTryToDownload;
-	private JLabel lblDefaultRepeatBehaviour;
-	private JCheckBox chckbxEnableShortcuts;
+	private JCheckBox chckbxUploadData;
+	private JCheckBox chckbxAgree;
 	private JLabel lblImportFromItunes_2;
 	private JLabel lblImportFromDisk;
 	private JLabel lblAudioAnalyses;
 	private JLabel lblSetupComplete;
 	private JLabel lblToAdjustSettings;
 	private JLabel lblFileMenu;
-	private JList list;
-	private JRadioButton rdbtnOne;
-	private JRadioButton rdbtnRepeatAll;
-	private JRadioButton rdbtnRepeatNone;
-	private JPanel panel_1;
-	private JPanel panel_2;
 	private JLabel lblProcessingStart;
 	private JLabel lblOf;
 	private JLabel lblProcessingCount;
@@ -176,20 +166,25 @@ public class Setup extends JDialog {
 	private JLabel lblYouCanImport;
 	private JLabel label_6;
 	private JScrollPane scrollPane;
+	private JTextArea txtrDataUp;
+	private JTextArea txtrAgreement;
+	private JScrollPane scrollPaneAgree;
+	private JTextArea txtrToProceedYou;
 
 	/**
 	 * Create the dialog.
 	 */
-	public Setup(Library library) {
+	public Setup(Library library, Boolean[] success) {
 		setModalityType(ModalityType.APPLICATION_MODAL);
 		dialog = this;
 		this.library = library;
+		this.success = success;
 		addWindowListener(new ThisWindowListener());
 		setResizable(false);
 		setTitle("Music Factory Setup");
 		setMinimumSize(new Dimension(800, 600));
 		setModal(true);
-		// TODO: this needs setting by caller
+		// this is set by caller
 		setLocationRelativeTo(null);
 		setAlwaysOnTop(true);
 		setBounds(100, 100, 800, 600);
@@ -218,7 +213,7 @@ public class Setup extends JDialog {
 		pnlSidebar.add(pnlOverview, BorderLayout.CENTER);
 		pnlOverview.setLayout(null);
 
-		lblBasicSettings = new JLabel("Basic settings");
+		lblBasicSettings = new JLabel("Usage agreement");
 		lblBasicSettings.setEnabled(false);
 		lblBasicSettings.setFont(new Font("Trebuchet MS", Font.BOLD, 13));
 		lblBasicSettings.setBounds(50, 72, 140, 16);
@@ -400,99 +395,59 @@ public class Setup extends JDialog {
 		pnl2.add(panel_21, BorderLayout.CENTER);
 		panel_21.setLayout(null);
 
-		lblBasicSettings_1 = new JLabel("Basic settings");
+		lblBasicSettings_1 = new JLabel("Usage agreement");
 		lblBasicSettings_1.setForeground(Color.GRAY);
 		lblBasicSettings_1.setFont(new Font("Tahoma", Font.BOLD, 20));
-		lblBasicSettings_1.setBounds(60, 20, 176, 48);
+		lblBasicSettings_1.setBounds(60, 20, 266, 48);
 		panel_21.add(lblBasicSettings_1);
 
-		chckbxTryToDownload = new JCheckBox("Try to download album artwork automatically");
-		chckbxTryToDownload.setEnabled(false);
-		chckbxTryToDownload.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		chckbxTryToDownload.setBackground(Color.WHITE);
-		chckbxTryToDownload.setBounds(60, 262, 379, 23);
-		panel_21.add(chckbxTryToDownload);
+		chckbxUploadData = new JCheckBox("Upload usage data automatically (requires internet connection)");
+		chckbxUploadData.setSelected(true);
+		chckbxUploadData.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		chckbxUploadData.setBackground(Color.WHITE);
+		chckbxUploadData.setBounds(60, 494, 480, 23);
+		panel_21.add(chckbxUploadData);
 
-		chckbxEnableShortcuts = new JCheckBox("Enable keyboard shortcuts");
-		chckbxEnableShortcuts.setEnabled(false);
-		chckbxEnableShortcuts.setSelected(true);
-		chckbxEnableShortcuts.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		chckbxEnableShortcuts.setBackground(Color.WHITE);
-		chckbxEnableShortcuts.setBounds(60, 459, 266, 23);
-		panel_21.add(chckbxEnableShortcuts);
+		chckbxAgree = new JCheckBox("I agree to the above terms");
+		chckbxAgree.addActionListener(new ChckbxEnableShortcutsActionListener());
+		chckbxAgree.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		chckbxAgree.setBackground(Color.WHITE);
+		chckbxAgree.setBounds(60, 377, 266, 23);
+		panel_21.add(chckbxAgree);
+		
+		txtrDataUp = new JTextArea();
+		txtrDataUp.setEditable(false);
+		txtrDataUp.setFont(new Font("Tahoma", Font.PLAIN, 12));
+		txtrDataUp.setWrapStyleWord(true);
+		txtrDataUp.setLineWrap(true);
+		txtrDataUp.setText("Whilst taking part in this study, you will be allowing us to collect limited amounts of information about your usage of the media player, such as how often you skip tracks. All such data will be collected anonymously. If you would prefer to manually submit the relevant data files by email, please untick this box and contact the researcher as soon as possible:");
+		txtrDataUp.setBounds(60, 418, 517, 69);
+		panel_21.add(txtrDataUp);
+		
+		scrollPaneAgree = new JScrollPane();
+		scrollPaneAgree.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		scrollPaneAgree.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+		scrollPaneAgree.setBounds(60, 137, 517, 233);
+		panel_21.add(scrollPaneAgree);
+		
+		txtrAgreement = new JTextArea();
+		scrollPaneAgree.setViewportView(txtrAgreement);
+		txtrAgreement.setWrapStyleWord(true);
+		txtrAgreement.setText("This project was approved by the University of Cambridge Computer Laboratory ethics committee on 31st March 2014.\r\n\r\nYour first point of contact with any queries relating to: the usage of this software; the project goals; the user study, should be directed to the project researcher:\r\nJames King - jk509@cam.ac.uk\r\n\r\nThe application is only intended for use on Windows operating systems. Support for other OSes is not guaranteed, but you are welcome to contact the researcher with queries.\r\n\r\nBy checking below, you agree to the following terms:\r\n\r\nData Collection:\r\n\r\nThe data to be gathered for this study will be a set of files generated by the software and stored in your \"USER_DIRECTORY\\Music Factory\\\" folder. You will have the option of allowing the software to automatically upload this data periodically to a remote server used by the researchers, or sending the data manually (e.g. by email or requesting for a researcher to collect the data in person with a USB stick). Any automatic data collection will be anonymous. See option below these terms for more details.\r\n\r\nSoftware Support & Updates:\r\n\r\nSoftware updates may be provided at the discretion of the researcher. Feedback on software defects is valuable but no guarantees are made as to when these may be fixed. The software can be easily updated by simply re-running a newer copy of the installer. This preserves all settings and music collection information. You will be informed when any updates are available and advised in what way the usage experience will be improved. Distribution of updates will be as per the original software distribution.\r\n\r\nPromised Functionality:\r\n\r\nThe promised functionality of the software is the ability to playback music already stored on this computer, alongside a number of basic features such as manually creating playlists. There is also an option to create playlists generated by the machine-learning component of the software (which is what will be under evaluation). One or more algorithms will be involved in the generation of these playlists, but no promises pertaining to the quality/performance of these is given or implied. \r\n\r\nYou are welcome to keep using the software beyond the study end-date. In doing so you will acknowledge that updates may or may not be released after the evaluation period, and that you use the software at your own risk after this period (i.e. the researchers will not be liable for any damage caused, although this is a highly unlikely scenario).\r\n\r\nOriginal project description and precautions statements:\r\n\r\nThe aim of this experiment will be to determine the quality of playlists generated by an automated tool as judged by users. The subjects will receive the software to be used as a typical media player with their own music collections for a period of approximately 1 month. The expected number of participants is 20-50.\r\nData will be gathered from users in two ways. Firstly, anonymous usage data will be collected with permission from users, but will only be viewable by the experiment organiser and will be destroyed after the project has concluded. This data will consist of statistics concerning the frequency and order in which songs have been listened to, and data about any playlists generated as a result.  Aggregated statistics concerning the entire data set will be made publicly viewable in the final report/dissertation for this project.\r\nSecondly, a survey will be conducted at the end of the experiment to allow the users a chance to report on their experiences with the software. These questions will be optional and sent as either a paper or digital form to be filled in.\r\n\r\nThe experiment will be carefully controlled, particularly with regards to anonymity in any data collected from the users. Participants will be informed that they may withdraw from the experiment at any time, and will be told exactly what data will be collected if they choose to participate. All participants will be over 18 and understand that their involvement is entirely voluntary.\r\nNo risk of physical or psychological harm to the participants is expected in this study.  Participants will understand that the only music which may be played to them is what they voluntarily give as input to the software, and that they must be legally entitled to use this music for such a purpose. Participants may choose not to input all of their music to the software.\r\nThe user survey will not pose any risk to participants: it will be voluntary and the questions will only cover their experiences of the software and their opinion on the quality of its operation.");
+		txtrAgreement.setLineWrap(true);
+		txtrAgreement.setFont(new Font("Tahoma", Font.PLAIN, 12));
+		txtrAgreement.setEditable(false);
+		txtrAgreement.setCaretPosition(0);
+		
+		txtrToProceedYou = new JTextArea();
+		txtrToProceedYou.setLineWrap(true);
+		txtrToProceedYou.setWrapStyleWord(true);
+		txtrToProceedYou.setFont(new Font("Tahoma", Font.PLAIN, 12));
+		txtrToProceedYou.setText("To proceed, you will need to read and confirm your acknowledgement of the following usage agreement. If you have any questions, please don't hesitate to contact the provider of this software.");
+		txtrToProceedYou.setBounds(60, 70, 517, 52);
+		panel_21.add(txtrToProceedYou);
 
-		ButtonGroup repeats = new ButtonGroup();
-
-		panel_1 = new JPanel();
-		panel_1.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
-		panel_1.setBackground(Color.WHITE);
-		panel_1.setBounds(49, 87, 456, 152);
-		panel_21.add(panel_1);
-		panel_1.setLayout(null);
-
-		lblDefaultSortOrder = new JLabel("Default sorting order for tracks:");
-		lblDefaultSortOrder.setBounds(20, 26, 200, 23);
-		panel_1.add(lblDefaultSortOrder);
-		lblDefaultSortOrder.setFont(new Font("Tahoma", Font.PLAIN, 14));
-
-		list = new JList();
-		list.setEnabled(false);
-		list.setBounds(242, 25, 176, 101);
-		panel_1.add(list);
-		list.setVisibleRowCount(5);
-		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		list.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		list.setBorder(new SoftBevelBorder(BevelBorder.LOWERED, Color.LIGHT_GRAY, Color.GRAY, null, null));
-		list.setModel(new AbstractListModel() {
-			/**
-			 * 
-			 */
-			private static final long serialVersionUID = 1L;
-			String[] values = new String[] { "By track name", "By artist, then album", "By artist, then track name", "By genre, then artist", "By year, then artist" };
-
-			public int getSize() {
-				return values.length;
-			}
-
-			public Object getElementAt(int index) {
-				return values[index];
-			}
-		});
-		list.setSelectedIndices(new int[] { 1 });
-
-		panel_2 = new JPanel();
-		panel_2.setLayout(null);
-		panel_2.setBorder(new EtchedBorder(EtchedBorder.LOWERED, null, null));
-		panel_2.setBackground(Color.WHITE);
-		panel_2.setBounds(49, 311, 456, 120);
-		panel_21.add(panel_2);
-
-		rdbtnOne = new JRadioButton("Repeat one");
-		rdbtnOne.setEnabled(false);
-		rdbtnOne.setBounds(20, 65, 109, 23);
-		panel_2.add(rdbtnOne);
-		rdbtnOne.setBackground(Color.WHITE);
-		repeats.add(rdbtnOne);
-
-		rdbtnRepeatAll = new JRadioButton("Repeat all");
-		rdbtnRepeatAll.setEnabled(false);
-		rdbtnRepeatAll.setBounds(135, 65, 109, 23);
-		panel_2.add(rdbtnRepeatAll);
-		rdbtnRepeatAll.setSelected(true);
-		rdbtnRepeatAll.setBackground(Color.WHITE);
-		repeats.add(rdbtnRepeatAll);
-
-		rdbtnRepeatNone = new JRadioButton("Repeat none");
-		rdbtnRepeatNone.setEnabled(false);
-		rdbtnRepeatNone.setBounds(250, 65, 109, 23);
-		panel_2.add(rdbtnRepeatNone);
-		rdbtnRepeatNone.setBackground(Color.WHITE);
-		repeats.add(rdbtnRepeatNone);
-
-		lblDefaultRepeatBehaviour = new JLabel("Default repeat behaviour for songs:");
-		lblDefaultRepeatBehaviour.setBounds(20, 24, 217, 23);
-		panel_2.add(lblDefaultRepeatBehaviour);
-		lblDefaultRepeatBehaviour.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		//ButtonGroup repeats = new ButtonGroup();
 
 		panel_22 = new JPanel();
 		panel_22.setPreferredSize(new Dimension(10, 30));
@@ -511,6 +466,7 @@ public class Setup extends JDialog {
 		panel_22.add(btnPrevious2, BorderLayout.WEST);
 
 		btnNext2 = new JButton("Next");
+		btnNext2.setEnabled(false);
 		btnNext2.setBackground(Color.WHITE);
 		btnNext2.setFont(new Font("Tahoma", Font.BOLD, 11));
 		btnNext2.addActionListener(new BtnNextActionListener());
@@ -601,7 +557,7 @@ public class Setup extends JDialog {
 		lblPressDeleteTo.setBounds(32, 225, 153, 23);
 		panel_31.add(lblPressDeleteTo);
 
-		lblLoadMoreItunes = new JLabel("You can import additional tracks from iTunes later if needed.");
+		lblLoadMoreItunes = new JLabel("You can import additional tracks from disk later if needed.");
 		lblLoadMoreItunes.setBounds(30, 496, 289, 14);
 		panel_31.add(lblLoadMoreItunes);
 
@@ -786,10 +742,10 @@ public class Setup extends JDialog {
 		btnAnalyse.addActionListener(new BtnGoActionListener());
 		panel_51.add(btnAnalyse);
 
-		lblThisMayTake = new JLabel("This may take several minutes. Please wait...");
+		lblThisMayTake = new JLabel("This may take some time (up to 10s per track). Please wait...");
 		lblThisMayTake.setVisible(false);
 		lblThisMayTake.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		lblThisMayTake.setBounds(60, 322, 367, 23);
+		lblThisMayTake.setBounds(60, 322, 407, 23);
 		panel_51.add(lblThisMayTake);
 
 		progressBar = new JProgressBar();
@@ -893,7 +849,7 @@ public class Setup extends JDialog {
 		lblThanksWereAll.setBounds(57, 79, 270, 28);
 		panel_61.add(lblThanksWereAll);
 
-		lblAFewInstructions = new JLabel("Click 'finish' below to start playing music, or navigate back to a previous page");
+		lblAFewInstructions = new JLabel("Click 'Finish' below to start playing music, or navigate back to a previous page");
 		lblAFewInstructions.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblAFewInstructions.setBounds(57, 126, 520, 28);
 		panel_61.add(lblAFewInstructions);
@@ -1011,6 +967,7 @@ public class Setup extends JDialog {
 	private class BtnFinishActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			// save()
+			success[0] = true;
 			dispose();
 		}
 	}
@@ -1110,8 +1067,10 @@ public class Setup extends JDialog {
 	private class ThisWindowListener extends WindowAdapter {
 		@Override
 		public void windowClosing(WindowEvent arg0) {
-			if (JOptionPane.showConfirmDialog(dialog, "The music player will not be useful until setup has completed.\nAre you sure you want to exit?", "Warning", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION)
+			if (JOptionPane.showConfirmDialog(dialog, "You will not be able to use the music player until setup has completed.\nAre you sure you want to exit?"/*"The music player will not be useful until setup has completed.\nAre you sure you want to exit?"*/, "Warning", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
+				success[0] = false;
 				dispose();
+			}
 		}
 	}
 
@@ -1184,6 +1143,11 @@ public class Setup extends JDialog {
 			}
 		}
 	}
+	private class ChckbxEnableShortcutsActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			btnNext2.setEnabled(chckbxAgree.isSelected());
+		}
+	}
 
 	private boolean Import(LibraryParser parser) {
 
@@ -1192,14 +1156,14 @@ public class Setup extends JDialog {
 
 		parser.run();
 
-		// TODO: sort
+		// TODO: this is an out of date method. Needs to mimic method in MusicPlayer... (ie. don't add to pl 0 or 1)
 		library.setPlaylist(0, parser.getTracks());
 		library.setPlaylist(1, parser.getTracks());
 		library.setPlaylist(2, parser.getTracks());
 
 		return true;
 
-		// TODO: import playlists, artwork
+		// TODO: import playlists
 	}
 
 	public void UpdateSidebar() {

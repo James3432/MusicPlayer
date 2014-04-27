@@ -1,4 +1,4 @@
-package jk509.player;
+package jk509.player.tests;
 
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
@@ -12,6 +12,9 @@ import java.util.Random;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 
+import jk509.player.Constants;
+import jk509.player.core.Security;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -23,6 +26,8 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.joda.time.DateTime;
+import org.joda.time.Days;
 
 public class Test {
 
@@ -34,6 +39,8 @@ public class Test {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
+		int days = Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays();
+		System.out.println(days);
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
@@ -76,27 +83,33 @@ public class Test {
 	 * TODO s: directory structure/namings for uploads
 	 */
 	private class BtnTestFileuploadActionListener implements ActionListener {
-		@SuppressWarnings("unused")
 		public void actionPerformed(ActionEvent arg0) {
 			String uniqueString = GenerateString(10);
+			String anon_id = Security.getSerialNumber(Constants.USERNAME_AS_ID);
 			String date = (new Date()).toString();
-			File[] files = new File[]{ new File("C:\\users\\james\\music factory\\library.ser") };
+			File[] files = new File[]{ 
+					new File(Constants.SETTINGS_PATH)
+					// TODO: more
+			};
 			
+			String[] descriptors = new String[]{
+					"Settings file"
+			};
 			
 			CloseableHttpClient httpclient = HttpClients.createDefault();
 	        try {
 	            HttpPost httppost = new HttpPost(Constants.UPLOAD_URL);
 
-	            FileBody bin = new FileBody(files[0]);
-	            StringBody comment = new StringBody("A binary file of some kind: "+date, ContentType.TEXT_PLAIN);
+	            MultipartEntityBuilder reqEntity = MultipartEntityBuilder.create();
+	            		
+	            for(int i=0; i<files.length; ++i){
+		            FileBody f = new FileBody(files[i]);
+		            StringBody comment = new StringBody("User data: "+anon_id+" "+date+" "+uniqueString+" $$ "+descriptors[i], ContentType.TEXT_PLAIN);
+		            reqEntity.addPart("files", f);
+		            reqEntity.addPart("text", comment);
+	            }
 
-	            HttpEntity reqEntity = MultipartEntityBuilder.create()
-	                    .addPart("files", bin)
-	                    .addPart("text", comment)
-	                    .build();
-
-
-	            httppost.setEntity(reqEntity);
+	            httppost.setEntity(reqEntity.build());
 
 	            System.out.println("executing request " + httppost.getRequestLine());
 	            CloseableHttpResponse response = httpclient.execute(httppost);

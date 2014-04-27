@@ -1,11 +1,12 @@
 package jk509.player.tests;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
-import java.util.Deque;
+import java.util.ArrayList;
+import java.util.List;
 
 import jk509.player.clustering.SongCluster;
 import jk509.player.core.Library;
@@ -45,7 +46,7 @@ public class TestSongCluster {
 			set = true;
 		}
 		
-		cluster.clearHistory();
+		//cluster.clearHistory();
 	}
 
 	@After
@@ -54,7 +55,7 @@ public class TestSongCluster {
 		library = null;
 	}
 	
-	@Test
+	/*@Test
 	public void testHistory() {
 		cluster.addHistory(library.get(5));
 		cluster.addHistory(library.get(4));
@@ -68,7 +69,7 @@ public class TestSongCluster {
 			Song s = q.pop();
 			System.out.println(s);
 		}
-	}
+	}*/
 
 	@Test
 	public void testGetClusterIndex() {
@@ -85,23 +86,26 @@ public class TestSongCluster {
 	
 	@Test
 	public void testNextFromScratch(){
-		cluster.addHistory(library.get(5));
-		cluster.addHistory(library.get(4));
-		cluster.addHistory(library.get(23));
-		cluster.addHistory(library.get(58));
-		cluster.addHistory(library.get(1));
-		Song s = cluster.next();
+		List<Song> history = new ArrayList<Song>();
+		history.add(library.get(5));
+		history.add(library.get(4));
+		history.add(library.get(23));
+		history.add(library.get(58));
+		history.add(library.get(1));
+		Song s = cluster.next(history, null);
 		System.out.println(s);
 	}
 	@Test
 	public void testNextFromSource(){
-		cluster.addHistory(library.get(5));
-		cluster.addHistory(library.get(4));
-		cluster.addHistory(library.get(23));
-		cluster.addHistory(library.get(58));
-		cluster.addHistory(library.get(1));
-		cluster.setPlayingCluster(library.get(5));
-		Song s = cluster.next();
+		List<Song> history = new ArrayList<Song>();
+		history.add(library.get(5));
+		history.add(library.get(4));
+		history.add(library.get(23));
+		history.add(library.get(58));
+		history.add(library.get(1));
+		Song seed = library.get(42);
+		cluster.setPlayingCluster(seed);
+		Song s = cluster.next(history, null);
 		System.out.println(s);
 	}
 

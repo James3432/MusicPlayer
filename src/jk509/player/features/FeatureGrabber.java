@@ -9,7 +9,6 @@ import jAudioFeatureExtractor.AudioFeatures.MetaFeatureFactory;
 import jAudioFeatureExtractor.AudioFeatures.StandardDeviation;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,6 +21,7 @@ import javax.swing.SwingUtilities;
 
 import jk509.player.Constants;
 import jk509.player.core.Song;
+import jk509.player.core.StaticMethods;
 import jk509.player.gui.GUIupdater;
 
 public class FeatureGrabber implements Constants {
@@ -55,8 +55,8 @@ public class FeatureGrabber implements Constants {
 
 	public Cancel cancel;
 	
-	private List<double[]> results;
-	private List<double[]> results_w;
+	//private List<double[]> results;
+	//private List<double[]> results_w;
 	
 	@SuppressWarnings("unchecked")
 	public FeatureGrabber(){
@@ -110,28 +110,43 @@ public class FeatureGrabber implements Constants {
 		System.exit(0);
 	}*/
 	
-	public List<double[]> getResults(){
+	/*public List<double[]> getResults(){
 		return results;
 	}
 	public List<double[]> getWeightedResults(){
 		ApplyWeights();
 		return results_w; 
-	}
+	}*/
 	
 	public void Normalise(){
 		
 	}
 	
-	private void ApplyWeights(){
+	//TODO?
+	/*private void ApplyWeights(){
 		double[] weights = (new AudioFeatures()).getWeights();
 		for(double[] weighted : results){
 			for(int i=0; i<weighted.length; ++i)
 				weighted[i] = weighted[i] * weights[i];
 			results_w.add(weighted);
 		}
-	}
+	}*/
 	
 	public void run(final List<Song> tracks, final GUIupdater updater){
+		
+		// TODO may need to change updater code? (remove mid-way announces)
+		this.updater = updater;
+		this.updater.setNumberOfFiles(tracks.size());
+		
+		defaults = (new AudioFeatures()).getFeatureArray();
+		
+		FeatureProcessor processorTemp = null;
+		try{
+			processorTemp = new FeatureProcessor(Constants.WINDOW_SIZE, Constants.WINDOW_OVERLAP, Constants.SAMPLING_RATE*1000, Constants.NORMALISE_AUDIO, features, defaults, cancel);
+		}catch(Exception e){
+			return;
+		}
+		final FeatureProcessor processor = processorTemp;
 		
 		if(Constants.MULTITHREADED){
 			
@@ -140,18 +155,8 @@ public class FeatureGrabber implements Constants {
 				int threadCount = Constants.PARALELLISM;
 				
 				int procs = Runtime.getRuntime().availableProcessors();
-				// may wish to initialise threadCount to this instead?
-				threadCount = procs; // TODO.. put bool switch into constants
-				
-				//PrintFeatures();
-				defaults = (new AudioFeatures()).getFeatureArray();
-				final FeatureProcessor processor = new FeatureProcessor(Constants.WINDOW_SIZE, Constants.WINDOW_OVERLAP, Constants.SAMPLING_RATE*1000, Constants.NORMALISE_AUDIO, features, defaults, cancel);
-				
-				List<double[]> res = new ArrayList<double[]>();
-				
-				// may need to change updater code? (remove mid-way announces)
-				this.updater = updater;
-				this.updater.setNumberOfFiles(tracks.size());
+				if(Constants.PARALLELISM_USE_PROC_COUNT)
+					threadCount = procs;
 				
 				ExecutorService threadPool = Executors.newFixedThreadPool(threadCount);
 				
@@ -163,7 +168,7 @@ public class FeatureGrabber implements Constants {
 						public void run() {
 							try{
 								String temp_name = GenerateString(Constants.TEMP_FILE_NAME_LENGTH);
-								File temp = new File(temp_name+".mp3");
+								File temp = new File(StaticMethods.getHomeDir()+"\\Music Factory\\"+temp_name+".mp3");
 								processor.extractFeatures(tracks.get(t), updater, temp);
 								try{
 									temp.delete();
@@ -184,43 +189,35 @@ public class FeatureGrabber implements Constants {
 				
 				SwingUtilities.invokeLater(updater.resumeGUI);
 				//return res;
-				if(Constants.NORMALISE_FEATURES)
-					results = Normalise(res);
-				else
-					results = res;
-				//TODO
-				// invoke Normalise();
+				//if(Constants.NORMALISE_FEATURES)
+				//	results = Normalise(res);
+				//else
+				//	results = res;
+				//TODO: invoke Normalise() which should process song list;
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
-				results = new ArrayList<double[]>();
+				//results = new ArrayList<double[]>();
 			}
 			
 		}else{
 		
 			try {
 				
-				//PrintFeatures();
-				defaults = (new AudioFeatures()).getFeatureArray();
-				FeatureProcessor processor = new FeatureProcessor(Constants.WINDOW_SIZE, Constants.WINDOW_OVERLAP, Constants.SAMPLING_RATE*1000, Constants.NORMALISE_AUDIO, features, defaults, cancel);
-				
-				List<double[]> res = new ArrayList<double[]>();
-				
-				this.updater = updater;
-				this.updater.setNumberOfFiles(tracks.size());
+				String temp_name = GenerateString(Constants.TEMP_FILE_NAME_LENGTH);
+				File temp = new File(StaticMethods.getHomeDir()+"\\Music Factory\\"+temp_name+".mp3");
 				
 				for(int i=0; i<tracks.size(); ++i){
 				//for(int i : new int[]{1, 3, 147, 148, 149}){
 				//for(int i=1161; i<1191; ++i){
 					try{
-						res.add(featuresToArray(processor.extractFeatures(new File(tracks.get(i).getLocation()), updater)));
+						processor.extractFeatures(tracks.get(i), updater, temp);
 						updater.announceUpdate(i+1, 0);
 						System.out.println("Features extracted from file #"+i);
 					}catch(Exception e){
-						res.add(null);
+						//res.add(null);
 						System.out.println("Feature extraction failed for file #"+i);
 					}
-					tracks.get(i).setAudioFeatures(res.get(i));
+					//tracks.get(i).setAudioFeatures(res.get(i));
 	
 					//EXPERIMENTAL
 					//System.out.println("gc+");
@@ -228,18 +225,22 @@ public class FeatureGrabber implements Constants {
 					//System.out.println("gc-");
 				}
 				
+				try{
+					temp.delete();
+				}catch(Exception e){ }
+				
 				SwingUtilities.invokeLater(updater.resumeGUI);
 				//return res;
-				if(Constants.NORMALISE_FEATURES)
-					results = Normalise(res);
-				else
-					results = res;
+				//if(Constants.NORMALISE_FEATURES)
+				//	results = Normalise(res);
+				//else
+				//	results = res;
 				//TODO
 				// invoke Normalise();
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-				results = new ArrayList<double[]>();
+				//results = new ArrayList<double[]>();
 			}
 		}
 	}
@@ -260,9 +261,8 @@ public class FeatureGrabber implements Constants {
 		}
 	}
 	
-	private List<double[]> Normalise(List<double[]> fs){
+	/*private List<double[]> Normalise(List<double[]> fs){
 		List<double[]> res = new ArrayList<double[]>();
-		// TODO
 		return res;
 	}
 	
@@ -275,7 +275,7 @@ public class FeatureGrabber implements Constants {
 			}
 		}
 		return res;
-	}
+	}*/
 	
 	void populateMetaFeatures(LinkedList<MetaFeatureFactory> listMFF,
 			LinkedList<FeatureExtractor> listFE, LinkedList<Boolean> def) {

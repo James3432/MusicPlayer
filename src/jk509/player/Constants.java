@@ -1,5 +1,7 @@
 package jk509.player;
 
+import org.joda.time.DateTime;
+
 import jk509.player.core.StaticMethods;
 
 public interface Constants {
@@ -18,6 +20,8 @@ public interface Constants {
 	public static final double RANDOMNESS_MIN = 0.2;                   // overall min value for randomness, taken at time=RANDOMNESS_SHIFT_TIME. User settings can't go below this.
 	public static final double RANDOMNESS_MAX = 0.8;                   // overall max value for randomness, taken at time=0. User settings can't exceed this.
 	public static final int RANDOMNESS_SHIFT_TIME = 10;                // number of days (or ops - I havn't decided) over which 'randomness' changes from exploration -> exploitation
+	public static final double RANDOMNESS_USER_CONTROL = 0.4;          // range over which user can adjust randomness
+	
 	// Rewards:
 	public static final double REWARD_TRACK_FINISHED = 0.5;            // track played all way through
 	public static final double REWARD_TRACK_SKIPPED_MAX = 0.5;         // track barely skipped: should equal track_finished unless good reason otherwise
@@ -40,9 +44,15 @@ public interface Constants {
 	public static final boolean NORMALISE_AUDIO = false;    // whether to normalise audio before processing. NOT TESTED
 	public static final boolean MULTITHREADED = true;       // whether to attempt feature extraction with multiple-core exploitation
 	public static final int PARALELLISM = 4;                // see above: default number of threads to try (decremented upon failure)
+	public static final boolean PARALLELISM_USE_PROC_COUNT = true; // Whether to set parallelism to the number of cores available
 	
 	// Other
 	public static final int UPLOAD_FREQUENCY = 3;    // Data will be uploaded to server (url below) every n days
+	public static final boolean SMART_PLAY_DEFAULT = true;  // Whether smart play mode is on by default
+	//public static final double HISTORY_WEIGHT_MIN = 0.1;
+	//public static final double HISTORY_WEIGHT_MAX = 1.0;
+	public static final double HISTORY_WEIGHT_STEP = 0.01;   // ie. 1/this is how long it takes to forget we played a track
+	public static final int HISTORY_NONREPEAT = 5; // number of tracks back in history we should never repeat
 	
 	// ------------------------------------------------------------------
 	
@@ -59,6 +69,8 @@ public interface Constants {
 	public static final boolean DEBUG_DISPLAY_UPDATES = true;     // display learning updates as they are processed
 	public static final boolean DEBUG_NEXTTRACKPATHS = true;      // display details of track chosen by next()
 	public static final boolean DEBUG_SETTINGS = true;            // use the debug version of settings.ser
+	public static final boolean DEBUG_SHOW_SETUP = false;         // show setup screen always, for testing
+	public static final boolean DEBUG_IGNORE_SETUP = false;        // ignore result of setup screen, load prog anyway
 	
 	// ------------------------------------------------------------------
 	
@@ -71,7 +83,10 @@ public interface Constants {
 	public static final String featureXMLLocation = "features.xml";
 	public static final int TEMP_FILE_NAME_LENGTH = 10;
 	public static final String UPLOAD_URL = "http://www.james.eu.org/upload.php";
-	public static final String settings_path = StaticMethods.getHomeDir() + (DEBUG_SETTINGS ? "\\Music Factory\\library_debug.ser" : "\\Music Factory\\library.ser");
+	public static final String SETTINGS_PATH = StaticMethods.getHomeDir() + (DEBUG_SETTINGS ? "\\Music Factory\\library_debug.ser" : "\\Music Factory\\library.ser");
+	public static final String PATH_TO_LAME = StaticMethods.getHomeDir() + "\\Music Factory\\lame.exe";
+	public static final boolean USERNAME_AS_ID = false; // Whether to capture current username as part of data upload ID string (cf. ethics agreement)
 
+	public static final DateTime STUDY_START_DATE = new DateTime(2014, 4, 1, 12, 0, 0, 0);
 	
 }
