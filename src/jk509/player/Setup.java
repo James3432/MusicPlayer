@@ -38,6 +38,7 @@ import jk509.player.core.Library;
 import jk509.player.core.LibraryParser;
 import jk509.player.core.Song;
 import jk509.player.core.StaticMethods;
+import javax.swing.border.LineBorder;
 
 public class Setup extends JDialog {
 	/**
@@ -170,6 +171,13 @@ public class Setup extends JDialog {
 	private JTextArea txtrAgreement;
 	private JScrollPane scrollPaneAgree;
 	private JTextArea txtrToProceedYou;
+	private JLabel lblAfterSettingUp;
+	private JLabel lblPleaseTryTo;
+	private JLabel lblNextTrackWill;
+	private JLabel lblNewLabel;
+	private JLabel lblSmartModeIs;
+	private JLabel lblTheBrainIcon;
+	private JPanel panel_1;
 
 	/**
 	 * Create the dialog.
@@ -495,7 +503,7 @@ public class Setup extends JDialog {
 		panel_31.add(txtMusicItunes);
 		txtMusicItunes.setColumns(10);
 
-		lblItunesLocate = new JLabel("Please locate your itunes folder:");
+		lblItunesLocate = new JLabel("Please locate your iTunes folder:");
 		lblItunesLocate.setBounds(30, 76, 170, 14);
 		panel_31.add(lblItunesLocate);
 
@@ -627,7 +635,7 @@ public class Setup extends JDialog {
 		btnSkipMusic.setFont(new Font("Tahoma", Font.BOLD, 11));
 		panel_41.add(btnSkipMusic);
 
-		lblIfYouUse = new JLabel("If you use another player such as \"Windows Media Player\", your music may be stored in \"My Music\".");
+		lblIfYouUse = new JLabel("If you use another player such as Windows Media Player, your music may be stored in \"My Music\".");
 		lblIfYouUse.setBounds(60, 84, 517, 14);
 		panel_41.add(lblIfYouUse);
 
@@ -846,12 +854,12 @@ public class Setup extends JDialog {
 
 		lblThanksWereAll = new JLabel("Thanks, we're all done here. ");
 		lblThanksWereAll.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		lblThanksWereAll.setBounds(57, 79, 270, 28);
+		lblThanksWereAll.setBounds(57, 93, 270, 28);
 		panel_61.add(lblThanksWereAll);
 
-		lblAFewInstructions = new JLabel("Click 'Finish' below to start playing music, or navigate back to a previous page");
+		lblAFewInstructions = new JLabel("Click Finish below to start playing music, or navigate back to a previous page");
 		lblAFewInstructions.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		lblAFewInstructions.setBounds(57, 126, 520, 28);
+		lblAFewInstructions.setBounds(57, 140, 520, 28);
 		panel_61.add(lblAFewInstructions);
 
 		lblSetupComplete = new JLabel("Setup complete");
@@ -862,13 +870,50 @@ public class Setup extends JDialog {
 
 		lblToAdjustSettings = new JLabel("to adjust settings. Import more music later using the import options in the");
 		lblToAdjustSettings.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		lblToAdjustSettings.setBounds(57, 153, 520, 28);
+		lblToAdjustSettings.setBounds(57, 167, 520, 28);
 		panel_61.add(lblToAdjustSettings);
 
-		lblFileMenu = new JLabel("'File' menu.");
+		lblFileMenu = new JLabel("File menu.");
 		lblFileMenu.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		lblFileMenu.setBounds(57, 181, 520, 28);
+		lblFileMenu.setBounds(57, 195, 520, 28);
 		panel_61.add(lblFileMenu);
+		
+		lblAfterSettingUp = new JLabel("After setting up any playlists and getting used to using the music player,");
+		lblAfterSettingUp.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		lblAfterSettingUp.setBounds(57, 265, 520, 28);
+		panel_61.add(lblAfterSettingUp);
+		
+		lblPleaseTryTo = new JLabel("please try to use it in \"Smart Mode\" as much as possible. In this mode, the");
+		lblPleaseTryTo.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		lblPleaseTryTo.setBounds(57, 292, 520, 28);
+		panel_61.add(lblPleaseTryTo);
+		
+		lblNextTrackWill = new JLabel("next track will always be chosen automatically based on what you're currently");
+		lblNextTrackWill.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		lblNextTrackWill.setBounds(57, 320, 520, 28);
+		panel_61.add(lblNextTrackWill);
+		
+		lblNewLabel = new JLabel("listening to and what you've listened to in the past.");
+		lblNewLabel.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		lblNewLabel.setBounds(57, 348, 520, 28);
+		panel_61.add(lblNewLabel);
+		
+		lblSmartModeIs = new JLabel("Smart mode is turned on by default. Turn it off later by pressing 's' or clicking");
+		lblSmartModeIs.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		lblSmartModeIs.setBounds(57, 404, 479, 28);
+		panel_61.add(lblSmartModeIs);
+		
+		lblTheBrainIcon = new JLabel("the brain icon near the bottom of the screen.");
+		lblTheBrainIcon.setFont(new Font("Tahoma", Font.PLAIN, 14));
+		lblTheBrainIcon.setBounds(57, 432, 520, 28);
+		panel_61.add(lblTheBrainIcon);
+		
+		panel_1 = new JPanel();
+		panel_1.setBackground(new Color(255, 255, 255));
+		panel_1.setBorder(new LineBorder(new Color(165, 42, 42), 2, true));
+		panel_1.setBounds(38, 249, 520, 229);
+		panel_61.add(panel_1);
+		panel_1.setLayout(null);
 
 		panel_62 = new JPanel();
 		panel_62.setPreferredSize(new Dimension(10, 30));

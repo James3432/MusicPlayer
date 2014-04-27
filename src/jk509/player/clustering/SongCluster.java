@@ -244,6 +244,12 @@ public class SongCluster extends AbstractCluster {
 	public void AddTrack(Song s) {
 		// TODO
 		/*
+		 * at lowest level, add to songcluster if size < cluster_size, else group with child into new songcluster
+		 * 
+		 * add to: clusters, tracks, preferred, p, assignments at each relevant level
+		 * 
+		 * just use centroid distances. alternative was:
+		 * 
 		clusterController.clusterInstance(instance);
 		clusterController.distributionForInstance(instance);
 		*/
@@ -255,7 +261,62 @@ public class SongCluster extends AbstractCluster {
 	}
 
 	public void RemoveTrack(Song s) {
-		// TODO
+		int cluster = getClusterIndex(s);
+		if(cluster < 0)
+			return; // track not here
+		
+		if(clusterPlaying > -1 && getClusterPlayingSong() == s)
+			clearPlaying();
+		
+		// This is a songcluster, so can safely do:
+		assignments = arrayRemove(assignments, tracks.indexOf(s));
+		tracks.remove(s);
+		
+		int deletedIndex = -1;
+		
+		if(getChildren().get(cluster) instanceof LeafCluster){
+			// delete whole leafCluster
+			deletedIndex = cluster;
+		}else{
+			// recurse
+			((SongCluster) getChildren().get(cluster)).RemoveTrack(s);
+			if(((SongCluster) getChildren().get(cluster)).getChildren().size() < 1){
+				// delete songcluster, as it is now empty
+				deletedIndex = cluster;
+			}
+		}
+			
+		if(deletedIndex > -1){
+		
+			getChildren().remove(deletedIndex);
+			
+			if(deletedIndex < clusterPlaying)
+				clusterPlaying--;
+			
+			preferred = arrayRemove(preferred, deletedIndex);
+			RemoveClusterP(deletedIndex);
+			
+		}
+	}
+	
+	/*
+	 * remove element from an array
+	 */
+	private double[] arrayRemove(double[] arr, int index){
+		if(index >= arr.length)
+			return arr;
+		double[] out = new double[arr.length-1];
+		System.arraycopy(arr, 0, out, 0, index);
+		System.arraycopy(arr, index+1, out, index, arr.length - 1 - index);
+		return out;
+	}
+	private int[] arrayRemove(int[] arr, int index){
+		if(index >= arr.length)
+			return arr;
+		int[] out = new int[arr.length-1];
+		System.arraycopy(arr, 0, out, 0, index);
+		System.arraycopy(arr, index+1, out, index, arr.length - 1 - index);
+		return out;
 	}
 
 	public void RemoveTracks(Song[] s) {
@@ -347,7 +408,7 @@ public class SongCluster extends AbstractCluster {
 	}
 	
 	/*
-	 * TODO maybe incorporate 'recently played' here too, so we never explore a cluster we've played through?
+	 * Pick the next cluster to explore. If we've played all these tracks too recently, the heuristic will look one or more levels upwards
 	 */
 	private int chooseNextCluster(ArrayList<Double> row){
 		/*
@@ -392,7 +453,7 @@ public class SongCluster extends AbstractCluster {
 	 */
 	private Song heuristicChoice(Song source, SongCluster startcluster, List<Song> history, List<Double> history_weights){
 		Song choice = null;
-		SongCluster cluster = startcluster;
+		SongCluster cluster = startcluster; // TODO: set Constants.MIN_HEURISTIC_SIZE then if not enough options here, jump up a level (if parent != null). ideally want this after counting #tracks not in history though.
 		while (choice == null && cluster != null){
 		
 			List<Song> songs = cluster.getTracks();
@@ -679,6 +740,18 @@ public class SongCluster extends AbstractCluster {
 	}
 	
 	/*
+	 * Delete 1 cluster from P at this level
+	 */
+	private void RemoveClusterP(int r){
+		// remove row
+		p.remove(r);
+		
+		// remove column
+		for(int i=0; i<p.size(); ++i)
+			p.get(i).remove(r);
+	}
+	
+	/*
 	 * Get path from root to a song in the clustering. e.g [5, 0, 2] means it's in level0 cluster 5, then level1 cluster 0, then in level2 cluster 2 is the LeafCluster
 	 */
 	public List<Integer> getIndexList(Song s){
@@ -730,10 +803,10 @@ public class SongCluster extends AbstractCluster {
 		}
 		
 		int index = getClusterIndex(s);
-		if(clusterPlaying > -1 && clusterPlaying != index && clusters.get(clusterPlaying) instanceof SongCluster)
+		if(index < 0 || (clusterPlaying > -1 && clusterPlaying != index && clusters.get(clusterPlaying) instanceof SongCluster))
 			((SongCluster) clusters.get(clusterPlaying)).clearPlaying();
 		clusterPlaying = index;
-		if(clusters.get(clusterPlaying) instanceof SongCluster)
+		if(index > -1 && clusters.get(clusterPlaying) instanceof SongCluster)
 			((SongCluster) clusters.get(clusterPlaying)).setPlayingCluster(s);
 		
 	}

@@ -697,7 +697,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		pnlSearch.setLayout(gbl_pnlSearch);
 
 		lblSearch = new JLabel();
-		lblSearch.setToolTipText("Search");
+		lblSearch.setToolTipText("Search (Ctrl+F)");
 		lblSearch.addMouseListener(new LblSearchMouseListener());
 
 		pnlSearchTxt = new JPanel();
@@ -710,6 +710,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		pnlSearch.add(pnlSearchTxt, gbc_pnlSearchTxt);
 		pnlSearchTxt.setLayout(new BorderLayout(0, 0));
 		txtSearch = new JTextField();
+		txtSearch.setToolTipText(" Search (Ctrl+F)");
 		pnlSearchTxt.add(txtSearch, BorderLayout.CENTER);
 		txtSearch.addKeyListener(new TxtSearchKeyListener());
 		txtSearch.setPreferredSize(new Dimension(60, 20));
@@ -861,7 +862,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		gbc_btnSmart.gridy = 0;
 		pnlSmart.add(btnSmart, gbc_btnSmart);
 		btnSmart.setFocusable(false);
-		btnSmart.setToolTipText("Continuous smart play mode");
+		btnSmart.setToolTipText("Smart play mode (S)");
 		btnSmart.addActionListener(new BtnSmartActionListener());
 		btnSmart.setOpaque(false);
 		btnSmart.setContentAreaFilled(false);
@@ -1205,7 +1206,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		btnDelete.addActionListener(new BtnDeleteActionListener());
 
 		btnAdd = new JButton();
-		btnAdd.setToolTipText("Add playlist");
+		btnAdd.setToolTipText("Add playlist (Ctrl+N)");
 		btnAdd.addActionListener(new BtnAddActionListener());
 		btnAdd.addMouseListener(new BtnAddMouseListener());
 
@@ -1217,7 +1218,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		gbc_btnSmartBar.gridy = 0;
 		pnlPlaylistCtrls.add(btnSmartBar, gbc_btnSmartBar);
 		btnSmartBar.setFocusable(false);
-		btnSmartBar.setToolTipText("Open smart play bar");
+		btnSmartBar.setToolTipText("Toggle smart play bar (Ctrl+Q)");
 		btnSmartBar.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/SmartBar.png")));
 		btnSmartBar.setPressedIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/SmartBar_down.png")));
 		btnSmartBar.setOpaque(false);
@@ -1432,6 +1433,13 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				}
 				DisplayLibrary();
 				RefreshPlaylists();
+				
+				(new Thread(){
+					@Override
+					public void run(){
+						StartupRoutines();
+					}
+				}).start();
 				// System.out.println("lib read");
 			} catch (FileNotFoundException e) {
 				// That's weird, because we just checked for it
@@ -1467,6 +1475,11 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}else{
 			System.exit(0);
 		}
+	}
+	
+	// check 
+	private void StartupRoutines(){
+		
 	}
 
 	private void UpdateLibrary() {
