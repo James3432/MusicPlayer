@@ -168,7 +168,7 @@ public class FeatureGrabber implements Constants {
 						public void run() {
 							try{
 								String temp_name = GenerateString(Constants.TEMP_FILE_NAME_LENGTH);
-								File temp = new File(StaticMethods.getHomeDir()+"\\Music Factory\\"+temp_name+".mp3");
+								File temp = new File(StaticMethods.getSettingsDir()+temp_name+".mp3");
 								processor.extractFeatures(tracks.get(t), updater, temp);
 								try{
 									temp.delete();
@@ -204,7 +204,7 @@ public class FeatureGrabber implements Constants {
 			try {
 				
 				String temp_name = GenerateString(Constants.TEMP_FILE_NAME_LENGTH);
-				File temp = new File(StaticMethods.getHomeDir()+"\\Music Factory\\"+temp_name+".mp3");
+				File temp = new File(StaticMethods.getSettingsDir()+temp_name+".mp3");
 				
 				for(int i=0; i<tracks.size(); ++i){
 				//for(int i : new int[]{1, 3, 147, 148, 149}){

@@ -103,10 +103,14 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
+import org.joda.time.DateTime;
+import org.joda.time.Days;
+
 import jk509.player.clustering.AbstractCluster;
 import jk509.player.clustering.LeafCluster;
 import jk509.player.clustering.SongCluster;
 import jk509.player.core.FileScanner;
+import jk509.player.core.FileUploader;
 import jk509.player.core.ItunesParser;
 import jk509.player.core.JLayerPlayerPausable;
 import jk509.player.core.Library;
@@ -126,6 +130,10 @@ import jk509.player.gui.SmartPlaylistDialog.SmartPlaylistResult;
 import jk509.player.gui.SwingDragImages;
 import jk509.player.learning.UserAction;
 import jk509.player.learning.UserHistoryDemo;
+
+import java.awt.SystemColor;
+
+import javax.swing.JProgressBar;
 
 public class MusicPlayer implements MouseListener, MouseMotionListener {
 
@@ -266,6 +274,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JPanel spacerL;
 	private JPanel spacerR;
 	private JPanel mainPanel;
+	private JPanel statusPnl;
 	private JSlider sliderVol;
 	private JPopupMenu mnuAddPlaylist;
 	private JMenuItem mntmNewPlaylist;
@@ -305,6 +314,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JMenuItem mntmToggleSmartBar;
 	private JMenuItem mntmAddFiles;
 	private JMenuItem mntmResetSongClusters;
+	private JMenuItem mntmResetUploads;
 	private JMenuItem mntmClearSongFeatures;
 	private JMenuItem mntmSaveClusters;
 	private JMenu mnDeveloper;
@@ -313,6 +323,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JMenuItem mntmLearnTestHistory;
 	private JMenuItem mntmLearnPlaylists;
 	private JCheckBoxMenuItem chckbxmntmAutoSendUsage;
+	private JMenuItem mntmUploadDataNow;
+	private JProgressBar statusBar;
+	private JLabel lblStatus;
+	private JLabel lblStatusProg;
 
 	/**
 	 * Create the application.
@@ -745,7 +759,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		pnlSearch.add(lblSearch, gbc_lblSearch);
 		lblSearch.setOpaque(false);
 		lblSearch.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/search.png")));
-
+		
 		splitPlaylists = new JSplitPane();
 		frmMusicPlayer.getContentPane().add(splitPlaylists, BorderLayout.CENTER);
 		splitPlaylists.setContinuousLayout(true);
@@ -1249,6 +1263,24 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		gbc_btnDelete.gridx = 1;
 		gbc_btnDelete.gridy = 0;
 		pnlPlaylistCtrls.add(btnDelete, gbc_btnDelete);
+		
+				statusPnl = new JPanel();
+				statusPnl.setVisible(false);
+				statusPnl.setFocusable(false);
+				statusPnl.setBackground(new Color(204, 255, 204));
+				statusPnl.setBorder(new LineBorder(SystemColor.inactiveCaption));
+				frmMusicPlayer.getContentPane().add(statusPnl, BorderLayout.SOUTH);
+				
+				lblStatus = new JLabel("Uploading usage data: ");
+				lblStatus.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 11));
+				statusPnl.add(lblStatus);
+				
+				statusBar = new JProgressBar();
+				statusPnl.add(statusBar);
+				
+				lblStatusProg = new JLabel("0%");
+				lblStatusProg.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 11));
+				statusPnl.add(lblStatusProg);
 
 		menuBar = new JMenuBar();
 		frmMusicPlayer.setJMenuBar(menuBar);
@@ -1311,22 +1343,36 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		chckbxmntmAutoSendUsage = new JCheckBoxMenuItem("Auto send usage data");
 		chckbxmntmAutoSendUsage.setSelected(true);
 		mnSettings.add(chckbxmntmAutoSendUsage);
+		
+		mntmUploadDataNow = new JMenuItem("Upload data now");
+		mntmUploadDataNow.addActionListener(new MntmUploadDataNowActionListener());
+		mnSettings.add(mntmUploadDataNow);
 
 		mntmOptions_1 = new JMenuItem("Options...");
 		mntmOptions_1.setEnabled(false);
 		mnSettings.add(mntmOptions_1);
 		
-				mntmResetFactoryDefaults = new JMenuItem("Factory Reset");
-				mntmResetFactoryDefaults.addActionListener(new MntmResetFactoryDefaultsActionListener());
-				mnSettings.addSeparator();
-				mnSettings.add(mntmResetFactoryDefaults);
+		mntmResetFactoryDefaults = new JMenuItem("Factory Reset");
+		mntmResetFactoryDefaults.addActionListener(new MntmResetFactoryDefaultsActionListener());
+		mnSettings.addSeparator();
+		mnSettings.add(mntmResetFactoryDefaults);
 		
 		mnDeveloper = new JMenu("Developer");
-		menuBar.add(mnDeveloper);
+		if(Constants.DEBUG_SHOWDEVMENU)
+			menuBar.add(mnDeveloper);
 		
-				mntmResetSongClusters = new JMenuItem("Reset Song Clusters");
-				mnDeveloper.add(mntmResetSongClusters);
-				mntmResetSongClusters.addActionListener(new MntmResetSongClustersActionListener());
+		mntmResetUploads = new JMenuItem("Reset Upload Counter");
+		mnDeveloper.add(mntmResetUploads);
+		mntmResetUploads.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				library.lastUpdateDay = -1;
+			}
+		});
+		
+		mntmResetSongClusters = new JMenuItem("Reset Song Clusters");
+		mnDeveloper.add(mntmResetSongClusters);
+		mntmResetSongClusters.addActionListener(new MntmResetSongClustersActionListener());
 		
 		mntmPrintProbabilities = new JMenuItem("Print probabilities");
 		mntmPrintProbabilities.addActionListener(new MntmPrintProbabilitiesActionListener());
@@ -1480,12 +1526,71 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	// check 
 	private void StartupRoutines(){
 		
+		// Check whether it's time to update usage data
+		int daysPassed = Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays();
+		int previousUpload = library.lastUpdateDay;
+		final int targetUploads = (daysPassed / Constants.UPLOAD_FREQUENCY) * Constants.UPLOAD_FREQUENCY;
+		
+		if(targetUploads > previousUpload)
+			UploadUsageData();
+		
+		// Then set randomness
+		double stage = daysPassed / Constants.RANDOMNESS_SHIFT_TIME;
+		double randomness = Constants.RANDOMNESS_MAX - stage * (Constants.RANDOMNESS_MAX - Constants.RANDOMNESS_MIN);
+		library.getClusters().setRandomness(randomness); // TODO but how does this interact with user randomness setting?
+	}
+	
+	private void UploadUsageData(){
+		// TODO get file list for uploading
+		
+		(new Thread(){
+			@Override public void run(){
+				SwingUtilities.invokeLater(new Thread(){
+					@Override public void run(){
+						statusPnl.setVisible(true);
+						lblStatus.setText("Uploading usage data: ");
+						lblStatusProg.setText("0%");
+						statusBar.setValue(0);
+					}
+				});
+				FileUploader.upload();
+				library.lastUpdateDay = Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays();
+				
+				while(statusBar.getValue() < 100){
+					SwingUtilities.invokeLater(new Thread(){
+						@Override public void run(){
+								lblStatusProg.setText((statusBar.getValue()+1)+"%");
+								statusBar.setValue(statusBar.getValue()+1);
+						}
+					});
+					try {
+						Thread.sleep(20);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				
+				SwingUtilities.invokeLater(new Thread(){
+					@Override public void run(){
+						lblStatus.setText("Uploading usage data: ");
+						lblStatusProg.setText("100%");
+						statusBar.setValue(100);
+						try {
+							Thread.sleep(2000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						statusPnl.setVisible(false);
+					}
+				});
+			}
+		}).start();
 	}
 
 	private void UpdateLibrary() {
 		File settings = new File(Constants.SETTINGS_PATH);
 
-		File theDir = new File(StaticMethods.getHomeDir() + "\\Music Factory");
+		File theDir = new File(StaticMethods.getSettingsDir());
 
 		// if the directory does not exist, create it
 		if (!theDir.exists()) {
@@ -3700,6 +3805,11 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				SendPlaylistUserAction(UserAction.PLAYLIST_ADJACENT, pl);
 				SendPlaylistUserAction(UserAction.PLAYLIST_SHARED, pl);
 			}
+		}
+	}
+	private class MntmUploadDataNowActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			UploadUsageData();
 		}
 	}
 	

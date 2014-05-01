@@ -30,6 +30,14 @@ public class StaticMethods {
 		return homedir;
 	}
 	
+	public static String getSettingsDir(){
+		String homedir = System.getenv("user.home");
+		if (homedir == null)
+			homedir = System.getenv("USERPROFILE");
+		return homedir + "\\Music Factory\\";
+	}
+
+	
 	/*
 	 * Set audioFeatures in track list from a double array list
 	 */

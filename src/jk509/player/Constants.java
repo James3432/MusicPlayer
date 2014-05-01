@@ -63,14 +63,16 @@ public interface Constants {
 	public static final boolean DEBUG_LOAD_FEATURES_FILE = false; // whether to load features from disk rather than scanning
 	public static final boolean DEBUG_SAVE_FEATURES = false;      // whether to save features to disk separately
 	public static final boolean DEBUG_SAVE_CLUSTERS = false;      // whether to save clusters to disk separately
-	public static final String FEATURES_PATH = "\\Music Factory\\features.ser"; // location for the above
-	public static final String CLUSTERS_PATH = "\\Music Factory\\clusters.ser"; // location for the above
+	public static final String FEATURES_PATH = "features.ser"; // location for the above
+	public static final String CLUSTERS_PATH = "clusters.ser"; // location for the above
 	public static final boolean CUSTOM_FEATUREPROC_CODE = false;  // whether to use the tweaked code which avoid errors but produces different results in feature extraction
 	public static final boolean DEBUG_DISPLAY_UPDATES = true;     // display learning updates as they are processed
 	public static final boolean DEBUG_NEXTTRACKPATHS = true;      // display details of track chosen by next()
-	public static final boolean DEBUG_SETTINGS = true;            // use the debug version of settings.ser
+	public static final boolean DEBUG_SETTINGS = false;            // use the debug version of settings.ser
 	public static final boolean DEBUG_SHOW_SETUP = false;         // show setup screen always, for testing
 	public static final boolean DEBUG_IGNORE_SETUP = false;        // ignore result of setup screen, load prog anyway
+	public static final boolean DEBUG_SHOWDEVMENU = true;         // whether to include Developer menu
+	public static final boolean ALT_SERIALNO_CODE = true;          // LEAVE AS TRUE
 	
 	// ------------------------------------------------------------------
 	
@@ -83,8 +85,9 @@ public interface Constants {
 	public static final String featureXMLLocation = "features.xml";
 	public static final int TEMP_FILE_NAME_LENGTH = 10;
 	public static final String UPLOAD_URL = "http://www.james.eu.org/upload.php";
-	public static final String SETTINGS_PATH = StaticMethods.getHomeDir() + (DEBUG_SETTINGS ? "\\Music Factory\\library_debug.ser" : "\\Music Factory\\library.ser");
-	public static final String PATH_TO_LAME = StaticMethods.getHomeDir() + "\\Music Factory\\lame.exe";
+	public static final String[] UPLOAD_FILE_LIST = { StaticMethods.getSettingsDir() + "features.txt", StaticMethods.getSettingsDir() + "clusters.txt" }; //TODO!
+	public static final String SETTINGS_PATH = StaticMethods.getSettingsDir() + (DEBUG_SETTINGS ? "library_debug.ser" : "library.ser");
+	public static final String PATH_TO_LAME = StaticMethods.getSettingsDir() + "lame.exe";
 	public static final boolean USERNAME_AS_ID = false; // Whether to capture current username as part of data upload ID string (cf. ethics agreement)
 
 	public static final DateTime STUDY_START_DATE = new DateTime(2014, 4, 1, 12, 0, 0, 0);

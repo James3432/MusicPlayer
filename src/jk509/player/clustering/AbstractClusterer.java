@@ -33,8 +33,8 @@ public abstract class AbstractClusterer {
 	public AbstractClusterer(List<Song> s) {
 		tracks = s;
 		
-		setFeatureSavePath(StaticMethods.getHomeDir() + Constants.FEATURES_PATH);
-		setClusterSavePath(StaticMethods.getHomeDir() + Constants.CLUSTERS_PATH);
+		setFeatureSavePath(StaticMethods.getSettingsDir() + Constants.FEATURES_PATH);
+		setClusterSavePath(StaticMethods.getSettingsDir() + Constants.CLUSTERS_PATH);
 	}
 
 	public abstract void run(JFrame frame);
