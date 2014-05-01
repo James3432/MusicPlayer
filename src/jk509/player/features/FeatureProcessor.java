@@ -11,7 +11,7 @@ package jk509.player.features;
 
 import jAudioFeatureExtractor.Cancel;
 import jAudioFeatureExtractor.ExplicitCancel;
-import jAudioFeatureExtractor.Updater;
+import jk509.player.gui.Updater;
 import jAudioFeatureExtractor.AudioFeatures.FeatureExtractor;
 import jAudioFeatureExtractor.jAudioTools.DSPMethods;
 

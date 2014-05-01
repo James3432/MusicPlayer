@@ -71,6 +71,7 @@ public interface Constants {
 	public static final boolean DEBUG_SETTINGS = false;            // use the debug version of settings.ser
 	public static final boolean DEBUG_SHOW_SETUP = false;         // show setup screen always, for testing
 	public static final boolean DEBUG_IGNORE_SETUP = false;        // ignore result of setup screen, load prog anyway
+	public static final boolean DEBUG_PRINT_CLUSTERS = true;       // print clusters after clustering
 	public static final boolean DEBUG_SHOWDEVMENU = true;         // whether to include Developer menu
 	public static final boolean ALT_SERIALNO_CODE = true;          // LEAVE AS TRUE
 	

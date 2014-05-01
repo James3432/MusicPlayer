@@ -30,15 +30,17 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EtchedBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.filechooser.FileFilter;
 
+import jk509.player.clustering.SongCluster;
 import jk509.player.core.FileScanner;
 import jk509.player.core.ItunesParser;
 import jk509.player.core.Library;
 import jk509.player.core.LibraryParser;
 import jk509.player.core.Song;
 import jk509.player.core.StaticMethods;
-import javax.swing.border.LineBorder;
+import jk509.player.gui.GuiUpdaterAdapter;
 
 public class Setup extends JDialog {
 	/**
@@ -89,13 +91,13 @@ public class Setup extends JDialog {
 	private JButton btnPrevious4;
 	private JButton btnNext4;
 	private JButton btnPrevious5;
-	private JButton btnNext5;
+	public JButton btnNext5;
 	private JButton btnPrevious6;
 	private JButton btnFinish;
 
 	private JDialog dialog;
 	private int stage = 1; // which screen, 1-6, we are on
-	private Library library;
+	public Library library;
 	private Boolean[] success;
 
 	private JLabel lblItLooksLike;
@@ -123,9 +125,9 @@ public class Setup extends JDialog {
 	private JButton btnBrowseMusic;
 	private JButton btnSkipMusic;
 	private JLabel lblAudioAnalysis;
-	private JButton btnAnalyse;
-	private JLabel lblThisMayTake;
-	private JProgressBar progressBar;
+	public JButton btnAnalyse;
+	public JLabel lblThisMayTake;
+	public JProgressBar progressBar;
 	private JLabel lblSong;
 	private JLabel lblThanksWereAll;
 	private JLabel lblAFewInstructions;
@@ -146,10 +148,10 @@ public class Setup extends JDialog {
 	private JLabel lblSetupComplete;
 	private JLabel lblToAdjustSettings;
 	private JLabel lblFileMenu;
-	private JLabel lblProcessingStart;
+	public JLabel lblProcessingStart;
 	private JLabel lblOf;
-	private JLabel lblProcessingCount;
-	private JLabel lblProcessingName;
+	public JLabel lblProcessingCount;
+	public JLabel lblProcessingName;
 	private JLabel lblTimeTaken;
 	private JLabel lblTimeRemaining;
 	private JLabel lblProcessingTime;
@@ -178,6 +180,7 @@ public class Setup extends JDialog {
 	private JLabel lblSmartModeIs;
 	private JLabel lblTheBrainIcon;
 	private JPanel panel_1;
+	public JProgressBar fileProgressBar;
 
 	/**
 	 * Create the dialog.
@@ -753,7 +756,7 @@ public class Setup extends JDialog {
 		lblThisMayTake = new JLabel("This may take some time (up to 10s per track). Please wait...");
 		lblThisMayTake.setVisible(false);
 		lblThisMayTake.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		lblThisMayTake.setBounds(60, 322, 407, 23);
+		lblThisMayTake.setBounds(60, 311, 407, 23);
 		panel_51.add(lblThisMayTake);
 
 		progressBar = new JProgressBar();
@@ -816,6 +819,11 @@ public class Setup extends JDialog {
 		lblClickHereTo.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblClickHereTo.setBounds(60, 231, 291, 23);
 		panel_51.add(lblClickHereTo);
+		
+		fileProgressBar = new JProgressBar();
+		fileProgressBar.setStringPainted(true);
+		fileProgressBar.setBounds(60, 347, 480, 28);
+		panel_51.add(fileProgressBar);
 
 		panel_52 = new JPanel();
 		panel_52.setPreferredSize(new Dimension(10, 30));
@@ -949,12 +957,12 @@ public class Setup extends JDialog {
 
 				@Override
 				public int getSize() {
-					return library.getPlaylists().get(0).size();
+					return library.getPlaylists().get(Library.MAIN_PLAYLIST).size(); //TODO all wrong: use Library.MAIN_PLAYLIST
 				}
 
 				@Override
 				public Object getElementAt(int arg0) {
-					Song track = library.getPlaylists().get(0).get(arg0);
+					Song track = library.getPlaylists().get(Library.MAIN_PLAYLIST).get(arg0);
 					return track.getName() + " - " + track.getAlbum() + " - " + track.getArtist();
 				}
 			});
@@ -980,12 +988,12 @@ public class Setup extends JDialog {
 
 				@Override
 				public int getSize() {
-					return library.getPlaylists().get(0).size();
+					return library.getPlaylists().get(Library.MAIN_PLAYLIST).size();
 				}
 
 				@Override
 				public Object getElementAt(int index) {
-					Song track = library.getPlaylists().get(0).get(index);
+					Song track = library.getPlaylists().get(Library.MAIN_PLAYLIST).get(index);
 					return track.getName() + " - " + track.getAlbum() + " - " + track.getArtist();
 				}
 			});
@@ -1027,17 +1035,20 @@ public class Setup extends JDialog {
 
 	private class BtnGoActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			btnNext5.setEnabled(true);
-			lblThisMayTake.setVisible(true);
-			btnAnalyse.setEnabled(false);
-			btnAnalyse.setForeground(Color.GRAY);
-			progressBar.setValue(progressBar.getMaximum());
-			if (library.size() > 0 && library.getPlaylists().get(0).size() > 0) {
-				lblProcessingCount.setText(Integer.toString(library.getPlaylists().get(0).size()));
-				lblProcessingName.setText(library.getPlaylists().get(0).get(0).getName() + " - " + library.getPlaylists().get(0).get(0).getAlbum() + " - " + library.getPlaylists().get(0).get(0).getArtist());
-				lblProcessingStart.setText(lblProcessingCount.getText());
+			if (library.size() > 0 && library.getPlaylists().get(Library.MAIN_PLAYLIST).size() > 0) {
+			
+				final Setup context = Setup.this;
+				(new Thread() {
+					@Override
+					public void run() {
+						SongCluster clusters = new SongCluster(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList(), new GuiUpdaterAdapter(context));
+						library.setClusters(clusters);
+					}
+				}).start();
+			}else{
+				btnNext5.setEnabled(true);
+				// TODO maybe skip this page. need to make sure clusters will get built when user does add some songs, though
 			}
-			lblThisMayTake.setText("Processing complete.");
 		}
 	}
 
@@ -1202,9 +1213,9 @@ public class Setup extends JDialog {
 		parser.run();
 
 		// TODO: this is an out of date method. Needs to mimic method in MusicPlayer... (ie. don't add to pl 0 or 1)
-		library.setPlaylist(0, parser.getTracks());
-		library.setPlaylist(1, parser.getTracks());
-		library.setPlaylist(2, parser.getTracks());
+		//library.setPlaylist(0, parser.getTracks());
+		//library.setPlaylist(1, parser.getTracks());
+		library.setPlaylist(Library.MAIN_PLAYLIST, parser.getTracks());
 
 		return true;
 

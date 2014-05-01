@@ -17,12 +17,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import javax.swing.SwingUtilities;
-
 import jk509.player.Constants;
 import jk509.player.core.Song;
 import jk509.player.core.StaticMethods;
-import jk509.player.gui.GUIupdater;
+import jk509.player.gui.Updater;
 
 public class FeatureGrabber implements Constants {
 
@@ -51,7 +49,7 @@ public class FeatureGrabber implements Constants {
 	 */
 	public FeatureDefinition[] featureDefinitions;
 	
-	private GUIupdater updater;
+	private Updater updater;
 
 	public Cancel cancel;
 	
@@ -132,7 +130,7 @@ public class FeatureGrabber implements Constants {
 		}
 	}*/
 	
-	public void run(final List<Song> tracks, final GUIupdater updater){
+	public void run(final List<Song> tracks, final Updater updater){
 		
 		// TODO may need to change updater code? (remove mid-way announces)
 		this.updater = updater;
@@ -187,7 +185,7 @@ public class FeatureGrabber implements Constants {
 				threadPool.shutdown();
 				threadPool.awaitTermination(Integer.MAX_VALUE, TimeUnit.HOURS); // wait as long as it takes...
 				
-				SwingUtilities.invokeLater(updater.resumeGUI);
+				updater.resume();
 				//return res;
 				//if(Constants.NORMALISE_FEATURES)
 				//	results = Normalise(res);
@@ -229,7 +227,7 @@ public class FeatureGrabber implements Constants {
 					temp.delete();
 				}catch(Exception e){ }
 				
-				SwingUtilities.invokeLater(updater.resumeGUI);
+				updater.resume();
 				//return res;
 				//if(Constants.NORMALISE_FEATURES)
 				//	results = Normalise(res);

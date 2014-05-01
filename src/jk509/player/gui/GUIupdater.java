@@ -1,6 +1,6 @@
 package jk509.player.gui;
 
-import jAudioFeatureExtractor.Updater;
+import jk509.player.gui.Updater;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -73,6 +73,14 @@ public class GUIupdater implements Updater {
 		//progressFrame.setModal(true);
 		//progressFrame.setModalityType(ModalityType.APPLICATION_MODAL);
 		// errorGUI = new ErrorGUI(progressFrame);
+	}
+	
+	public void suspend(){
+		SwingUtilities.invokeLater(suspendGUI);
+	}
+	
+	public void resume(){
+		SwingUtilities.invokeLater(resumeGUI);
 	}
 
 	/**

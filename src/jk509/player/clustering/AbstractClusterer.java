@@ -10,12 +10,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import javax.swing.JFrame;
-
 import jk509.player.Constants;
 import jk509.player.core.Song;
 import jk509.player.core.StaticMethods;
 import jk509.player.features.FeatureGrabber;
+import jk509.player.gui.Updater;
 import weka.core.Attribute;
 import weka.core.FastVector;
 import weka.core.Instance;
@@ -37,7 +36,7 @@ public abstract class AbstractClusterer {
 		setClusterSavePath(StaticMethods.getSettingsDir() + Constants.CLUSTERS_PATH);
 	}
 
-	public abstract void run(JFrame frame);
+	public abstract void run(Updater updater);
 
 	public List<ArrayList<Song>> getResult() {
 		return clusters;

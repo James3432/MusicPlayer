@@ -123,6 +123,7 @@ import jk509.player.core.StaticMethods;
 import jk509.player.core.TableSorter;
 import jk509.player.core.TableSorter.Directive;
 import jk509.player.core.TrackTime;
+import jk509.player.gui.GUIupdater;
 import jk509.player.gui.ParseDiskDialog;
 import jk509.player.gui.ParseItunesDialog;
 import jk509.player.gui.SmartPlaylistDialog;
@@ -3760,9 +3761,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			(new Thread() {
 				@Override
 				public void run() {
-					SongCluster clusters = new SongCluster(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList(), frmMusicPlayer);
+					SongCluster clusters = new SongCluster(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList(), new GUIupdater(frmMusicPlayer));
 					library.setClusters(clusters);
-					PrintClusters(clusters, "");
+					if(Constants.DEBUG_PRINT_CLUSTERS)
+						PrintClusters(clusters, "");
 					UpdateLibrary();
 				}
 			}).start();

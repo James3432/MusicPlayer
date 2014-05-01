@@ -6,13 +6,11 @@ import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.JFrame;
-
 import jk509.player.Constants;
 import jk509.player.core.Song;
 import jk509.player.core.StaticMethods;
 import jk509.player.features.FeatureGrabber;
-import jk509.player.gui.GUIupdater;
+import jk509.player.gui.Updater;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Instances;
 
@@ -26,7 +24,7 @@ public class KMeansClusterer extends AbstractClusterer {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void run(JFrame frame) {
+	public void run(Updater updater) {
 		if (tracks.size() < 1)
 			return;
 		if (!(new File(Constants.featureXMLLocation)).exists())
@@ -35,7 +33,7 @@ public class KMeansClusterer extends AbstractClusterer {
 		List<Song> featureless = GetSongsWithoutFeatures(tracks);
 		
 		if(featureless.size() > 0){
-			GUIupdater updater = new GUIupdater(frame);
+			//GUIupdater updater = new GUIupdater(frame);
 			if (Constants.DEBUG_LOAD_FEATURES_FILE) {
 				FileInputStream fin;
 				try {

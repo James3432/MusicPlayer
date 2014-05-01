@@ -1,5 +1,7 @@
 package jk509.player.clustering;
 
+import jk509.player.gui.Updater;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,11 +11,10 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Stack;
 
-import javax.swing.JFrame;
-
 import jk509.player.Constants;
 import jk509.player.core.Song;
 import jk509.player.core.StaticMethods;
+import jk509.player.gui.GUIupdater;
 import jk509.player.learning.UserAction;
 import weka.core.Instance;
 
@@ -41,16 +42,19 @@ public class SongCluster extends AbstractCluster {
 	
 	private int clusterPlaying = -1; // only > -1 if playing==True. Equivalent to the current "state" in a machine-learning sense
 
-	public SongCluster(List<Song> songs, JFrame form){
-		this(songs, 0, null, form);
+	public SongCluster(List<Song> songs, Updater updater){
+		this(songs, 0, null, updater);
 	}
-	public SongCluster(List<Song> songs, int level, SongCluster parent, JFrame form) {
+	public SongCluster(List<Song> songs, int level, SongCluster parent, Updater updater) {
 		super(songs, level, parent);
+		if(level == 0)
+			updater.suspend();
 		leaf = false;
-		ResetClusters(form);
+		ResetClusters(updater);
+		updater.resume();
 	}
 
-	public SongCluster(LeafCluster c, JFrame form) {
+	public SongCluster(LeafCluster c, GUIupdater updater) {
 		super(Arrays.asList(c.getTrack()), c.getLevel(), c.getParent());
 		leaf = false;
 		clusters = new ArrayList<AbstractCluster>();
@@ -61,16 +65,16 @@ public class SongCluster extends AbstractCluster {
 	/*
 	 * Reset features and rebuild clustering
 	 */
-	public void ResetAll(JFrame form){
+	public void ResetAll(Updater updater){
 		for(Song s : tracks)
 			s.setAudioFeatures(null);
-		ResetClusters(form);
+		ResetClusters(updater);
 	}
 	
 	/*
 	 * Rebuild entire clustering from here downwards, creating new child clusters
 	 */
-	public void ResetClusters(JFrame form){
+	public void ResetClusters(Updater updater){
 
 		clusters = new ArrayList<AbstractCluster>();
 		
@@ -85,7 +89,7 @@ public class SongCluster extends AbstractCluster {
 		}else{
 		
 			AbstractClusterer clusterer = new KMeansClusterer(tracks);
-			clusterer.run(form);
+			clusterer.run(updater);
 			// PrintClusters(clusterer.getResult());
 			assignments = clusterer.getAssignments();
 			//clusterController = ((KMeansClusterer) clusterer).getClusterer();
@@ -100,7 +104,7 @@ public class SongCluster extends AbstractCluster {
 				double[] centroid = in.toDoubleArray();
 				AbstractCluster newCluster = null;
 				if (cluster.size() > 1){
-					newCluster = /*clusters.add(*/new SongCluster(cluster, level + 1, this, form);
+					newCluster = /*clusters.add(*/new SongCluster(cluster, level + 1, this, updater);
 				}else if (cluster.size() == 1){
 					newCluster = /*clusters.add(*/new LeafCluster(level + 1, this, cluster.get(0));
 				}
