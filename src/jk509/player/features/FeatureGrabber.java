@@ -21,6 +21,8 @@ import jk509.player.Constants;
 import jk509.player.core.Song;
 import jk509.player.core.StaticMethods;
 import jk509.player.gui.Updater;
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
 
 public class FeatureGrabber implements Constants {
 
@@ -85,7 +87,7 @@ public class FeatureGrabber implements Constants {
 						aggArray[i]);
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 			System.exit(1);
 		}
 		populateMetaFeatures(metaExtractors, extractors, def);
@@ -150,11 +152,7 @@ public class FeatureGrabber implements Constants {
 			
 			try {
 				
-				int threadCount = Constants.PARALELLISM;
-				
-				int procs = Runtime.getRuntime().availableProcessors();
-				if(Constants.PARALLELISM_USE_PROC_COUNT)
-					threadCount = procs;
+				int threadCount = StaticMethods.getThreadCount();
 				
 				ExecutorService threadPool = Executors.newFixedThreadPool(threadCount);
 				
@@ -193,7 +191,7 @@ public class FeatureGrabber implements Constants {
 				//	results = res;
 				//TODO: invoke Normalise() which should process song list;
 			} catch (Exception e) {
-				e.printStackTrace();
+				Logger.log(e, LogType.ERROR_LOG);
 				//results = new ArrayList<double[]>();
 			}
 			
@@ -237,7 +235,7 @@ public class FeatureGrabber implements Constants {
 				// invoke Normalise();
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
+				Logger.log(e, LogType.ERROR_LOG);
 				//results = new ArrayList<double[]>();
 			}
 		}

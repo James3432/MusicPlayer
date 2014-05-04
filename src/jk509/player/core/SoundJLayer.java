@@ -2,6 +2,8 @@ package jk509.player.core;
 
 import javazoom.jl.decoder.JavaLayerException;
 import jk509.player.MusicPlayer;
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
 
 public class SoundJLayer implements Runnable {
 	private String filePath;
@@ -106,14 +108,14 @@ public class SoundJLayer implements Runnable {
 	/*
 	 * private void playerInitialize(){ try{ String urlAsString = "file:///" + new java.io.File(".").getCanonicalPath() + "/" + this.filePath;
 	 * 
-	 * this.player = new JLayerPlayerPausable(new java.net.URL(urlAsString)); this.player.setPlaybackListener(this.playbackListener); } catch (JavaLayerException e){ e.printStackTrace(); } }
+	 * this.player = new JLayerPlayerPausable(new java.net.URL(urlAsString)); this.player.setPlaybackListener(this.playbackListener); } catch (JavaLayerException e){ Logger.log(e, LogType.ERROR_LOG); } }
 	 */
 	private void playerInitialize(MusicPlayer.PlaybackListener pl) {
 		try {
 			this.player = new JLayerPlayerPausable(this.filePath);
 			this.player.setPlaybackListener(pl);
 		} catch (JavaLayerException e) {
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		}
 	}
 

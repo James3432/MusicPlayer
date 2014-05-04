@@ -3,9 +3,13 @@ package jk509.player.core;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import jk509.player.Constants;
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.client.ClientProtocolException;
@@ -35,9 +39,12 @@ public class FileUploader {
 				new File(StaticMethods.getSettingsDir() + "clusters.txt")
 		};*/
 		
-		File[] files = new File[Constants.UPLOAD_FILE_LIST.length];
-		for(int i=0; i<files.length; ++i)
-			files[i] = new File(Constants.UPLOAD_FILE_LIST[i]);
+		List<File> files = new ArrayList<File>();
+		for(int i=0; i<Constants.UPLOAD_FILE_LIST.length; ++i){
+			File afile = new File(Constants.UPLOAD_FILE_LIST[i]);
+			if(afile.exists())
+				files.add(afile);
+		}
 	
 		// String[] descriptors = new String[] { "Features file", "Clusters file" };
 	
@@ -47,8 +54,8 @@ public class FileUploader {
 	
 			MultipartEntityBuilder reqEntity = MultipartEntityBuilder.create();
 	
-			for (int i = 0; i < files.length; ++i) {
-				FileBody f = new FileBody(files[i]);
+			for (int i = 0; i < files.size(); ++i) {
+				FileBody f = new FileBody(files.get(i));
 				StringBody comment = new StringBody(/*"User data: " + */anon_id + " " + date + " " + uniqueString/* + " $$ " + descriptors[i]*/, ContentType.TEXT_PLAIN);
 				reqEntity.addPart("file_"+i, f);
 				reqEntity.addPart("text_"+i, comment);
@@ -81,14 +88,14 @@ public class FileUploader {
 				response.close();
 			}
 		} catch (ClientProtocolException e) {
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		} catch (IOException e) {
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		} finally {
 			try {
 				httpclient.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				Logger.log(e, LogType.ERROR_LOG);
 			}
 		}
 	}

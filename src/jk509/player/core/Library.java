@@ -39,6 +39,7 @@ public class Library implements Serializable, Cloneable {
 	
 	public int lastUpdateDay = 0;
 	public boolean smartPlay = Constants.SMART_PLAY_DEFAULT;
+	public boolean autoupload = true;
 	//private Deque<Song> history; // from oldest--->recent
 
 	public Library() {

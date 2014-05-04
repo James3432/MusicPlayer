@@ -11,7 +11,6 @@ package jk509.player.features;
 
 import jAudioFeatureExtractor.Cancel;
 import jAudioFeatureExtractor.ExplicitCancel;
-import jk509.player.gui.Updater;
 import jAudioFeatureExtractor.AudioFeatures.FeatureExtractor;
 import jAudioFeatureExtractor.jAudioTools.DSPMethods;
 
@@ -28,6 +27,9 @@ import javax.sound.sampled.AudioSystem;
 
 import jk509.player.Constants;
 import jk509.player.core.Song;
+import jk509.player.gui.Updater;
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
 
 //import jAudioFeatureExtractor.jAudioTools.AudioMethods;
 
@@ -520,7 +522,7 @@ public class FeatureProcessor {
 				}
 				input.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				Logger.log(e, LogType.ERROR_LOG);
 			}
 
 			File recording_file = temp;
@@ -582,10 +584,10 @@ public class FeatureProcessor {
 			// Return all channels compressed into one
 			return samples;
 		} catch (java.lang.OutOfMemoryError e) {   // TODO return these errors
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 			return null;
 		} catch (Exception e) {
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 			return null;
 		}
 	}

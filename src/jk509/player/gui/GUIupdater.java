@@ -1,7 +1,5 @@
 package jk509.player.gui;
 
-import jk509.player.gui.Updater;
-
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
@@ -111,7 +109,7 @@ public class GUIupdater implements Updater {
 	 * 
 	 * // Prepare stream writers FileOutputStream values_to = new FileOutputStream( feature_values_save_file); FileOutputStream definitions_to = new FileOutputStream( feature_definitions_save_file);
 	 * 
-	 * controller.dm_.featureKey = definitions_to; controller.dm_.featureValue = values_to; controller.dm_.extract(windowSize, windowOverlap, controller.samplingRateAction.getSamplingRate(), controller.normalise.isSelected(), perWindow, perFile, controller.dm_.recordingInfo, controller.outputTypeAction .getSelected()); SwingUtilities.invokeLater(resumeGUI); } catch (Exception e) { e.printStackTrace(); errorGUI.e = e; SwingUtilities.invokeLater(errorGUI); SwingUtilities.invokeLater(resumeGUI); } hasRun = true; }
+	 * controller.dm_.featureKey = definitions_to; controller.dm_.featureValue = values_to; controller.dm_.extract(windowSize, windowOverlap, controller.samplingRateAction.getSamplingRate(), controller.normalise.isSelected(), perWindow, perFile, controller.dm_.recordingInfo, controller.outputTypeAction .getSelected()); SwingUtilities.invokeLater(resumeGUI); } catch (Exception e) { Logger.log(e, LogType.ERROR_LOG); errorGUI.e = e; SwingUtilities.invokeLater(errorGUI); SwingUtilities.invokeLater(resumeGUI); } hasRun = true; }
 	 */
 
 	class UpdateGUI implements Runnable {

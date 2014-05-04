@@ -15,6 +15,8 @@ import jk509.player.core.Song;
 import jk509.player.core.StaticMethods;
 import jk509.player.features.FeatureGrabber;
 import jk509.player.gui.Updater;
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
 import weka.core.Attribute;
 import weka.core.FastVector;
 import weka.core.Instance;
@@ -91,10 +93,10 @@ public abstract class AbstractClusterer {
 			oos.close();
 		} catch (FileNotFoundException e) {
 			// Auto-generated catch block
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		} catch (IOException e) {
 			// Auto-generated catch block
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		}
 	}
 
@@ -133,10 +135,10 @@ public abstract class AbstractClusterer {
 			oos.close();
 		} catch (FileNotFoundException e) {
 			// Auto-generated catch block
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		} catch (IOException e) {
 			// Auto-generated catch block
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		}
 	}
 	

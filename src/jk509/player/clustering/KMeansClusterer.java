@@ -11,6 +11,8 @@ import jk509.player.core.Song;
 import jk509.player.core.StaticMethods;
 import jk509.player.features.FeatureGrabber;
 import jk509.player.gui.Updater;
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
 import weka.clusterers.SimpleKMeans;
 import weka.core.Instances;
 
@@ -25,44 +27,53 @@ public class KMeansClusterer extends AbstractClusterer {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void run(Updater updater) {
-		if (tracks.size() < 1)
+		if (tracks.size() < 1){
+			Logger.log("No tracks found for analysis", LogType.ERROR_LOG);
 			return;
-		if (!(new File(Constants.featureXMLLocation)).exists())
+		}
+		if (!(new File(Constants.featureXMLLocation)).exists()){
+			Logger.log("Can't find features.xml", LogType.ERROR_LOG);
 			return;
-
-		List<Song> featureless = GetSongsWithoutFeatures(tracks);
-		
-		if(featureless.size() > 0){
-			//GUIupdater updater = new GUIupdater(frame);
-			if (Constants.DEBUG_LOAD_FEATURES_FILE) {
-				FileInputStream fin;
-				try {
-					List<double[]> results = null;
-					fin = new FileInputStream(new File(features_path));
-					ObjectInputStream oos = new ObjectInputStream(fin);
-					results = (List<double[]>) oos.readObject();
-					StaticMethods.SetFeaturesFromFile(featureless, results);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			} else {
-				System.out.println("Starting feature extraction for "+featureless.size()+" tracks.");
-				featureGrabber = new FeatureGrabber();
-				featureGrabber.run(featureless, updater);
-				/* List<double[]> */
-				//results = featureGrabber.getWeightedResults();
-				featureGrabber = null;
-				// TODO: normalise (probably inside featureGrabber)
-	
-				if (Constants.DEBUG_SAVE_FEATURES) {
-					List<double[]> results = StaticMethods.GetFeaturesFromSongs(tracks);
-					System.out.println("Features extracted, saving to disk");
-					saveFeatures(results);
-					System.out.println("Saved.");
-				}
-			}
 		}
 
+		try{
+		
+			List<Song> featureless = GetSongsWithoutFeatures(tracks);
+			
+			if(featureless.size() > 0){
+				//GUIupdater updater = new GUIupdater(frame);
+				if (Constants.DEBUG_LOAD_FEATURES_FILE) {
+					FileInputStream fin;
+					try {
+						List<double[]> results = null;
+						fin = new FileInputStream(new File(features_path));
+						ObjectInputStream oos = new ObjectInputStream(fin);
+						results = (List<double[]>) oos.readObject();
+						StaticMethods.SetFeaturesFromFile(featureless, results);
+					} catch (Exception e) {
+						Logger.log(e, LogType.ERROR_LOG);
+					}
+				} else {
+					System.out.println("Starting feature extraction for "+featureless.size()+" tracks.");
+					featureGrabber = new FeatureGrabber();
+					featureGrabber.run(featureless, updater);
+					/* List<double[]> */
+					//results = featureGrabber.getWeightedResults();
+					featureGrabber = null;
+					// TODO: normalise (probably inside featureGrabber)
+		
+					if (Constants.DEBUG_SAVE_FEATURES) {
+						List<double[]> results = StaticMethods.GetFeaturesFromSongs(tracks);
+						System.out.println("Features extracted, saving to disk");
+						saveFeatures(results);
+						System.out.println("Saved.");
+					}
+				}
+			}
+
+		}catch(Exception e){
+			Logger.log(e, LogType.ERROR_LOG);
+		}
 		// double[] weights = (new AudioFeatures()).getWeights();
 		// The weighting below is between tracks, not between features
 
@@ -119,7 +130,7 @@ public class KMeansClusterer extends AbstractClusterer {
 				System.out.println("Saved");
 			}
 		} catch (Exception e) {
-			//e.printStackTrace(); TODO return error
+			Logger.log(e, LogType.ERROR_LOG);
 			clusters = new ArrayList<ArrayList<Song>>();
 			clusters.clear();
 		}

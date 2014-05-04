@@ -1,7 +1,5 @@
 package jk509.player.clustering;
 
-import jk509.player.gui.Updater;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,7 +13,10 @@ import jk509.player.Constants;
 import jk509.player.core.Song;
 import jk509.player.core.StaticMethods;
 import jk509.player.gui.GUIupdater;
+import jk509.player.gui.Updater;
 import jk509.player.learning.UserAction;
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
 import weka.core.Instance;
 
 public class SongCluster extends AbstractCluster {
@@ -571,7 +572,8 @@ public class SongCluster extends AbstractCluster {
 			return;
 		
 		if(Constants.DEBUG_DISPLAY_UPDATES)
-			System.out.println(action.toString());
+			//System.out.println(action.toString());
+			Logger.log(action.toString(), LogType.LEARNING_LOG);
 		
 		Song source = action.source;
 		Song target = action.target;

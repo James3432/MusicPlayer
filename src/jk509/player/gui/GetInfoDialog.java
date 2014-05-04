@@ -8,6 +8,9 @@ import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
+
 public class GetInfoDialog extends JDialog {
 
 	/**
@@ -25,7 +28,7 @@ public class GetInfoDialog extends JDialog {
 			dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 			dialog.setVisible(true);
 		} catch (Exception e) {
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		}
 	}
 

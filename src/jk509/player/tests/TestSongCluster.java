@@ -12,6 +12,8 @@ import jk509.player.clustering.SongCluster;
 import jk509.player.core.Library;
 import jk509.player.core.Song;
 import jk509.player.learning.UserAction;
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
 
 import org.junit.After;
 import org.junit.Before;
@@ -36,7 +38,7 @@ public class TestSongCluster {
 				library.setCurrentPlaylist(Library.MAIN_PLAYLIST);
 				ois.close();
 			}catch(Exception e){
-				e.printStackTrace();
+				Logger.log(e, LogType.ERROR_LOG);
 			}
 			cluster = new SongCluster(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList(), null);
 			System.out.println("Test data:");

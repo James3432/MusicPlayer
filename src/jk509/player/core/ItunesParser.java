@@ -16,6 +16,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
+
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -81,12 +84,12 @@ public class ItunesParser extends DefaultHandler implements LibraryParser {
 
 			prune();
 
-		} catch (SAXException se) {
-			se.printStackTrace();
-		} catch (ParserConfigurationException pce) {
-			pce.printStackTrace();
-		} catch (IOException ie) {
-			ie.printStackTrace();
+		} catch (SAXException e) {
+			Logger.log(e, LogType.ERROR_LOG);
+		} catch (ParserConfigurationException e) {
+			Logger.log(e, LogType.ERROR_LOG);
+		} catch (IOException e) {
+			Logger.log(e, LogType.ERROR_LOG);
 		}
 	}
 
@@ -160,7 +163,7 @@ public class ItunesParser extends DefaultHandler implements LibraryParser {
 					loc = loc.replaceAll("\\+", "%2b");
 					loc = URLDecoder.decode(loc, "UTF-8");
 				} catch (UnsupportedEncodingException e) {
-					e.printStackTrace();
+					Logger.log(e, LogType.ERROR_LOG);
 				}
 				tempTrack.setLocation(loc);
 			} else if (previousTagVal.equalsIgnoreCase("Track ID") && qName.equals("integer")) {
@@ -170,7 +173,7 @@ public class ItunesParser extends DefaultHandler implements LibraryParser {
 				try {
 					tempTrack.setDateAdded(new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss'Z'", Locale.ENGLISH).parse(tempVal));
 				} catch (ParseException e) {
-					e.printStackTrace();
+					Logger.log(e, LogType.ERROR_LOG);
 					tempTrack.setDateAdded(new Date());
 				}
 			}

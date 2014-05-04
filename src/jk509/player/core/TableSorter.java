@@ -300,7 +300,7 @@ public class TableSorter extends AbstractTableModel {
 		// try {
 		return getViewToModel()[viewIndex].modelIndex;
 		// } catch (ArrayIndexOutOfBoundsException e) {
-		// e.printStackTrace();
+		// Logger.log(e, LogType.ERROR_LOG);
 		// return -1;
 		// }
 	}
@@ -309,7 +309,7 @@ public class TableSorter extends AbstractTableModel {
 		// try {
 		return getModelToView()[modelIndex];
 		// } catch (ArrayIndexOutOfBoundsException e) {
-		// e.printStackTrace();
+		// Logger.log(e, LogType.ERROR_LOG);
 		// return -1;
 		// }
 	}

@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Random;
 
 import jk509.player.core.TableSorter.Directive;
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
 
 public class Playlist implements Serializable {
 
@@ -59,7 +61,7 @@ public class Playlist implements Serializable {
 		// try {
 		return list.get(i);
 		// } catch (IndexOutOfBoundsException e) {
-		// e.printStackTrace();
+		// Logger.log(e, LogType.ERROR_LOG);
 		// return null;
 		// }
 	}
@@ -68,7 +70,7 @@ public class Playlist implements Serializable {
 		try {
 			list.remove(i);
 		} catch (IndexOutOfBoundsException e) {
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		}
 	}
 
@@ -193,6 +195,14 @@ public class Playlist implements Serializable {
 			if (get(i).equals(s))
 				return i;
 		return -1;
+	}
+	
+	@Override
+	public String toString(){
+		String res = "";
+		for(Song s : getList())
+			res += s.toString()+"\n";
+		return res;
 	}
 
 	public class Shuffle implements Serializable {

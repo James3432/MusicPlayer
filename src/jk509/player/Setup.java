@@ -10,6 +10,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.AbstractListModel;
 import javax.swing.ImageIcon;
@@ -28,7 +32,6 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.filechooser.FileFilter;
@@ -38,9 +41,22 @@ import jk509.player.core.FileScanner;
 import jk509.player.core.ItunesParser;
 import jk509.player.core.Library;
 import jk509.player.core.LibraryParser;
+import jk509.player.core.Playlist;
 import jk509.player.core.Song;
 import jk509.player.core.StaticMethods;
 import jk509.player.gui.GuiUpdaterAdapter;
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
+import christophedelory.playlist.SpecificPlaylist;
+import christophedelory.playlist.SpecificPlaylistFactory;
+
+import com.worldsworstsoftware.itunes.ItunesLibrary;
+import com.worldsworstsoftware.itunes.ItunesPlaylist;
+import com.worldsworstsoftware.itunes.ItunesTrack;
+import com.worldsworstsoftware.itunes.parser.ItunesLibraryParser;
+import javax.swing.ListSelectionModel;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
 public class Setup extends JDialog {
 	/**
@@ -99,6 +115,8 @@ public class Setup extends JDialog {
 	private int stage = 1; // which screen, 1-6, we are on
 	public Library library;
 	private Boolean[] success;
+	private List<Playlist> itunesPlaylists;
+	private List<String> genericPlaylists;
 
 	private JLabel lblItLooksLike;
 	private JLabel lblHi;
@@ -118,12 +136,10 @@ public class Setup extends JDialog {
 	private JScrollPane scrlItunesTable;
 	private JList listPlaylists;
 	private JScrollPane scrollPane_1;
-	private JButton btnSkipItunes;
 	private JLabel lblBasicSettings_1;
 	private JLabel lblIfYouUse;
 	private JLabel lblYouCanAlso;
 	private JButton btnBrowseMusic;
-	private JButton btnSkipMusic;
 	private JLabel lblAudioAnalysis;
 	public JButton btnAnalyse;
 	public JLabel lblThisMayTake;
@@ -162,7 +178,6 @@ public class Setup extends JDialog {
 	private JList listTracks;
 	private JLabel lblPlaylists;
 	private JLabel lblPreview;
-	private JLabel lblNoteThisWill;
 	private JLabel label_3;
 	private JLabel label_4;
 	private JList listTracksDisk;
@@ -181,6 +196,14 @@ public class Setup extends JDialog {
 	private JLabel lblTheBrainIcon;
 	private JPanel panel_1;
 	public JProgressBar fileProgressBar;
+	private JLabel lblCores;
+	private JLabel lblLoadIcon;
+	private JLabel lblLoadIcon1;
+	private JButton btnImportPlaylistFiles;
+	private JLabel label_1;
+	private JScrollPane scrollPane_2;
+	private JList listPlaylistsDisk;
+	private JLabel lblFoundCount;
 
 	/**
 	 * Create the dialog.
@@ -190,6 +213,8 @@ public class Setup extends JDialog {
 		dialog = this;
 		this.library = library;
 		this.success = success;
+		itunesPlaylists = new ArrayList<Playlist>();
+		genericPlaylists = new ArrayList<String>();
 		addWindowListener(new ThisWindowListener());
 		setResizable(false);
 		setTitle("Music Factory Setup");
@@ -413,6 +438,7 @@ public class Setup extends JDialog {
 		panel_21.add(lblBasicSettings_1);
 
 		chckbxUploadData = new JCheckBox("Upload usage data automatically (requires internet connection)");
+		chckbxUploadData.addActionListener(new ChckbxUploadDataActionListener());
 		chckbxUploadData.setSelected(true);
 		chckbxUploadData.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		chckbxUploadData.setBackground(Color.WHITE);
@@ -425,7 +451,7 @@ public class Setup extends JDialog {
 		chckbxAgree.setBackground(Color.WHITE);
 		chckbxAgree.setBounds(60, 377, 266, 23);
 		panel_21.add(chckbxAgree);
-		
+
 		txtrDataUp = new JTextArea();
 		txtrDataUp.setEditable(false);
 		txtrDataUp.setFont(new Font("Tahoma", Font.PLAIN, 12));
@@ -434,22 +460,23 @@ public class Setup extends JDialog {
 		txtrDataUp.setText("Whilst taking part in this study, you will be allowing us to collect limited amounts of information about your usage of the media player, such as how often you skip tracks. All such data will be collected anonymously. If you would prefer to manually submit the relevant data files by email, please untick this box and contact the researcher as soon as possible:");
 		txtrDataUp.setBounds(60, 418, 517, 69);
 		panel_21.add(txtrDataUp);
-		
+
 		scrollPaneAgree = new JScrollPane();
 		scrollPaneAgree.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		scrollPaneAgree.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		scrollPaneAgree.setBounds(60, 137, 517, 233);
 		panel_21.add(scrollPaneAgree);
-		
+
 		txtrAgreement = new JTextArea();
 		scrollPaneAgree.setViewportView(txtrAgreement);
 		txtrAgreement.setWrapStyleWord(true);
-		txtrAgreement.setText("This project was approved by the University of Cambridge Computer Laboratory ethics committee on 31st March 2014.\r\n\r\nYour first point of contact with any queries relating to: the usage of this software; the project goals; the user study, should be directed to the project researcher:\r\nJames King - jk509@cam.ac.uk\r\n\r\nThe application is only intended for use on Windows operating systems. Support for other OSes is not guaranteed, but you are welcome to contact the researcher with queries.\r\n\r\nBy checking below, you agree to the following terms:\r\n\r\nData Collection:\r\n\r\nThe data to be gathered for this study will be a set of files generated by the software and stored in your \"USER_DIRECTORY\\Music Factory\\\" folder. You will have the option of allowing the software to automatically upload this data periodically to a remote server used by the researchers, or sending the data manually (e.g. by email or requesting for a researcher to collect the data in person with a USB stick). Any automatic data collection will be anonymous. See option below these terms for more details.\r\n\r\nSoftware Support & Updates:\r\n\r\nSoftware updates may be provided at the discretion of the researcher. Feedback on software defects is valuable but no guarantees are made as to when these may be fixed. The software can be easily updated by simply re-running a newer copy of the installer. This preserves all settings and music collection information. You will be informed when any updates are available and advised in what way the usage experience will be improved. Distribution of updates will be as per the original software distribution.\r\n\r\nPromised Functionality:\r\n\r\nThe promised functionality of the software is the ability to playback music already stored on this computer, alongside a number of basic features such as manually creating playlists. There is also an option to create playlists generated by the machine-learning component of the software (which is what will be under evaluation). One or more algorithms will be involved in the generation of these playlists, but no promises pertaining to the quality/performance of these is given or implied. \r\n\r\nYou are welcome to keep using the software beyond the study end-date. In doing so you will acknowledge that updates may or may not be released after the evaluation period, and that you use the software at your own risk after this period (i.e. the researchers will not be liable for any damage caused, although this is a highly unlikely scenario).\r\n\r\nOriginal project description and precautions statements:\r\n\r\nThe aim of this experiment will be to determine the quality of playlists generated by an automated tool as judged by users. The subjects will receive the software to be used as a typical media player with their own music collections for a period of approximately 1 month. The expected number of participants is 20-50.\r\nData will be gathered from users in two ways. Firstly, anonymous usage data will be collected with permission from users, but will only be viewable by the experiment organiser and will be destroyed after the project has concluded. This data will consist of statistics concerning the frequency and order in which songs have been listened to, and data about any playlists generated as a result.  Aggregated statistics concerning the entire data set will be made publicly viewable in the final report/dissertation for this project.\r\nSecondly, a survey will be conducted at the end of the experiment to allow the users a chance to report on their experiences with the software. These questions will be optional and sent as either a paper or digital form to be filled in.\r\n\r\nThe experiment will be carefully controlled, particularly with regards to anonymity in any data collected from the users. Participants will be informed that they may withdraw from the experiment at any time, and will be told exactly what data will be collected if they choose to participate. All participants will be over 18 and understand that their involvement is entirely voluntary.\r\nNo risk of physical or psychological harm to the participants is expected in this study.  Participants will understand that the only music which may be played to them is what they voluntarily give as input to the software, and that they must be legally entitled to use this music for such a purpose. Participants may choose not to input all of their music to the software.\r\nThe user survey will not pose any risk to participants: it will be voluntary and the questions will only cover their experiences of the software and their opinion on the quality of its operation.");
+		txtrAgreement
+				.setText("This project was approved by the University of Cambridge Computer Laboratory ethics committee on 31st March 2014.\r\n\r\nYour first point of contact with any queries relating to: the usage of this software; the project goals; the user study, should be directed to the project researcher:\r\nJames King - jk509@cam.ac.uk\r\n\r\nThe application is only intended for use on Windows operating systems. Support for other OSes is not guaranteed, but you are welcome to contact the researcher with queries.\r\n\r\nBy checking below, you agree to the following terms:\r\n\r\nData Collection:\r\n\r\nThe data to be gathered for this study will be a set of files generated by the software and stored in your \"USER_DIRECTORY\\Music Factory\\\" folder. You will have the option of allowing the software to automatically upload this data periodically to a remote server used by the researchers, or sending the data manually (e.g. by email or requesting for a researcher to collect the data in person with a USB stick). Any automatic data collection will be anonymous. See option below these terms for more details.\r\n\r\nSoftware Support & Updates:\r\n\r\nSoftware updates may be provided at the discretion of the researcher. Feedback on software defects is valuable but no guarantees are made as to when these may be fixed. The software can be easily updated by simply re-running a newer copy of the installer. This preserves all settings and music collection information. You will be informed when any updates are available and advised in what way the usage experience will be improved. Distribution of updates will be as per the original software distribution.\r\n\r\nPromised Functionality:\r\n\r\nThe promised functionality of the software is the ability to playback music already stored on this computer, alongside a number of basic features such as manually creating playlists. There is also an option to create playlists generated by the machine-learning component of the software (which is what will be under evaluation). One or more algorithms will be involved in the generation of these playlists, but no promises pertaining to the quality/performance of these is given or implied. \r\n\r\nYou are welcome to keep using the software beyond the study end-date. In doing so you will acknowledge that updates may or may not be released after the evaluation period, and that you use the software at your own risk after this period (i.e. the researchers will not be liable for any damage caused, although this is a highly unlikely scenario).\r\n\r\nOriginal project description and precautions statements:\r\n\r\nThe aim of this experiment will be to determine the quality of playlists generated by an automated tool as judged by users. The subjects will receive the software to be used as a typical media player with their own music collections for a period of approximately 1 month. The expected number of participants is 20-50.\r\nData will be gathered from users in two ways. Firstly, anonymous usage data will be collected with permission from users, but will only be viewable by the experiment organiser and will be destroyed after the project has concluded. This data will consist of statistics concerning the frequency and order in which songs have been listened to, and data about any playlists generated as a result.  Aggregated statistics concerning the entire data set will be made publicly viewable in the final report/dissertation for this project.\r\nSecondly, a survey will be conducted at the end of the experiment to allow the users a chance to report on their experiences with the software. These questions will be optional and sent as either a paper or digital form to be filled in.\r\n\r\nThe experiment will be carefully controlled, particularly with regards to anonymity in any data collected from the users. Participants will be informed that they may withdraw from the experiment at any time, and will be told exactly what data will be collected if they choose to participate. All participants will be over 18 and understand that their involvement is entirely voluntary.\r\nNo risk of physical or psychological harm to the participants is expected in this study.  Participants will understand that the only music which may be played to them is what they voluntarily give as input to the software, and that they must be legally entitled to use this music for such a purpose. Participants may choose not to input all of their music to the software.\r\nThe user survey will not pose any risk to participants: it will be voluntary and the questions will only cover their experiences of the software and their opinion on the quality of its operation.");
 		txtrAgreement.setLineWrap(true);
 		txtrAgreement.setFont(new Font("Tahoma", Font.PLAIN, 12));
 		txtrAgreement.setEditable(false);
 		txtrAgreement.setCaretPosition(0);
-		
+
 		txtrToProceedYou = new JTextArea();
 		txtrToProceedYou.setLineWrap(true);
 		txtrToProceedYou.setWrapStyleWord(true);
@@ -458,7 +485,7 @@ public class Setup extends JDialog {
 		txtrToProceedYou.setBounds(60, 70, 517, 52);
 		panel_21.add(txtrToProceedYou);
 
-		//ButtonGroup repeats = new ButtonGroup();
+		// ButtonGroup repeats = new ButtonGroup();
 
 		panel_22 = new JPanel();
 		panel_22.setPreferredSize(new Dimension(10, 30));
@@ -496,47 +523,57 @@ public class Setup extends JDialog {
 		pnl3.add(panel_31, BorderLayout.CENTER);
 		panel_31.setLayout(null);
 
+		lblLoadIcon1 = new JLabel();
+		lblLoadIcon1.setDoubleBuffered(true);
+		lblLoadIcon1.setVisible(false);
+		lblLoadIcon1.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/loading.gif")));
+		lblLoadIcon1.setBounds(207, 345, 48, 48);
+		panel_31.add(lblLoadIcon1);
+
 		lblNoAudioFiles = new JLabel("(Audio files will not be copied)");
-		lblNoAudioFiles.setBounds(178, 141, 191, 14);
+		lblNoAudioFiles.setBounds(208, 154, 191, 14);
 		panel_31.add(lblNoAudioFiles);
 
 		txtMusicItunes = new JTextField();
-		txtMusicItunes.setBounds(30, 101, 445, 21);
+		txtMusicItunes.setBounds(60, 120, 414, 21);
 		txtMusicItunes.setText(StaticMethods.getHomeDir() + "\\Music\\iTunes");
 		panel_31.add(txtMusicItunes);
 		txtMusicItunes.setColumns(10);
 
 		lblItunesLocate = new JLabel("Please locate your iTunes folder:");
-		lblItunesLocate.setBounds(30, 76, 170, 14);
+		lblItunesLocate.setBounds(60, 100, 170, 14);
 		panel_31.add(lblItunesLocate);
 
 		String path = StaticMethods.getHomeDir() + "\\Music\\iTunes\\iTunes Music Library.xml";
+		lblFoundItunesLibrary = new JLabel("Couldn't find an iTunes library automatically.");
+		lblFoundItunesLibrary.setBounds(60, 75, 500, 14);
+		txtMusicItunes.setText(StaticMethods.getHomeDir());
 		if ((new File(path)).exists()) {
-			lblFoundItunesLibrary = new JLabel("Found an iTunes library: " + path);
-			lblFoundItunesLibrary.setBounds(30, 76, 500, 14);
+			lblFoundItunesLibrary.setText("Found an iTunes library: " + path);
+			lblFoundItunesLibrary.setBounds(60, 90, 500, 14);
 			lblFoundItunesLibrary.setForeground(new Color(0, 128, 0));
 			txtMusicItunes.setText(path);
 			lblItunesLocate.setVisible(false);
-			panel_31.add(lblFoundItunesLibrary);
 		}
+		panel_31.add(lblFoundItunesLibrary);
 
 		btnBrowseItunes = new JButton("Browse...");
 		btnBrowseItunes.addActionListener(new BtnBrowseItunesActionListener());
 		btnBrowseItunes.setBackground(Color.WHITE);
-		btnBrowseItunes.setBounds(481, 100, 79, 23);
+		btnBrowseItunes.setBounds(481, 119, 79, 23);
 		panel_31.add(btnBrowseItunes);
 
 		btnImportItunes = new JButton("Import Music");
 		btnImportItunes.setBackground(Color.WHITE);
 		btnImportItunes.setForeground(new Color(0, 128, 0));
-		btnImportItunes.setBounds(30, 133, 136, 30);
+		btnImportItunes.setBounds(60, 145, 138, 30);
 		btnImportItunes.addActionListener(new BtnImportItunesActionListener());
 		btnImportItunes.setFont(new Font("Tahoma", Font.BOLD, 14));
 		panel_31.add(btnImportItunes);
 
 		scrlItunesTable = new JScrollPane();
 		scrlItunesTable.setToolTipText("Select one or more tracks and press delete to remove them");
-		scrlItunesTable.setBounds(30, 250, 339, 240);
+		scrlItunesTable.setBounds(61, 250, 340, 253);
 		scrlItunesTable.setPreferredSize(new Dimension(100, 100));
 		panel_31.add(scrlItunesTable);
 
@@ -545,13 +582,15 @@ public class Setup extends JDialog {
 		scrlItunesTable.setViewportView(listTracks);
 
 		scrollPane_1 = new JScrollPane();
-		scrollPane_1.setToolTipText("Select one or more playlists and press delete to remove them");
-		scrollPane_1.setBounds(390, 250, 170, 240);
+		scrollPane_1.setToolTipText("Press delete to remove a playlist");
+		scrollPane_1.setBounds(417, 250, 143, 253);
 		scrollPane_1.setPreferredSize(new Dimension(50, 50));
 		panel_31.add(scrollPane_1);
 
 		listPlaylists = new JList();
-		listPlaylists.setToolTipText("Select one or more playlists and press delete to remove them");
+		listPlaylists.addKeyListener(new ListPlaylistsKeyListener());
+		listPlaylists.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		listPlaylists.setToolTipText("Press delete to remove a playlist");
 		scrollPane_1.setViewportView(listPlaylists);
 		/*
 		 * listPlaylists.setModel(new AbstractListModel() { String[] values = new String[] {}; public int getSize() { return values.length; } public Object getElementAt(int index) { return values[index]; } });
@@ -560,16 +599,16 @@ public class Setup extends JDialog {
 		chckbxImportPlaylists = new JCheckBox("Import playlists");
 		chckbxImportPlaylists.setSelected(true);
 		chckbxImportPlaylists.setBackground(Color.WHITE);
-		chckbxImportPlaylists.setBounds(386, 492, 143, 23);
+		chckbxImportPlaylists.setBounds(417, 506, 143, 23);
 		panel_31.add(chckbxImportPlaylists);
 
 		lblPressDeleteTo = new JLabel("Tracks");
 		lblPressDeleteTo.setFont(new Font("Trebuchet MS", Font.BOLD, 12));
-		lblPressDeleteTo.setBounds(32, 225, 153, 23);
+		lblPressDeleteTo.setBounds(61, 225, 153, 23);
 		panel_31.add(lblPressDeleteTo);
 
 		lblLoadMoreItunes = new JLabel("You can import additional tracks from disk later if needed.");
-		lblLoadMoreItunes.setBounds(30, 496, 289, 14);
+		lblLoadMoreItunes.setBounds(61, 510, 289, 14);
 		panel_31.add(lblLoadMoreItunes);
 
 		lblImportFromItunes_2 = new JLabel("Import from iTunes (optional)");
@@ -578,23 +617,16 @@ public class Setup extends JDialog {
 		lblImportFromItunes_2.setBounds(60, 20, 335, 48);
 		panel_31.add(lblImportFromItunes_2);
 
-		btnSkipItunes = new JButton("Skip");
-		btnSkipItunes.setBackground(Color.WHITE);
-		btnSkipItunes.setBounds(470, 33, 90, 24);
-		panel_31.add(btnSkipItunes);
-		btnSkipItunes.setFont(new Font("Tahoma", Font.BOLD, 11));
-
 		lblPlaylists = new JLabel("Playlists");
 		lblPlaylists.setFont(new Font("Trebuchet MS", Font.BOLD, 12));
-		lblPlaylists.setBounds(390, 225, 153, 23);
+		lblPlaylists.setBounds(417, 225, 153, 23);
 		panel_31.add(lblPlaylists);
 
 		lblPreview = new JLabel("Preview:");
 		lblPreview.setForeground(Color.GRAY);
 		lblPreview.setFont(new Font("Tahoma", Font.BOLD, 16));
-		lblPreview.setBounds(32, 174, 335, 48);
+		lblPreview.setBounds(60, 190, 335, 34);
 		panel_31.add(lblPreview);
-		btnSkipItunes.addActionListener(new BtnSkipActionListener());
 
 		panel_32 = new JPanel();
 		panel_32.setPreferredSize(new Dimension(10, 30));
@@ -613,7 +645,6 @@ public class Setup extends JDialog {
 
 		btnNext3 = new JButton("Next");
 		btnNext3.setBackground(Color.WHITE);
-		btnNext3.setEnabled(false);
 		btnNext3.setFont(new Font("Tahoma", Font.BOLD, 11));
 		btnNext3.addActionListener(new BtnNextActionListener());
 		btnNext3.setHorizontalTextPosition(SwingConstants.LEADING);
@@ -631,23 +662,23 @@ public class Setup extends JDialog {
 		pnl4.add(panel_41, BorderLayout.CENTER);
 		panel_41.setLayout(null);
 
-		btnSkipMusic = new JButton("Skip");
-		btnSkipMusic.setBackground(Color.WHITE);
-		btnSkipMusic.setBounds(470, 33, 90, 24);
-		btnSkipMusic.addActionListener(new BtnSkip_1ActionListener());
-		btnSkipMusic.setFont(new Font("Tahoma", Font.BOLD, 11));
-		panel_41.add(btnSkipMusic);
+		lblLoadIcon = new JLabel();
+		lblLoadIcon.setDoubleBuffered(true);
+		lblLoadIcon.setVisible(false);
+		lblLoadIcon.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/loading.gif")));
+		lblLoadIcon.setBounds(207, 350, 48, 48);
+		panel_41.add(lblLoadIcon);
 
 		lblIfYouUse = new JLabel("If you use another player such as Windows Media Player, your music may be stored in \"My Music\".");
-		lblIfYouUse.setBounds(60, 84, 517, 14);
+		lblIfYouUse.setBounds(60, 75, 517, 14);
 		panel_41.add(lblIfYouUse);
 
 		lblYouCanAlso = new JLabel("You can also select any location where music is stored on your computer.");
-		lblYouCanAlso.setBounds(60, 104, 350, 14);
+		lblYouCanAlso.setBounds(60, 95, 350, 14);
 		panel_41.add(lblYouCanAlso);
 
 		txtMusicRoot = new JTextField();
-		txtMusicRoot.setBounds(60, 129, 415, 21);
+		txtMusicRoot.setBounds(60, 120, 414, 21);
 		txtMusicRoot.setText(StaticMethods.getHomeDir() + "\\Music");
 		panel_41.add(txtMusicRoot);
 		txtMusicRoot.setColumns(10);
@@ -655,13 +686,13 @@ public class Setup extends JDialog {
 		btnBrowseMusic = new JButton("Browse...");
 		btnBrowseMusic.addActionListener(new BtnBrowseMusicActionListener());
 		btnBrowseMusic.setBackground(Color.WHITE);
-		btnBrowseMusic.setBounds(481, 128, 79, 23);
+		btnBrowseMusic.setBounds(481, 119, 79, 23);
 		panel_41.add(btnBrowseMusic);
 
 		btnImportMusic = new JButton("Import Music");
 		btnImportMusic.setBackground(Color.WHITE);
 		btnImportMusic.setForeground(new Color(0, 128, 0));
-		btnImportMusic.setBounds(60, 161, 138, 34);
+		btnImportMusic.setBounds(60, 145, 138, 30);
 		btnImportMusic.addActionListener(new BtnImportMusicActionListener());
 		btnImportMusic.setFont(new Font("Tahoma", Font.BOLD, 14));
 		panel_41.add(btnImportMusic);
@@ -672,38 +703,62 @@ public class Setup extends JDialog {
 		lblImportFromDisk.setBounds(60, 20, 365, 48);
 		panel_41.add(lblImportFromDisk);
 
-		lblNoteThisWill = new JLabel("Note: this will replace any music imported from iTunes");
-		lblNoteThisWill.setFont(new Font("Tahoma", Font.PLAIN, 12));
-		lblNoteThisWill.setForeground(Color.RED);
-		lblNoteThisWill.setBounds(217, 180, 343, 15);
-		panel_41.add(lblNoteThisWill);
-
 		label_3 = new JLabel("Tracks");
 		label_3.setFont(new Font("Trebuchet MS", Font.BOLD, 12));
-		label_3.setBounds(62, 239, 153, 23);
+		label_3.setBounds(61, 225, 153, 23);
 		panel_41.add(label_3);
 
 		label_4 = new JLabel("Preview:");
 		label_4.setForeground(Color.GRAY);
 		label_4.setFont(new Font("Tahoma", Font.BOLD, 16));
-		label_4.setBounds(60, 208, 335, 34);
+		label_4.setBounds(60, 190, 79, 34);
 		panel_41.add(label_4);
 
-		lblYouCanImport = new JLabel("You can import additional tracks from disk later if needed.");
-		lblYouCanImport.setBounds(60, 510, 289, 14);
+		lblYouCanImport = new JLabel("This shows all tracks including iTunes imports. You can import multiple folders from disk.");
+		lblYouCanImport.setBounds(60, 510, 500, 14);
 		panel_41.add(lblYouCanImport);
 
 		label_6 = new JLabel("(Audio files will not be copied)");
-		label_6.setBounds(217, 161, 191, 14);
+		label_6.setBounds(208, 154, 191, 14);
 		panel_41.add(label_6);
 
 		scrollPane = new JScrollPane();
-		scrollPane.setBounds(61, 265, 450, 238);
+		scrollPane.setBounds(61, 250, 340, 253);
 		panel_41.add(scrollPane);
 
 		listTracksDisk = new JList();
 		scrollPane.setViewportView(listTracksDisk);
 		listTracksDisk.setToolTipText("Select one or more tracks and press delete to remove them");
+
+		btnImportPlaylistFiles = new JButton("Import playlists...");
+		btnImportPlaylistFiles.addActionListener(new BtnImportPlaylistFilesActionListener());
+		btnImportPlaylistFiles.setFont(new Font("Tahoma", Font.BOLD, 11));
+		btnImportPlaylistFiles.setBounds(417, 477, 143, 27);
+		panel_41.add(btnImportPlaylistFiles);
+		
+		label_1 = new JLabel("Playlists");
+		label_1.setFont(new Font("Trebuchet MS", Font.BOLD, 12));
+		label_1.setBounds(417, 225, 153, 23);
+		panel_41.add(label_1);
+		
+		scrollPane_2 = new JScrollPane();
+		scrollPane_2.setToolTipText("Press delete to remove a playlist");
+		scrollPane_2.setPreferredSize(new Dimension(50, 50));
+		scrollPane_2.setBounds(417, 250, 143, 223);
+		panel_41.add(scrollPane_2);
+		
+		listPlaylistsDisk = new JList();
+		listPlaylistsDisk.addKeyListener(new ListPlaylistsKeyListener());
+		listPlaylistsDisk.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		listPlaylistsDisk.setToolTipText("Press delete to remove a playlist");
+		scrollPane_2.setViewportView(listPlaylistsDisk);
+		
+		lblFoundCount = new JLabel("Found 0 tracks so far");
+		lblFoundCount.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 12));
+		lblFoundCount.setVisible(false);
+		lblFoundCount.setBounds(210, 199, 200, 16);
+		lblFoundCount.setForeground(new Color(0, 128, 0));
+		panel_41.add(lblFoundCount);
 
 		panel_42 = new JPanel();
 		panel_42.setPreferredSize(new Dimension(10, 30));
@@ -722,7 +777,6 @@ public class Setup extends JDialog {
 
 		btnNext4 = new JButton("Next");
 		btnNext4.setBackground(Color.WHITE);
-		btnNext4.setEnabled(false);
 		btnNext4.setFont(new Font("Tahoma", Font.BOLD, 11));
 		btnNext4.addActionListener(new BtnNextActionListener());
 		btnNext4.setHorizontalTextPosition(SwingConstants.LEADING);
@@ -749,22 +803,22 @@ public class Setup extends JDialog {
 		btnAnalyse.setBackground(Color.WHITE);
 		btnAnalyse.setForeground(new Color(0, 128, 0));
 		btnAnalyse.setFont(new Font("Tahoma", Font.BOLD, 14));
-		btnAnalyse.setBounds(60, 272, 107, 28);
+		btnAnalyse.setBounds(60, 240, 107, 28);
 		btnAnalyse.addActionListener(new BtnGoActionListener());
 		panel_51.add(btnAnalyse);
 
 		lblThisMayTake = new JLabel("This may take some time (up to 10s per track). Please wait...");
 		lblThisMayTake.setVisible(false);
 		lblThisMayTake.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		lblThisMayTake.setBounds(60, 311, 407, 23);
+		lblThisMayTake.setBounds(60, 293, 407, 23);
 		panel_51.add(lblThisMayTake);
 
 		progressBar = new JProgressBar();
-		progressBar.setBounds(60, 386, 480, 28);
+		progressBar.setBounds(60, 368, 480, 28);
 		panel_51.add(progressBar);
 
 		lblSong = new JLabel("Processing track");
-		lblSong.setBounds(60, 431, 78, 14);
+		lblSong.setBounds(60, 413, 78, 14);
 		panel_51.add(lblSong);
 
 		lblAudioAnalyses = new JLabel("Audio analysis");
@@ -774,35 +828,35 @@ public class Setup extends JDialog {
 		panel_51.add(lblAudioAnalyses);
 
 		lblProcessingStart = new JLabel("0");
-		lblProcessingStart.setBounds(148, 431, 38, 14);
+		lblProcessingStart.setBounds(148, 413, 38, 14);
 		panel_51.add(lblProcessingStart);
 
 		lblOf = new JLabel("of");
-		lblOf.setBounds(190, 431, 23, 14);
+		lblOf.setBounds(190, 413, 23, 14);
 		panel_51.add(lblOf);
 
 		lblProcessingCount = new JLabel("0");
-		lblProcessingCount.setBounds(223, 431, 46, 14);
+		lblProcessingCount.setBounds(223, 413, 46, 14);
 		panel_51.add(lblProcessingCount);
 
 		lblProcessingName = new JLabel("");
-		lblProcessingName.setBounds(60, 456, 503, 23);
+		lblProcessingName.setBounds(60, 438, 503, 23);
 		panel_51.add(lblProcessingName);
 
 		lblTimeTaken = new JLabel("Time taken:");
-		lblTimeTaken.setBounds(60, 490, 67, 14);
+		lblTimeTaken.setBounds(60, 473, 67, 14);
 		panel_51.add(lblTimeTaken);
 
 		lblTimeRemaining = new JLabel("Time remaining:");
-		lblTimeRemaining.setBounds(231, 490, 99, 14);
+		lblTimeRemaining.setBounds(231, 473, 99, 14);
 		panel_51.add(lblTimeRemaining);
 
-		lblProcessingTime = new JLabel("0m 0s");
-		lblProcessingTime.setBounds(129, 490, 46, 14);
+		lblProcessingTime = new JLabel("0h 0m 0s");
+		lblProcessingTime.setBounds(129, 473, 84, 14);
 		panel_51.add(lblProcessingTime);
 
-		lblProcessingTimeLeft = new JLabel("0m 0s");
-		lblProcessingTimeLeft.setBounds(318, 490, 46, 14);
+		lblProcessingTimeLeft = new JLabel("0h 0m 0s");
+		lblProcessingTimeLeft.setBounds(318, 473, 78, 14);
 		panel_51.add(lblProcessingTimeLeft);
 
 		lblThisInformationWill = new JLabel("This information will be used to help create smart playlists once your listening");
@@ -817,13 +871,19 @@ public class Setup extends JDialog {
 
 		lblClickHereTo = new JLabel("Click here to begin analysis:");
 		lblClickHereTo.setFont(new Font("Tahoma", Font.PLAIN, 14));
-		lblClickHereTo.setBounds(60, 231, 291, 23);
+		lblClickHereTo.setBounds(61, 204, 291, 23);
 		panel_51.add(lblClickHereTo);
-		
+
 		fileProgressBar = new JProgressBar();
 		fileProgressBar.setStringPainted(true);
-		fileProgressBar.setBounds(60, 347, 480, 28);
+		fileProgressBar.setBounds(60, 329, 480, 28);
 		panel_51.add(fileProgressBar);
+
+		int threadCount = StaticMethods.getThreadCount();
+		lblCores = new JLabel("Using " + threadCount + " processor core" + (threadCount > 1 ? "s" : ""));
+		lblCores.setForeground(Color.GRAY);
+		lblCores.setBounds(60, 503, 153, 14);
+		panel_51.add(lblCores);
 
 		panel_52 = new JPanel();
 		panel_52.setPreferredSize(new Dimension(10, 30));
@@ -885,37 +945,37 @@ public class Setup extends JDialog {
 		lblFileMenu.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblFileMenu.setBounds(57, 195, 520, 28);
 		panel_61.add(lblFileMenu);
-		
+
 		lblAfterSettingUp = new JLabel("After setting up any playlists and getting used to using the music player,");
 		lblAfterSettingUp.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblAfterSettingUp.setBounds(57, 265, 520, 28);
 		panel_61.add(lblAfterSettingUp);
-		
+
 		lblPleaseTryTo = new JLabel("please try to use it in \"Smart Mode\" as much as possible. In this mode, the");
 		lblPleaseTryTo.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblPleaseTryTo.setBounds(57, 292, 520, 28);
 		panel_61.add(lblPleaseTryTo);
-		
+
 		lblNextTrackWill = new JLabel("next track will always be chosen automatically based on what you're currently");
 		lblNextTrackWill.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblNextTrackWill.setBounds(57, 320, 520, 28);
 		panel_61.add(lblNextTrackWill);
-		
+
 		lblNewLabel = new JLabel("listening to and what you've listened to in the past.");
 		lblNewLabel.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblNewLabel.setBounds(57, 348, 520, 28);
 		panel_61.add(lblNewLabel);
-		
+
 		lblSmartModeIs = new JLabel("Smart mode is turned on by default. Turn it off later by pressing 's' or clicking");
 		lblSmartModeIs.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblSmartModeIs.setBounds(57, 404, 479, 28);
 		panel_61.add(lblSmartModeIs);
-		
+
 		lblTheBrainIcon = new JLabel("the brain icon near the bottom of the screen.");
 		lblTheBrainIcon.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblTheBrainIcon.setBounds(57, 432, 520, 28);
 		panel_61.add(lblTheBrainIcon);
-		
+
 		panel_1 = new JPanel();
 		panel_1.setBackground(new Color(255, 255, 255));
 		panel_1.setBorder(new LineBorder(new Color(165, 42, 42), 2, true));
@@ -949,21 +1009,31 @@ public class Setup extends JDialog {
 
 	}
 
+	/*
+	 * private void UpdatePlaylistDisplay(){ listPlaylists.setModel(new AbstractListModel(){ private static final long serialVersionUID = 1L;
+	 * 
+	 * @Override public Object getElementAt(int arg0) { return library.getPlaylists().get(arg0 + MusicPlayer.FIXED_PLAYLIST_ELEMENTS).getName(); }
+	 * 
+	 * @Override public int getSize() { return library.getPlaylists().size() - MusicPlayer.FIXED_PLAYLIST_ELEMENTS; }
+	 * 
+	 * }); }
+	 */
+
 	private void UpdateTrackDisplay() {
-		if (stage == 3) {
+		//if (stage == 3) {
 			// import from itunes
 			listTracks.setModel(new AbstractListModel() {
 				private static final long serialVersionUID = 1L;
 
 				@Override
 				public int getSize() {
-					return library.getPlaylists().get(Library.MAIN_PLAYLIST).size(); //TODO all wrong: use Library.MAIN_PLAYLIST
+					return library.getPlaylists().get(Library.MAIN_PLAYLIST).size();
 				}
 
 				@Override
 				public Object getElementAt(int arg0) {
 					Song track = library.getPlaylists().get(Library.MAIN_PLAYLIST).get(arg0);
-					return track.getName() + " - " + track.getAlbum() + " - " + track.getArtist();
+					return track.toString();
 				}
 			});
 			listPlaylists.setModel(new AbstractListModel() {
@@ -971,17 +1041,17 @@ public class Setup extends JDialog {
 
 				@Override
 				public int getSize() {
-					return library.getPlaylists().size() - MusicPlayer.FIXED_PLAYLIST_ELEMENTS;
+					return itunesPlaylists.size();//library.getPlaylists().size() - MusicPlayer.FIXED_PLAYLIST_ELEMENTS;
 				}
 
 				@Override
 				public Object getElementAt(int index) {
-					return library.getPlaylists().get(index - MusicPlayer.FIXED_PLAYLIST_ELEMENTS).getName();
+					return itunesPlaylists.get(index).getName();//library.getPlaylists().get(index + MusicPlayer.FIXED_PLAYLIST_ELEMENTS).getName();
 				}
 			});
 			listTracks.repaint();
 			listPlaylists.repaint();
-		} else if (stage == 4) {
+		//} else if (stage == 4) {
 			// import from disk
 			listTracksDisk.setModel(new AbstractListModel() {
 				private static final long serialVersionUID = 1L;
@@ -994,18 +1064,37 @@ public class Setup extends JDialog {
 				@Override
 				public Object getElementAt(int index) {
 					Song track = library.getPlaylists().get(Library.MAIN_PLAYLIST).get(index);
-					return track.getName() + " - " + track.getAlbum() + " - " + track.getArtist();
+					return track.toString();
+				}
+			});
+			listPlaylistsDisk.setModel(new AbstractListModel() {
+				private static final long serialVersionUID = 1L;
+
+				@Override
+				public int getSize() {
+					return genericPlaylists.size();
+				}
+
+				@Override
+				public Object getElementAt(int index) {
+					return StaticMethods.getFileName(genericPlaylists.get(index));
 				}
 			});
 			listTracksDisk.repaint();
-		}
+			listPlaylistsDisk.repaint();
+		//}
 	}
 
 	private class BtnNextActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			cardLayout.next(pnlMain);
-			stage++;
-			UpdateSidebar();
+			if(stage == 4 && library.getPlaylists().get(Library.MAIN_PLAYLIST).size() < Constants.MIN_LIBRARY_SIZE){
+				Object[] options = {"OK"};
+				JOptionPane.showOptionDialog(Setup.this, "Sorry, you need to add at least "+Constants.MIN_LIBRARY_SIZE+" tracks before proceeding", "Cannot continue", JOptionPane.PLAIN_MESSAGE, JOptionPane.ERROR_MESSAGE, null, options, options[0]);
+			}else{
+				cardLayout.next(pnlMain);
+				stage++;
+				UpdateSidebar();
+			}
 		}
 	}
 
@@ -1019,24 +1108,49 @@ public class Setup extends JDialog {
 
 	private class BtnFinishActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
+			
+			if(chckbxImportPlaylists.isSelected()){
+				library.addPlaylists(itunesPlaylists);
+			}
+			
 			// save()
 			success[0] = true;
+			Logger.log("Setup completed successfully", LogType.USAGE_LOG);
 			dispose();
 		}
 	}
+	
+	private Playlist importPlaylist(String fpath){
+		try {
+			File file = new File(fpath);
+			SpecificPlaylist specificPlaylist;
 
-	private class BtnSkipActionListener implements ActionListener {
-		public void actionPerformed(ActionEvent e) {
-			cardLayout.next(pnlMain);
-			stage++;
-			UpdateSidebar();
+			specificPlaylist = SpecificPlaylistFactory.getInstance().readFrom(file);
+
+			if (specificPlaylist == null) {
+				// error
+			} else {
+				christophedelory.playlist.Playlist genericPlaylist = specificPlaylist.toPlaylist();
+				List<String> locs = new ArrayList<String>();
+				StaticMethods.playlistConverter(genericPlaylist.getRootSequence(), locs);
+				List<Song> playlist = StaticMethods.getSongsByLocation(locs, library.getTracks());
+				Playlist p = new Playlist(StaticMethods.getFileName(fpath), Playlist.USER, playlist);
+				return p;
+			}
+		} catch (Exception e) {
+			Logger.log(e, LogType.ERROR_LOG);
 		}
+		return null;
 	}
 
 	private class BtnGoActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			if (library.size() > 0 && library.getPlaylists().get(Library.MAIN_PLAYLIST).size() > 0) {
+			btnPrevious5.setEnabled(false);
+			processPlaylists();
 			
+			if (library.getPlaylists().size() >= MusicPlayer.FIXED_PLAYLIST_ELEMENTS && library.getPlaylists().get(Library.MAIN_PLAYLIST).size() > 0) {
+
+				// Thread which does main analysis
 				final Setup context = Setup.this;
 				(new Thread() {
 					@Override
@@ -1045,26 +1159,54 @@ public class Setup extends JDialog {
 						library.setClusters(clusters);
 					}
 				}).start();
-			}else{
+
+				// Timer thread just for updating times 
+				(new Thread() {
+					@Override
+					public void run() {
+						long startTime = System.currentTimeMillis();
+						int time = 0;
+						while (!lblThisMayTake.getText().equals("Processing complete.")) {
+							if ((System.currentTimeMillis() - startTime) / 1000 > time) {
+								time = (int) (System.currentTimeMillis() - startTime) / 1000;
+								lblProcessingTime.setText((time / 3600) + "h " + ((time % 3600) / 60) + "m " + (time % 60) + "s");
+								if (Integer.parseInt(lblProcessingStart.getText()) > 0) {
+									int timeleft = (time / Integer.parseInt(lblProcessingStart.getText())) * (library.getPlaylists().get(Library.MAIN_PLAYLIST).size() - Integer.parseInt(lblProcessingStart.getText()));
+									lblProcessingTimeLeft.setText((timeleft / 3600) + "h " + ((timeleft % 3600) / 60) + "m " + (timeleft % 60) + "s");
+								}
+							}
+							try {
+								Thread.sleep(200);
+							} catch (InterruptedException e) {
+								Logger.log(e, LogType.ERROR_LOG);
+							}
+						}
+						lblProcessingTimeLeft.setText("0h 0m 0s");
+					}
+				}).start();
+
+			} else {
 				btnNext5.setEnabled(true);
 				// TODO maybe skip this page. need to make sure clusters will get built when user does add some songs, though
 			}
 		}
 	}
-
-	private class BtnSkip_1ActionListener implements ActionListener {
-		public void actionPerformed(ActionEvent e) {
-			cardLayout.next(pnlMain);
-			stage++;
-			UpdateSidebar();
+	
+	public class FileScannerUpdater {
+		private int count = 0;
+		public void update(){
+			count++;
+			lblFoundCount.setText("Found "+count+" track"+(count > 1 ? "s" : "")+" so far");
 		}
 	}
 
 	private class BtnImportMusicActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
-
+			lblFoundCount.setVisible(true);
+			btnNext4.setEnabled(false);
+			lblLoadIcon.setVisible(true);
+			//label_6.setVisible(false);
 			btnPrevious4.setEnabled(false);
-			btnSkipMusic.setEnabled(false);
 			btnBrowseMusic.setEnabled(false);
 			listTracksDisk.setModel(new AbstractListModel() {
 				private static final long serialVersionUID = 1L;
@@ -1074,7 +1216,7 @@ public class Setup extends JDialog {
 				}
 
 				public Object getElementAt(int index) {
-					return "Loading... this may take several minutes for large collections, please wait.";
+					return " Loading... this may a while for large collections";
 				}
 			});
 
@@ -1084,47 +1226,113 @@ public class Setup extends JDialog {
 			btnImportMusic.repaint();
 			// dialog.invalidate(); dialog.repaint();
 
-			SwingUtilities.invokeLater(new Runnable() {
+			(new Thread() {
 				@Override
 				public void run() {
 					String folder = txtMusicRoot.getText();
-					FileScanner parser = new FileScanner();
+					FileScanner parser = new FileScanner(new FileScannerUpdater());
 					parser.setPath(folder);
 					parser.setValid(true);
-					if (Import(parser)) {
+					if (AddToLibrary(parser)) {
 						// btnImportMusic.setEnabled(false);
 						btnImportMusic.setText("Done");
+						(new Thread(){
+							@Override public void run(){ try {
+								Thread.sleep(1000);
+							} catch (InterruptedException e) {
+								// TODO Auto-generated catch block
+								Logger.log(e, LogType.ERROR_LOG);
+							} 
+							btnImportMusic.setEnabled(true); 
+							btnImportMusic.setText("Import Music"); 
+							}
+						}).start();
 						btnNext4.setEnabled(true);
-						btnPrevious4.setEnabled(true);
-						btnSkipMusic.setEnabled(true);
 						btnBrowseMusic.setEnabled(true);
+						lblYouCanImport.setVisible(true);
+						lblFoundCount.setVisible(false);
 					}
 					UpdateTrackDisplay();
+					btnPrevious4.setEnabled(true);
+					lblLoadIcon.setVisible(false);
 				}
-			});
+			}).start();
 
 		}
 	}
 
 	private class BtnImportItunesActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
-			String loc = txtMusicItunes.getText();
-			LibraryParser parser = new ItunesParser();
-			parser.setPath(loc);
-			parser.setValid(true);
-			if (Import(parser)) {
-				btnImportItunes.setEnabled(false);
-				btnNext3.setEnabled(true);
+			lblLoadIcon1.setVisible(true);
+			btnNext3.setEnabled(false);
+			btnPrevious3.setEnabled(false);
+			(new Thread() {
+				@Override
+				public void run() {
+					String loc = txtMusicItunes.getText();
+					LibraryParser parser = new ItunesParser();
+					parser.setPath(loc);
+					parser.setValid(true);
+					if (Import(parser)) {
+						btnImportItunes.setEnabled(false);
+						btnNext3.setEnabled(true);
+					}
+
+					ImportItunesPlaylists();
+
+					//UpdatePlaylistDisplay();
+					UpdateTrackDisplay();
+					lblLoadIcon1.setVisible(false);
+					btnPrevious3.setEnabled(true);
+				}
+			}).start();
+
+			/*try {
+
+				
+				 * File file = new File(txtMusicItunes.getText()); SpecificPlaylist specificPlaylist = SpecificPlaylistFactory.getInstance().readFrom(file); if(specificPlaylist != null){ Playlist pl = specificPlaylist.toPlaylist(); PlaylistConverter converter = new PlaylistConverter(); SpecificPlaylist newSpecificPlaylist = converter.toSpecificPlaylist(pl); PlaylistToString adapter = new PlaylistToString(); adapter.beginVisitPlaylist(pl); //adapter.endVisitPlaylist(pl); System.out.println(adapter.toString()); }
+				 
+			} catch (Exception e) {
+				Logger.log(e, LogType.ERROR_LOG);
+			}*/
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private void ImportItunesPlaylists() {
+		ItunesLibrary ituneslibrary = ItunesLibraryParser.parseLibrary(txtMusicItunes.getText());
+		List<ItunesPlaylist> playlists = ituneslibrary.getPlaylists();
+		outerloop:
+		for (int i = 1; i < playlists.size(); ++i) { // skip 1 as it's all tracks
+			ItunesPlaylist playlist = (ItunesPlaylist) playlists.get(i);
+			//System.out.println(playlist.getName());
+			Playlist pl = new Playlist(playlist.getName(), Playlist.USER);
+			List<ItunesTrack> tracks = playlist.getPlaylistItems();
+			for (int j = 0; j < tracks.size(); ++j) {
+				ItunesTrack track = (ItunesTrack) tracks.get(j);
+				String loc = track.getLocation().replaceAll("file://localhost/", "");
+				try {
+					loc = loc.replaceAll("\\+", "%2b");
+					loc = URLDecoder.decode(loc, "UTF-8");
+				} catch (UnsupportedEncodingException e) {
+					Logger.log(e, LogType.ERROR_LOG);
+				}
+				Song s = StaticMethods.GetSongByLoc(loc, library.getPlaylists().get(Library.MAIN_PLAYLIST).getList());
+				if(s == null)
+					continue outerloop;
+				pl.add(s);
 			}
-			UpdateTrackDisplay();
+			if(pl.size() > 0)
+				itunesPlaylists.add(pl);
 		}
 	}
 
 	private class ThisWindowListener extends WindowAdapter {
 		@Override
 		public void windowClosing(WindowEvent arg0) {
-			if (JOptionPane.showConfirmDialog(dialog, "You will not be able to use the music player until setup has completed.\nAre you sure you want to exit?"/*"The music player will not be useful until setup has completed.\nAre you sure you want to exit?"*/, "Warning", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION){
+			if (JOptionPane.showConfirmDialog(dialog, "You will not be able to use the music player until setup has completed.\nAre you sure you want to exit?"/* "The music player will not be useful until setup has completed.\nAre you sure you want to exit?" */, "Warning", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
 				success[0] = false;
+				Logger.log("Setup exited prematurely", LogType.USAGE_LOG);
 				dispose();
 			}
 		}
@@ -1199,9 +1407,58 @@ public class Setup extends JDialog {
 			}
 		}
 	}
+
 	private class ChckbxEnableShortcutsActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
 			btnNext2.setEnabled(chckbxAgree.isSelected());
+		}
+	}
+
+	private class ChckbxUploadDataActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+			library.autoupload = chckbxUploadData.isSelected();
+		}
+	}
+	private class BtnImportPlaylistFilesActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			JFileChooser fileChooser = new JFileChooser();
+		
+			String startat = StaticMethods.getHomeDir();
+			fileChooser.setCurrentDirectory(new File(startat));
+			//fileChooser.setFileFilter(new MP3filter());
+			
+			fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+			fileChooser.setAcceptAllFileFilterUsed(true);
+			fileChooser.setMultiSelectionEnabled(false);
+			fileChooser.setDialogTitle("Choose playlist file");
+			
+			int result = fileChooser.showOpenDialog(Setup.this);
+			if (result == JFileChooser.APPROVE_OPTION) {
+				File res = fileChooser.getSelectedFile();
+				String fpath = res.getAbsolutePath();
+				genericPlaylists.add(fpath);
+				UpdateTrackDisplay();
+			}
+		}
+	}
+	private class ListPlaylistsKeyListener extends KeyAdapter {
+		@Override
+		public void keyPressed(KeyEvent arg0) {
+			if(arg0.getKeyCode() == KeyEvent.VK_DELETE){
+				// Delete selected playlist
+				if(stage == 3){
+					itunesPlaylists.remove(listPlaylists.getSelectedIndex());
+				}else if(stage == 4){
+					genericPlaylists.remove(listPlaylistsDisk.getSelectedIndex());
+				}
+				UpdateTrackDisplay();
+			}
+		}
+	}
+	
+	private void processPlaylists(){
+		for(int i=0; i<genericPlaylists.size(); ++i){
+			library.addPlaylist(importPlaylist(genericPlaylists.get(i)));
 		}
 	}
 
@@ -1212,14 +1469,26 @@ public class Setup extends JDialog {
 
 		parser.run();
 
-		// TODO: this is an out of date method. Needs to mimic method in MusicPlayer... (ie. don't add to pl 0 or 1)
-		//library.setPlaylist(0, parser.getTracks());
-		//library.setPlaylist(1, parser.getTracks());
+		library.clearViews();
 		library.setPlaylist(Library.MAIN_PLAYLIST, parser.getTracks());
 
 		return true;
 
 		// TODO: import playlists
+	}
+
+	private boolean AddToLibrary(LibraryParser parser) {
+
+		if (!parser.isValid())
+			return false;
+
+		parser.run();
+
+		library.clearViews();
+		library.addToPlaylist(Library.MAIN_PLAYLIST, parser.getTracks());
+
+		return true;
+
 	}
 
 	public void UpdateSidebar() {

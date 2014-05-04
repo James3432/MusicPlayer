@@ -33,6 +33,8 @@ import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.decoder.SampleBuffer;
 import javazoom.jl.player.AudioDevice;
 import javazoom.jl.player.FactoryRegistry;
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
 
 public class JLayerPlayerPausable {
 	// This class is loosely based on javazoom.jl.player.AdvancedPlayer.
@@ -94,7 +96,7 @@ public class JLayerPlayerPausable {
 		try {
 			this.bitstream = new Bitstream(this.getAudioInputStream());
 		} catch (IOException e) {
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		}
 		this.audioDevice = FactoryRegistry.systemRegistry().createAudioDevice();
 		this.decoder = new Decoder();

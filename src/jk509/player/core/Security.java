@@ -13,6 +13,8 @@ import java.util.Enumeration;
 import java.util.Scanner;
 
 import jk509.player.Constants;
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
 
 import com.jacob.activeX.ActiveXComponent;
 import com.jacob.com.ComThread;
@@ -111,7 +113,7 @@ public class Security {
 	      input.close();
 	    }
 	    catch(Exception e){
-	        e.printStackTrace();
+	        Logger.log(e, LogType.ERROR_LOG);
 	    }
 	    return result.trim();
     }

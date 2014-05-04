@@ -1,17 +1,13 @@
 package jk509.player.core;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
-import javax.imageio.ImageIO;
+import jk509.player.Setup.FileScannerUpdater;
 
 import com.mpatric.mp3agic.ID3v1;
 import com.mpatric.mp3agic.ID3v2;
@@ -23,14 +19,21 @@ public class FileScanner implements LibraryParser {
 
 	private String libraryPath = "";
 	private List<Song> tracks;
-	private Map<String, BufferedImage> artwork;
+	// private Map<String, BufferedImage> artwork;
 
 	private boolean valid = false;
 	private Song tempTrack;
+	
+	private FileScannerUpdater updater;
 
 	public FileScanner() {
 		tracks = new ArrayList<Song>();
-		artwork = new HashMap<String, BufferedImage>();
+		// artwork = new HashMap<String, BufferedImage>();
+	}
+	
+	public FileScanner(FileScannerUpdater updater){
+		this();
+		this.updater = updater;
 	}
 
 	public FileScanner(String path) {
@@ -109,20 +112,13 @@ public class FileScanner implements LibraryParser {
 				tempTrack.setDateAdded(new Date(mp3file.getLastModified()));
 				tempTrack.setLocation(sourceFile.getPath());
 
-				byte[] albumImageData = tag.getAlbumImage();
-				if (albumImageData != null) {
-					// System.out.println("Have album image data, length: " + albumImageData.length + " bytes");
-					// System.out.println("Album image mime type: " + tag.getAlbumImageMimeType());
-					try {
-						BufferedImage img = ImageIO.read(new ByteArrayInputStream(albumImageData));
-
-						artwork.put(sourceFile.getPath(), img);
-						tempTrack.setArtwork(true);
-
-					} catch (IOException e) {
-						tempTrack.setArtwork(false);
-					}
-				}
+				/*
+				 * byte[] albumImageData = tag.getAlbumImage(); if (albumImageData != null) { // System.out.println("Have album image data, length: " + albumImageData.length + " bytes"); // System.out.println("Album image mime type: " + tag.getAlbumImageMimeType()); try { BufferedImage img = ImageIO.read(new ByteArrayInputStream(albumImageData));
+				 * 
+				 * artwork.put(sourceFile.getPath(), img); tempTrack.setArtwork(true);
+				 * 
+				 * } catch (IOException e) { tempTrack.setArtwork(false); } }
+				 */
 			} else if (mp3file.hasId3v1Tag()) {
 				// ID3v1
 				ID3v1 tag = mp3file.getId3v1Tag();
@@ -155,6 +151,8 @@ public class FileScanner implements LibraryParser {
 				tempTrack.setDateAdded(new Date());
 
 			tracks.add(tempTrack);
+			
+			updater.update();
 
 		} catch (InvalidDataException e) {
 			// no tag
@@ -222,9 +220,9 @@ public class FileScanner implements LibraryParser {
 		return tracks;
 	}
 
-	public Map<String, BufferedImage> getArtwork() {
+	/*public Map<String, BufferedImage> getArtwork() {
 		return artwork;
-	}
+	}*/
 
 	@Override
 	public int trackCount() {

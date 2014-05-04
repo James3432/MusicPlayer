@@ -16,6 +16,7 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.SystemColor;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
@@ -76,6 +77,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JProgressBar;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSlider;
@@ -103,9 +105,6 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
-import org.joda.time.DateTime;
-import org.joda.time.Days;
-
 import jk509.player.clustering.AbstractCluster;
 import jk509.player.clustering.LeafCluster;
 import jk509.player.clustering.SongCluster;
@@ -131,10 +130,11 @@ import jk509.player.gui.SmartPlaylistDialog.SmartPlaylistResult;
 import jk509.player.gui.SwingDragImages;
 import jk509.player.learning.UserAction;
 import jk509.player.learning.UserHistoryDemo;
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
 
-import java.awt.SystemColor;
-
-import javax.swing.JProgressBar;
+import org.joda.time.DateTime;
+import org.joda.time.Days;
 
 public class MusicPlayer implements MouseListener, MouseMotionListener {
 
@@ -174,7 +174,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		} catch (Throwable e) {
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		}
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -188,7 +188,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					window.frmMusicPlayer.setVisible(true);
 					// window.startup();
 				} catch (Exception e) {
-					e.printStackTrace();
+					Logger.log(e, LogType.ERROR_LOG);
 				}
 			}
 		});
@@ -226,7 +226,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private int rowSelectionRoot; // changes according to sort
 	// private int playlistSelected = 0;
 	private JFileChooser fileChooser;
-	public static int FIXED_PLAYLIST_ELEMENTS = 1; // number of system-set
+	public static int FIXED_PLAYLIST_ELEMENTS = 3; // number of system-set
 													// playlists (ie. tracks,
 													// artists, albums)
 	public static int UPDATE_PLAY_COUNT_WINDOW = 20; // no. seconds off end of song within which a skip will still cause the play count to be incremented
@@ -1342,6 +1342,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		menuBar.add(mnSettings);
 		
 		chckbxmntmAutoSendUsage = new JCheckBoxMenuItem("Auto send usage data");
+		chckbxmntmAutoSendUsage.addActionListener(new ChckbxmntmAutoSendUsageActionListener());
 		chckbxmntmAutoSendUsage.setSelected(true);
 		mnSettings.add(chckbxmntmAutoSendUsage);
 		
@@ -1463,6 +1464,12 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					library.setVolume(100);
 					sliderVol.setValue(100);
 				}
+				try{
+					chckbxmntmAutoSendUsage.setSelected(library.autoupload);
+				}catch(Exception e){
+					library.autoupload = true;
+					chckbxmntmAutoSendUsage.setSelected(true);
+				}
 				sliderVol.repaint();
 				if (library.getVolume() < 0)
 					library.setVolume(100);
@@ -1481,16 +1488,16 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				DisplayLibrary();
 				RefreshPlaylists();
 				
-				(new Thread(){
-					@Override
-					public void run(){
+				//(new Thread(){
+				//	@Override
+				//	public void run(){
 						StartupRoutines();
-					}
-				}).start();
+				//	}
+				//}).start();
 				// System.out.println("lib read");
 			} catch (FileNotFoundException e) {
 				// That's weird, because we just checked for it
-				e.printStackTrace();
+				Logger.log(e, LogType.ERROR_LOG);
 			} catch (Exception e) {
 				// Invalid library file
 				
@@ -1510,12 +1517,42 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				System.exit(0);
 			}
 		}
-
+		
+		// Add a timer for uploading
+		/*Timer uploadCheckerTimer = new Timer(true);
+		uploadCheckerTimer.scheduleAtFixedRate(
+		    new TimerTask() {
+		      public void run() { 
+		    	  UploadUsageData(); 
+		      }
+		    }, 0, Constants.UPLOAD_FREQUENCY * 24 * 60 * 60);*/
+		(new Thread(){
+			@Override
+			public void run(){
+				while(true){
+					try {
+						Thread.sleep(/*Constants.UPLOAD_FREQUENCY * 24 * */60 * 60 * 1000);
+					} catch (InterruptedException e) {
+						Logger.log(e, LogType.ERROR_LOG);
+					}
+					
+					// Check whether it's time to update usage data
+					int daysPassed = Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays();
+					int previousUpload = library.lastUpdateDay;
+					final int targetUploads = (daysPassed / Constants.UPLOAD_FREQUENCY) * Constants.UPLOAD_FREQUENCY;
+					
+					if(library.autoupload && targetUploads > previousUpload)
+						UploadUsageData();
+				}
+			}
+		}).start();
+	
 	}
 
 	private void SetupStatus() {
 		boolean success = setupValid[0].booleanValue();
 		if(success || Constants.DEBUG_IGNORE_SETUP){
+			chckbxmntmAutoSendUsage.setSelected(library.autoupload);
 			UpdateLibrary();
 			DisplayLibrary();
 			RefreshPlaylists();
@@ -1532,7 +1569,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		int previousUpload = library.lastUpdateDay;
 		final int targetUploads = (daysPassed / Constants.UPLOAD_FREQUENCY) * Constants.UPLOAD_FREQUENCY;
 		
-		if(targetUploads > previousUpload)
+		if(library.autoupload && targetUploads > previousUpload)
 			UploadUsageData();
 		
 		// Then set randomness
@@ -1542,7 +1579,6 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 	
 	private void UploadUsageData(){
-		// TODO get file list for uploading
 		
 		(new Thread(){
 			@Override public void run(){
@@ -1567,7 +1603,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					try {
 						Thread.sleep(20);
 					} catch (InterruptedException e) {
-						e.printStackTrace();
+						Logger.log(e, LogType.ERROR_LOG);
 					}
 				}
 				
@@ -1579,7 +1615,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 						try {
 							Thread.sleep(2000);
 						} catch (InterruptedException e) {
-							e.printStackTrace();
+							Logger.log(e, LogType.ERROR_LOG);
 						}
 						statusPnl.setVisible(false);
 					}
@@ -1612,7 +1648,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			oos.close();
 		} catch (FileNotFoundException e) {
 			// Shouldn't occur, because we're creating file
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		} catch (IOException e) {
 			// Unknown IO error
 			Object[] options = {"OK"};
@@ -1624,7 +1660,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		                   null,
 		                   options,
 		                   options[0]);
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		}
 	}
 
@@ -1751,7 +1787,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		try {
 			currentTableSorter.clearListeners();
 		} catch (Exception e) {
-			// e.printStackTrace();
+			// Logger.log(e, LogType.ERROR_LOG);
 		}
 
 		/*
@@ -1941,7 +1977,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					tabMain.getSelectionModel().setSelectionInterval(row, row);
 				}
 				addToPlaylist.removeAll();
-				for (int i = FIXED_PLAYLIST_ELEMENTS + Library.HIDDEN_PLAYLISTS; i < library.getPlaylists().size(); i++) {
+				for (int i = FIXED_PLAYLIST_ELEMENTS; i < library.getPlaylists().size(); i++) {
 					final int playlist = i;
 					JMenuItem item = new JMenuItem(library.getPlaylists().get(i).getName());
 					item.addActionListener(new ActionListener() {
@@ -2500,7 +2536,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 						history.add(currentTrack);
 					}
 					if(Constants.DEBUG_NEXTTRACKPATHS)
-						System.out.println(library.getClusters().getIndexList(currentTrack));
+						//System.out.println(library.getClusters().getIndexList(currentTrack));
+						Logger.log(library.getClusters().getIndexList(currentTrack), LogType.LEARNING_LOG);
 					
 					RefreshMainList();
 					UpdateTrackDisplay();
@@ -2530,7 +2567,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			} else
 				Stop();
 		} catch (Exception e) {
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		}
 
 	}
@@ -2551,7 +2588,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				// track had just finished - do nothing
 			} catch (InterruptedException e) {
 				// Auto-generated catch block
-				e.printStackTrace();
+				Logger.log(e, LogType.ERROR_LOG);
 			}
 		// player = new SoundJLayer(loc, playbackListener);
 		player.play(ms);
@@ -2563,7 +2600,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		// }
 		// }
 		// } catch (Exception e) {
-		// e.printStackTrace();
+		// Logger.log(e, LogType.ERROR_LOG);
 		// }
 
 	}
@@ -2603,14 +2640,14 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		}
 
 		try {
 			Thread.sleep(THREAD_SLEEP);
 		} catch (InterruptedException e) {
 			// Auto-generated catch block
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		}
 
 		// This is the line that actually does the jump - all the above is just
@@ -2619,7 +2656,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		playAt(/* tabMain.getSelectedRow(), */(int) (s * 1000));
 
 		/*
-		 * if (paused) { try { Thread.sleep(THREAD_SLEEP); } catch (InterruptedException e) { e.printStackTrace(); }
+		 * if (paused) { try { Thread.sleep(THREAD_SLEEP); } catch (InterruptedException e) { Logger.log(e, LogType.ERROR_LOG); }
 		 * 
 		 * TogglePause(); }
 		 */
@@ -2655,7 +2692,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				timing_offset = 0;
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			Logger.log(e, LogType.ERROR_LOG);
 		}
 
 	}
@@ -2833,7 +2870,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			player.stop();
 		} catch (Exception e) {
 			// wasn't playing
-			// e.printStackTrace();
+			// Logger.log(e, LogType.ERROR_LOG);
 		}
 		library.deleteQueue();
 		player = null;
@@ -3134,7 +3171,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private void DeleteInPlaylists(Song s) {
 		// scan all user/auto playlists and remove this song, based on it's
 		// location (for now)
-		for (int pl = FIXED_PLAYLIST_ELEMENTS + Library.HIDDEN_PLAYLISTS; pl < library.getPlaylists().size(); pl++) {
+		for (int pl = FIXED_PLAYLIST_ELEMENTS; pl < library.getPlaylists().size(); pl++) {
 			for (int i = 0; i < library.getPlaylists().get(pl).size(); i++) {
 				if (library.getPlaylists().get(pl).get(i).equals(s)) {
 					library.getPlaylists().get(pl).remove(i);
@@ -3814,6 +3851,11 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			UploadUsageData();
 		}
 	}
+	private class ChckbxmntmAutoSendUsageActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent e) {
+			library.autoupload = chckbxmntmAutoSendUsage.isSelected();
+		}
+	}
 	
 	//@SuppressWarnings("unused")
 	private void PrintClusters(SongCluster cs, String branch) {
@@ -4075,7 +4117,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			// Fetch the drop location
 			JList.DropLocation loc = (javax.swing.JList.DropLocation) supp.getDropLocation();
 
-			if (loc.getIndex() < FIXED_PLAYLIST_ELEMENTS)
+			if (loc.getIndex() < 1)
 				return false;
 
 			// Return whether we accept the location
@@ -4102,11 +4144,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 				return true;
 			} catch (UnsupportedFlavorException e) {
-				//e.printStackTrace();
+				Logger.log(e, LogType.ERROR_LOG);
 				return false;
 			} catch (IOException e) {
-				// Auto-generated catch block
-				e.printStackTrace();
+				Logger.log(e, LogType.ERROR_LOG);
 				return false;
 			}
 
@@ -4114,7 +4155,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 
 	private void AddSongToPlaylist(int index, Song data) {
-		if (index < FIXED_PLAYLIST_ELEMENTS) {
+		if (index < 1) {
 			// do nothing: can't insert into default playlists
 		} else {
 			library.getPlaylists().get(index + Library.HIDDEN_PLAYLISTS).append(data);
@@ -4130,7 +4171,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			try {
 				this.knobImage = ImageIO.read(this.getClass().getResource("/jk509/player/res/knob.png"));
 			} catch (IOException e) {
-				e.printStackTrace();
+				Logger.log(e, LogType.ERROR_LOG);
 			}
 		}
 
@@ -4141,7 +4182,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				else
 					this.knobImage = ImageIO.read(this.getClass().getResource("/jk509/player/res/knob.png"));
 			} catch (IOException e) {
-				e.printStackTrace();
+				Logger.log(e, LogType.ERROR_LOG);
 			}
 			g.drawImage(this.knobImage, thumbRect.x + 3, thumbRect.y + 3, 6, 13, null);
 		}
@@ -4163,7 +4204,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			try {
 				this.knobImage = ImageIO.read(this.getClass().getResource("/jk509/player/res/knob3.png"));
 			} catch (IOException e) {
-				e.printStackTrace();
+				Logger.log(e, LogType.ERROR_LOG);
 			}
 		}
 
@@ -4174,7 +4215,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				else
 					this.knobImage = ImageIO.read(this.getClass().getResource("/jk509/player/res/knob3.png"));
 			} catch (IOException e) {
-				e.printStackTrace();
+				Logger.log(e, LogType.ERROR_LOG);
 			}
 			g.drawImage(this.knobImage, thumbRect.x - 2, thumbRect.y + 2, 15, 15, null);
 		}

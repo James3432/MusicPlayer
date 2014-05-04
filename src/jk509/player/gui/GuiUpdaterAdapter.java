@@ -59,10 +59,12 @@ public class GuiUpdaterAdapter implements Updater {
 				form.btnAnalyse.setForeground(Color.GRAY);
 				form.progressBar.setValue(0);
 				form.fileProgressBar.setValue(0);
+				form.fileProgressBar.setMaximum(100);
+				form.progressBar.setMaximum(100);
 				
 				form.lblProcessingCount.setText(Integer.toString(form.library.getPlaylists().get(Library.MAIN_PLAYLIST).size()));
 				form.lblProcessingName.setText(form.library.getPlaylists().get(Library.MAIN_PLAYLIST).get(0).toString());
-				form.lblProcessingStart.setText("0");
+				form.lblProcessingStart.setText("1");
 				
 			}
 		};
@@ -71,7 +73,7 @@ public class GuiUpdaterAdapter implements Updater {
 			public void run() {
 				form.progressBar.setValue(form.progressBar.getMaximum());
 				form.fileProgressBar.setValue(form.fileProgressBar.getMaximum());
-				form.lblProcessingStart.setText(Integer.toString(form.library.getPlaylist(0).size()));
+				form.lblProcessingStart.setText(form.lblProcessingCount.getText());//Integer.toString(form.library.getPlaylist(0).size()));
 				form.lblProcessingName.setText("");
 				form.lblThisMayTake.setText("Processing complete.");
 				form.btnNext5.setEnabled(true);
@@ -123,7 +125,13 @@ public class GuiUpdaterAdapter implements Updater {
 			form.fileProgressBar.setMaximum(thisFileLength);
 			form.progressBar.setMaximum(numberOfFiles);
 			form.fileProgressBar.setValue(pos);
-			form.progressBar.setValue(file);
+			if(file > form.progressBar.getValue())
+				form.progressBar.setValue(file);
+			if(file+1 > Integer.parseInt(form.lblProcessingStart.getText()) && file < Integer.parseInt(form.lblProcessingCount.getText()))
+				form.lblProcessingStart.setText(Integer.toString(file+1));
+			
+			if(file < form.library.getPlaylist(0).size())
+				form.lblProcessingName.setText(form.library.getPlaylist(0).get(file).toString());
 		}
 	}
 
