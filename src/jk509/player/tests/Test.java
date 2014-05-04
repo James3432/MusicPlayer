@@ -42,7 +42,8 @@ public class Test {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
-		// System.out.println(System.getProperty("java.library.path"));
+		System.out.println(System.getProperty("user.dir"));
+		System.out.println(System.getProperty("java.library.path"));
 		int days = Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays();
 		System.out.println(days);
 		EventQueue.invokeLater(new Runnable() {

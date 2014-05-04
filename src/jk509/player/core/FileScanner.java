@@ -152,7 +152,8 @@ public class FileScanner implements LibraryParser {
 
 			tracks.add(tempTrack);
 			
-			updater.update();
+			if(updater != null)
+				updater.update();
 
 		} catch (InvalidDataException e) {
 			// no tag

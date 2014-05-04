@@ -32,7 +32,7 @@ public class KMeansClusterer extends AbstractClusterer {
 			return;
 		}
 		if (!(new File(Constants.featureXMLLocation)).exists()){
-			Logger.log("Can't find features.xml", LogType.ERROR_LOG);
+			Logger.log("Can't find features.xml in: "+Constants.featureXMLLocation, LogType.ERROR_LOG);
 			return;
 		}
 
