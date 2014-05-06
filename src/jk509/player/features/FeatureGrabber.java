@@ -171,6 +171,13 @@ public class FeatureGrabber implements Constants {
 								}catch(Exception e){ }
 								updater.announceUpdate(t+1, 0);
 								System.out.println("Features extracted from file #"+t);
+								
+								(new Thread(){
+									@Override public void run(){
+										// access synchronised backup-to-disk method
+										Logger.backupFeatures(t, tracks.get(t).getAudioFeatures());
+									}
+								}).start();
 							}catch(Exception e){
 								System.out.println("Feature extraction failed for file #"+t);
 							}
@@ -209,6 +216,14 @@ public class FeatureGrabber implements Constants {
 						processor.extractFeatures(tracks.get(i), updater, temp);
 						updater.announceUpdate(i+1, 0);
 						System.out.println("Features extracted from file #"+i);
+						
+						final int j = i;
+						(new Thread(){
+							@Override public void run(){
+								// access synchronised backup-to-disk method
+								Logger.backupFeatures(j, tracks.get(j).getAudioFeatures());
+							}
+						}).start();
 					}catch(Exception e){
 						//res.add(null);
 						System.out.println("Feature extraction failed for file #"+i);

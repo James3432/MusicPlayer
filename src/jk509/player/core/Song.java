@@ -224,7 +224,7 @@ public class Song implements Serializable {
 	@Override
 	public boolean equals(Object o) {
 		Song other = (Song) o;
-		if (this.getLocation() != null && other.getLocation() != null && this.getLocation().equals(other.getLocation()))
+		if (this.getLocation() != null && other.getLocation() != null && StaticMethods.locEquals(this.getLocation(), other.getLocation()))
 			return true;
 		else
 			return false;

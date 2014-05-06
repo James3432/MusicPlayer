@@ -6,12 +6,18 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 
 import jk509.player.Constants;
+import jk509.player.clustering.AbstractCluster;
+import jk509.player.clustering.LeafCluster;
+import jk509.player.clustering.SongCluster;
+import jk509.player.core.Song;
 
-import logging.JsonWriter;
-
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -175,6 +181,165 @@ public class Logger {
 			Logger.log(e, LogType.ERROR_LOG);
 		}
 	 
+	}
+	
+	public static synchronized void backupFeatures(int file, double[] features){
+		String fpath = Constants.FEATURES_LOG;
+		
+		JSONParser parser = new JSONParser();
+		List<Double[]> currentObjs = null;
+		List<Integer> currentInds = null;
+		List<JSONObject> objarr = null;
+		
+		boolean nofile = false;
+		
+		try {
+	 
+			Object obj = parser.parse(new FileReader(fpath));
+	 
+			JSONObject jsonObject = (JSONObject) obj;
+			
+			currentInds = new ArrayList<Integer>();
+			currentObjs = new ArrayList<Double[]>();
+			objarr = new ArrayList<JSONObject>();
+			
+			/*for(int i=0; i<jsonObject.size(); ++i){
+				current.add( (Double[]) jsonObject.get(i));
+			}*/
+	 
+			JSONArray arr = (JSONArray) jsonObject.get("Feature list");
+			Iterator<Object> iterator = arr.iterator();
+			while (iterator.hasNext()) {
+				objarr.add((JSONObject) iterator.next());
+			}
+			
+			for(int i=0; i<objarr.size(); ++i){
+				currentInds.add((int) (long) (Long) objarr.get(i).get("File"));
+				JSONArray array = (JSONArray) objarr.get(i).get("Features");
+				Iterator<Object> it = array.iterator();
+				List<Double> temparray = new ArrayList<Double>();
+				while(it.hasNext())
+					temparray.add((Double) it.next());
+				
+				Double[] tmp = new Double[temparray.size()];
+				for(int j=0; j<temparray.size(); ++j)
+					tmp[j] = temparray.get(j);
+				currentObjs.add(tmp);
+			}
+	 
+		} catch (FileNotFoundException e) {
+			nofile = true;
+		} catch (IOException e) {
+			Logger.log(e, LogType.ERROR_LOG);
+		} catch (ParseException e) {
+			Logger.log(e, LogType.ERROR_LOG);
+		}
+
+		JSONObject master_obj = new JSONObject();
+		JSONArray master_list = new JSONArray();
+		
+		if(!nofile){
+			for(int i=0; i<currentInds.size(); ++i){
+				JSONObject obj = new JSONObject();
+				JSONArray list = new JSONArray();
+				obj.put("File", currentInds.get(i));
+				for(int j=0; j<currentObjs.get(i).length; ++j){
+					list.add(currentObjs.get(i)[j]);
+				}
+				obj.put("Features", list);
+				master_list.add(obj);
+			}
+		}
+		
+		JSONObject obj = new JSONObject();
+		JSONArray list = new JSONArray();
+		obj.put("File", file);
+		for(int i=0; i<features.length; ++i){
+			list.add(features[i]);
+		}
+		obj.put("Features", list);
+		master_list.add(obj);
+		
+		master_obj.put("Feature list", master_list);
+		
+		FileWriter fileout = null;
+		try {
+			fileout = new FileWriter(fpath);
+			fileout.write(JsonWriter.formatJson(master_obj.toJSONString()));
+			fileout.flush();
+			fileout.close();
+		} catch (IOException e) {
+			Logger.log(e, LogType.ERROR_LOG);
+		}
+	}
+	
+	
+	public static void backupAllFeatures(List<Song> tracks){
+		String fpath = Constants.FEATURES_LOG;
+		
+		JSONObject master_obj = new JSONObject();
+		JSONArray master_list = new JSONArray();
+		
+		for(int i=0; i<tracks.size(); ++i){
+			double[] features = tracks.get(i).getAudioFeatures();
+		
+			JSONObject obj = new JSONObject();
+			JSONArray list = new JSONArray();
+			obj.put("File", i);
+			for(int j=0; j<features.length; ++j){
+				list.add(features[j]);
+			}
+			obj.put("Features", list);
+			master_list.add(obj);
+		}
+		
+		master_obj.put("Feature list", master_list);
+		
+		FileWriter fileout = null;
+		try {
+			fileout = new FileWriter(fpath);
+			fileout.write(JsonWriter.formatJson(master_obj.toJSONString()));
+			fileout.flush();
+			fileout.close();
+		} catch (IOException e) {
+			Logger.log(e, LogType.ERROR_LOG);
+		}
+	}
+	
+	
+	public static void backupClusters(SongCluster root){
+		
+		String fpath = Constants.CLUSTERS_LOG;
+		
+		JSONObject master_obj = new JSONObject();
+		JSONArray master_list = new JSONArray();
+		
+		master_list = SubClustersToJson(root);
+		master_obj.put("Clusters", master_list);
+		
+		FileWriter fileout = null;
+		try {
+			fileout = new FileWriter(fpath);
+			fileout.write(JsonWriter.formatJson(master_obj.toJSONString()));
+			fileout.flush();
+			fileout.close();
+		} catch (IOException e) {
+			Logger.log(e, LogType.ERROR_LOG);
+		}
+		
+	}
+	
+	private static JSONArray SubClustersToJson(SongCluster cs){
+		List<AbstractCluster> nested = cs.getChildren();
+		JSONArray arr = new JSONArray();
+		for(AbstractCluster c : nested){
+			if(c instanceof LeafCluster){
+				arr.add(((LeafCluster) c).getTrack().toString());
+			}else{
+				arr.add(SubClustersToJson((SongCluster) c));
+			}
+		}
+		return arr;
 	}
 	
 }

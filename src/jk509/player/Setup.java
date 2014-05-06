@@ -7,6 +7,8 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -30,8 +32,10 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.filechooser.FileFilter;
@@ -54,9 +58,6 @@ import com.worldsworstsoftware.itunes.ItunesLibrary;
 import com.worldsworstsoftware.itunes.ItunesPlaylist;
 import com.worldsworstsoftware.itunes.ItunesTrack;
 import com.worldsworstsoftware.itunes.parser.ItunesLibraryParser;
-import javax.swing.ListSelectionModel;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 
 public class Setup extends JDialog {
 	/**
@@ -117,6 +118,8 @@ public class Setup extends JDialog {
 	private Boolean[] success;
 	private List<Playlist> itunesPlaylists;
 	private List<String> genericPlaylists;
+	private JFileChooser playlistChooser;
+	private JFileChooser musicChooser;
 
 	private JLabel lblItLooksLike;
 	private JLabel lblHi;
@@ -446,6 +449,8 @@ public class Setup extends JDialog {
 		panel_21.add(chckbxUploadData);
 
 		chckbxAgree = new JCheckBox("I agree to the above terms");
+		chckbxAgree.setMnemonic('a');
+		chckbxAgree.setMnemonic(KeyEvent.VK_A);
 		chckbxAgree.addActionListener(new ChckbxEnableShortcutsActionListener());
 		chckbxAgree.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		chckbxAgree.setBackground(Color.WHITE);
@@ -807,7 +812,7 @@ public class Setup extends JDialog {
 		btnAnalyse.addActionListener(new BtnGoActionListener());
 		panel_51.add(btnAnalyse);
 
-		lblThisMayTake = new JLabel("This may take some time (up to 10s per track). Please wait...");
+		lblThisMayTake = new JLabel("Analysis may take some time (up to 10s per track). Please wait...");
 		lblThisMayTake.setVisible(false);
 		lblThisMayTake.setFont(new Font("Tahoma", Font.PLAIN, 14));
 		lblThisMayTake.setBounds(60, 293, 407, 23);
@@ -1108,11 +1113,6 @@ public class Setup extends JDialog {
 
 	private class BtnFinishActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			
-			if(chckbxImportPlaylists.isSelected()){
-				library.addPlaylists(itunesPlaylists);
-			}
-			
 			// save()
 			success[0] = true;
 			Logger.log("Setup completed successfully", LogType.USAGE_LOG);
@@ -1145,8 +1145,9 @@ public class Setup extends JDialog {
 
 	private class BtnGoActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
+			Setup.this.setAlwaysOnTop(false);
 			btnPrevious5.setEnabled(false);
-			processPlaylists();
+			lblThisMayTake.setText("Importing playlists...");
 			
 			if (library.getPlaylists().size() >= MusicPlayer.FIXED_PLAYLIST_ELEMENTS && library.getPlaylists().get(Library.MAIN_PLAYLIST).size() > 0) {
 
@@ -1155,6 +1156,17 @@ public class Setup extends JDialog {
 				(new Thread() {
 					@Override
 					public void run() {
+						processPlaylists();
+						try {
+							SwingUtilities.invokeAndWait(new Runnable() {
+								@Override public void run() {
+									lblThisMayTake.setText("Analysis may take some time (up to 10s per track). Please wait...");
+								}
+							});
+						} catch (Exception e) {
+							Logger.log(e, LogType.ERROR_LOG);
+						} 
+						
 						SongCluster clusters = new SongCluster(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList(), new GuiUpdaterAdapter(context));
 						library.setClusters(clusters);
 					}
@@ -1302,25 +1314,30 @@ public class Setup extends JDialog {
 	private void ImportItunesPlaylists() {
 		ItunesLibrary ituneslibrary = ItunesLibraryParser.parseLibrary(txtMusicItunes.getText());
 		List<ItunesPlaylist> playlists = ituneslibrary.getPlaylists();
-		outerloop:
+		//outerloop:
 		for (int i = 1; i < playlists.size(); ++i) { // skip 1 as it's all tracks
 			ItunesPlaylist playlist = (ItunesPlaylist) playlists.get(i);
+			String t = playlist.getName().toLowerCase();
+			if(t.equals("library") || t.equals("music") || t.equals("films") || t.equals("tv programmes") || t.equals("music videos"))
+				continue;
 			//System.out.println(playlist.getName());
 			Playlist pl = new Playlist(playlist.getName(), Playlist.USER);
 			List<ItunesTrack> tracks = playlist.getPlaylistItems();
 			for (int j = 0; j < tracks.size(); ++j) {
-				ItunesTrack track = (ItunesTrack) tracks.get(j);
-				String loc = track.getLocation().replaceAll("file://localhost/", "");
-				try {
-					loc = loc.replaceAll("\\+", "%2b");
-					loc = URLDecoder.decode(loc, "UTF-8");
-				} catch (UnsupportedEncodingException e) {
-					Logger.log(e, LogType.ERROR_LOG);
-				}
-				Song s = StaticMethods.GetSongByLoc(loc, library.getPlaylists().get(Library.MAIN_PLAYLIST).getList());
-				if(s == null)
-					continue outerloop;
-				pl.add(s);
+				try{
+					ItunesTrack track = (ItunesTrack) tracks.get(j);
+					String loc = track.getLocation().replaceAll("file://localhost/", "");
+					try {
+						loc = loc.replaceAll("\\+", "%2b");
+						loc = URLDecoder.decode(loc, "UTF-8");
+					} catch (UnsupportedEncodingException e) {
+						Logger.log(e, LogType.ERROR_LOG);
+					}
+					Song s = StaticMethods.GetSongByLoc(loc, library.getPlaylists().get(Library.MAIN_PLAYLIST).getList());
+					if(s != null)
+						//continue outerloop;
+						pl.add(s);
+				}catch(NullPointerException e){}
 			}
 			if(pl.size() > 0)
 				itunesPlaylists.add(pl);
@@ -1340,41 +1357,67 @@ public class Setup extends JDialog {
 
 	private class BtnBrowseMusicActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			JFileChooser chooser = new JFileChooser();
-
-			String startat = "";
-			// choose initial folder (first check textfield, otherwise try user
-			// home dir)
-			try {
-				if ((new File(txtMusicRoot.getText())).exists() && (new File(txtMusicRoot.getText())).isDirectory())
-					startat = (new File(txtMusicRoot.getText())).getPath();
-				else
+			if(musicChooser == null){
+				musicChooser = new JFileChooser();
+	
+				String startat = "";
+				// choose initial folder (first check textfield, otherwise try user
+				// home dir)
+				try {
+					if ((new File(txtMusicRoot.getText())).exists() && (new File(txtMusicRoot.getText())).isDirectory())
+						startat = (new File(txtMusicRoot.getText())).getPath();
+					else
+						startat = "";
+				} catch (Exception e2) {
 					startat = "";
-			} catch (Exception e2) {
-				startat = "";
+				}
+	
+				if (startat.equals("")) {
+					startat = System.getenv("user.home");
+					if (startat == null || startat.equals(""))
+						startat = System.getenv("USERPROFILE");
+					if (startat == null || startat.equals(""))
+						startat = ".";
+				}
+				musicChooser.setCurrentDirectory(new java.io.File(startat));
+				musicChooser.setDialogTitle("Select music folder");
+				musicChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+	
+				// disable the "All files" option.
+				musicChooser.setAcceptAllFileFilterUsed(false);
+			
+			}else{
+				String startat = musicChooser.getCurrentDirectory().getAbsolutePath();
+				// choose initial folder (first check textfield, otherwise try user
+				// home dir)
+				try {
+					if ((new File(txtMusicRoot.getText())).exists() && (new File(txtMusicRoot.getText())).isDirectory())
+						startat = (new File(txtMusicRoot.getText())).getPath();
+					else
+						startat = musicChooser.getCurrentDirectory().getAbsolutePath();
+				} catch (Exception e2) {
+					startat = musicChooser.getCurrentDirectory().getAbsolutePath();
+				}
+	
+				if (startat.equals("")) {
+					startat = System.getenv("user.home");
+					if (startat == null || startat.equals(""))
+						startat = System.getenv("USERPROFILE");
+					if (startat == null || startat.equals(""))
+						startat = ".";
+				}
+				musicChooser.setCurrentDirectory(new java.io.File(startat));
 			}
 
-			if (startat.equals("")) {
-				startat = System.getenv("user.home");
-				if (startat == null || startat.equals(""))
-					startat = System.getenv("USERPROFILE");
-				if (startat == null || startat.equals(""))
-					startat = ".";
-			}
-			chooser.setCurrentDirectory(new java.io.File(startat));
-			chooser.setDialogTitle("Select music folder");
-			chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-
-			// disable the "All files" option.
-			chooser.setAcceptAllFileFilterUsed(false);
-
-			int result = chooser.showOpenDialog(dialog);
+			int result = musicChooser.showOpenDialog(dialog);
 			if (result == JFileChooser.APPROVE_OPTION) {
-				txtMusicRoot.setText(chooser.getSelectedFile().getPath());
+				txtMusicRoot.setText(musicChooser.getSelectedFile().getPath());
 			} else {
 				// System.out.println("No Selection ");
 				// System.out.println(result);
+				txtMusicRoot.setText(musicChooser.getCurrentDirectory().getAbsolutePath());
 			}
+			
 		}
 	}
 
@@ -1421,22 +1464,28 @@ public class Setup extends JDialog {
 	}
 	private class BtnImportPlaylistFilesActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
-			JFileChooser fileChooser = new JFileChooser();
-		
-			String startat = StaticMethods.getHomeDir();
-			fileChooser.setCurrentDirectory(new File(startat));
-			//fileChooser.setFileFilter(new MP3filter());
+			if(playlistChooser == null){
+				playlistChooser = new JFileChooser();
 			
-			fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-			fileChooser.setAcceptAllFileFilterUsed(true);
-			fileChooser.setMultiSelectionEnabled(false);
-			fileChooser.setDialogTitle("Choose playlist file");
+				String startat = StaticMethods.getHomeDir();
+				playlistChooser.setCurrentDirectory(new File(startat));
+				//playlistChooser.setFileFilter(new MP3filter());
+				
+				playlistChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+				playlistChooser.setAcceptAllFileFilterUsed(true);
+				playlistChooser.setDialogTitle("Choose playlist files");
+				playlistChooser.setMultiSelectionEnabled(true);
+			}
 			
-			int result = fileChooser.showOpenDialog(Setup.this);
+			int result = playlistChooser.showOpenDialog(Setup.this);
 			if (result == JFileChooser.APPROVE_OPTION) {
-				File res = fileChooser.getSelectedFile();
-				String fpath = res.getAbsolutePath();
-				genericPlaylists.add(fpath);
+				File[] res = playlistChooser.getSelectedFiles();
+				if(res != null && res.length > 0){
+					for(int i=0; i<res.length; ++i){
+						String fpath = res[i].getAbsolutePath();
+						genericPlaylists.add(fpath);
+					}
+				}
 				UpdateTrackDisplay();
 			}
 		}
@@ -1457,6 +1506,9 @@ public class Setup extends JDialog {
 	}
 	
 	private void processPlaylists(){
+		if(chckbxImportPlaylists.isSelected()){
+			library.addPlaylists(itunesPlaylists);
+		}
 		for(int i=0; i<genericPlaylists.size(); ++i){
 			library.addPlaylist(importPlaylist(genericPlaylists.get(i)));
 		}
@@ -1580,20 +1632,6 @@ public class Setup extends JDialog {
 		}
 	}
 
-	/*
-	 * Get the extension of a file.
-	 */
-	public static String getExtension(File f) {
-		String ext = null;
-		String s = f.getName();
-		int i = s.lastIndexOf('.');
-
-		if (i > 0 && i < s.length() - 1) {
-			ext = s.substring(i + 1).toLowerCase();
-		}
-		return ext;
-	}
-
 	class OBJfilter extends FileFilter {
 
 		public OBJfilter() {
@@ -1612,7 +1650,7 @@ public class Setup extends JDialog {
 				return true;
 			}
 
-			String extension = getExtension(f);
+			String extension = StaticMethods.getExtension(f);
 			if (extension != null) {
 				if (extension.equals("ser") || extension.equals("xml")) {
 					return true;

@@ -157,7 +157,8 @@ public abstract class AbstractClusterer {
 			atts.addElement(new Attribute("num" + i));
 		Instances dataset = new Instances("Feature-set", atts, tracks.size());
 		for(Song s : tracks)
-			dataset.add(new Instance(1.0, s.getAudioFeatures()));
+			if (s.getAudioFeatures() != null && s.getAudioFeatures().length == Constants.FEATURES)
+				dataset.add(new Instance(1.0, s.getAudioFeatures()));
 		return dataset;
 	}
 

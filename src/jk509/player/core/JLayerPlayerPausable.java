@@ -207,7 +207,11 @@ public class JLayerPlayerPausable {
 
 					synchronized (this) {
 						if (this.audioDevice != null) {
-							this.audioDevice.write(output.getBuffer(), 0, output.getBufferLength());
+							try{
+								this.audioDevice.write(output.getBuffer(), 0, output.getBufferLength());
+							}catch(IllegalArgumentException e){
+								return false;
+							}
 						}
 					}
 

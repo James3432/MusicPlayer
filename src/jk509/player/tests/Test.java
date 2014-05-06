@@ -8,6 +8,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.DataLine;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 
@@ -42,10 +47,36 @@ public class Test {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
+		try{
+		String path = "C:\\users\\james\\13 Venus Morena.wav";
+	                AudioInputStream stream;
+	                stream = AudioSystem.getAudioInputStream(new File(path));
+	                AudioFormat format = stream.getFormat();
+	                if (format.getEncoding() != AudioFormat.Encoding.PCM_SIGNED) {
+	                    format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, format
+	                            .getSampleRate(), format.getSampleSizeInBits() * 2, format
+	                            .getChannels(), format.getFrameSize() * 2, format
+	                            .getFrameRate(), true); // big endian
+	                    stream = AudioSystem.getAudioInputStream(format, stream);
+	                }
+	                DataLine.Info info = new DataLine.Info(Clip.class, stream.getFormat(),
+	                        ((int) stream.getFrameLength() * format.getFrameSize()));
+	                Clip clip = (Clip) AudioSystem.getLine(info);
+	                clip.close();
+	                double output = clip.getBufferSize()
+	                        / (clip.getFormat().getFrameSize() * clip.getFormat()
+	                                .getFrameRate());
+	            System.out.println(output);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		
 		System.out.println(System.getProperty("user.dir"));
 		System.out.println(System.getProperty("java.library.path"));
 		int days = Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays();
 		System.out.println(days);
+		StaticMethods.deleteTempFiles();
+		Logger.backupFeatures(5, new double[]{5.2, 0.5, 6.3, 1.2, 2.35234, 1023. });
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {

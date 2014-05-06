@@ -63,12 +63,12 @@ public interface Constants {
 	public static final boolean DEBUG_LOAD_FEATURES_FILE = false; // whether to load features from disk rather than scanning
 	public static final boolean DEBUG_SAVE_FEATURES = false;      // whether to save features to disk separately
 	public static final boolean DEBUG_SAVE_CLUSTERS = false;      // whether to save clusters to disk separately
-	public static final String FEATURES_PATH = "features.ser"; // location for the above
-	public static final String CLUSTERS_PATH = "clusters.ser"; // location for the above
+	public static final String FEATURES_PATH = StaticMethods.getSettingsDir() + "features.ser"; // location for the above
+	public static final String CLUSTERS_PATH = StaticMethods.getSettingsDir() + "clusters.txt"; // location for the above
 	public static final boolean CUSTOM_FEATUREPROC_CODE = false;  // whether to use the tweaked code which avoid errors but produces different results in feature extraction
 	public static final boolean DEBUG_DISPLAY_UPDATES = true;     // display learning updates as they are processed
 	public static final boolean DEBUG_NEXTTRACKPATHS = true;      // display details of track chosen by next()
-	public static final boolean DEBUG_SETTINGS = false;//TODO            // use the debug version of settings.ser
+	public static final boolean DEBUG_SETTINGS = true;//TODO            // use the debug version of settings.ser
 	public static final boolean DEBUG_SHOW_SETUP = false;         // show setup screen always, for testing
 	public static final boolean DEBUG_IGNORE_SETUP = false;        // ignore result of setup screen, load prog anyway
 	public static final boolean DEBUG_PRINT_CLUSTERS = true;       // print clusters after clustering
@@ -93,8 +93,10 @@ public interface Constants {
 	public static final String STATS_LOG = StaticMethods.getSettingsDir()+"statslog.txt";
 	public static final String USAGE_LOG = StaticMethods.getSettingsDir()+"usagelog.txt";
 	public static final String LEARNING_LOG = StaticMethods.getSettingsDir()+"learninglog.txt";
+	public static final String FEATURES_LOG = StaticMethods.getSettingsDir()+"features.json";
+	public static final String CLUSTERS_LOG = StaticMethods.getSettingsDir()+"clusters.json";
 	public static final int MIN_LIBRARY_SIZE = 2 * MAX_CLUSTERS;  // # tracks a user must add to use the player
-	public static final String[] UPLOAD_FILE_LIST = { SETTINGS_PATH, ERROR_LOG, STATS_LOG, USAGE_LOG, LEARNING_LOG }; //TODO!
+	public static final String[] UPLOAD_FILE_LIST = { /*SETTINGS_PATH, */ERROR_LOG, STATS_LOG, USAGE_LOG, LEARNING_LOG, CLUSTERS_LOG }; //TODO!
 
 	public static final DateTime STUDY_START_DATE = new DateTime(2014, 5, 1, 12, 0, 0, 0);
 	

@@ -185,7 +185,7 @@ public class Playlist implements Serializable {
 
 	public int getIndexOf(String loc) {
 		for (int i = 0; i < size(); ++i)
-			if (get(i).getLocation().equals(loc))
+			if (StaticMethods.locEquals(get(i).getLocation(), loc))
 				return i;
 		return -1;
 	}

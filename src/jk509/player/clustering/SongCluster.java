@@ -93,6 +93,8 @@ public class SongCluster extends AbstractCluster {
 			clusterer.run(updater);
 			// PrintClusters(clusterer.getResult());
 			assignments = clusterer.getAssignments();
+			if(assignments == null)
+				assignments = new int[0];
 			//clusterController = ((KMeansClusterer) clusterer).getClusterer();
 			//System.out.println(clusterController.getOptions());
 			//System.out.println("=========*******************=============");
@@ -116,9 +118,12 @@ public class SongCluster extends AbstractCluster {
 				++i;
 			}
 		}
-
+		
 		// Don't need to call ResetLearning because each level's constructor calls this function, so initP gets called at every level
 		InitPMatrix();
+		
+		// Clear out temp file
+		StaticMethods.deleteTempFiles();
 	}
 	
 	/*
@@ -556,6 +561,11 @@ public class SongCluster extends AbstractCluster {
 			cluster = cluster.getParent();
 		}
 		
+		if(choice == null){
+			System.out.println("Couldn't choose next track");
+			Logger.log("Couldn't choose next track in SongCluster line 566", LogType.ERROR_LOG);
+		}
+		
 		return choice;
 	}
 	
@@ -571,9 +581,10 @@ public class SongCluster extends AbstractCluster {
 		if(this.level != 0)
 			return;
 		
-		if(Constants.DEBUG_DISPLAY_UPDATES)
-			//System.out.println(action.toString());
+		if(Constants.DEBUG_DISPLAY_UPDATES){
+			System.out.println(action.toString());
 			Logger.log(action.toString(), LogType.LEARNING_LOG);
+		}
 		
 		Song source = action.source;
 		Song target = action.target;

@@ -8,6 +8,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import jk509.player.Setup.FileScannerUpdater;
+import jk509.player.logging.Logger;
+import jk509.player.logging.Logger.LogType;
 
 import com.mpatric.mp3agic.ID3v1;
 import com.mpatric.mp3agic.ID3v2;
@@ -74,7 +76,7 @@ public class FileScanner implements LibraryParser {
 					continue;
 				if (x.isDirectory())
 					scan(x.getPath());
-				else if (x.getName().toLowerCase().endsWith(".mp3"))
+				else if (x.getName().toLowerCase().endsWith(".mp3") || x.getName().toLowerCase().endsWith(".wav"))
 					AddSong(x);
 			}
 		}
@@ -84,86 +86,119 @@ public class FileScanner implements LibraryParser {
 	private void AddSong(File sourceFile) {
 		Mp3File mp3file;
 		tempTrack = new Song();
-
-		try {
-			mp3file = new Mp3File(sourceFile.getPath());
-
-			if (mp3file.hasId3v2Tag()) {
-				// ID3v2
-				ID3v2 tag = mp3file.getId3v2Tag();
-				try {
-					tempTrack.setTrackNumber(Integer.parseInt(RemNull(RemSlash(tag.getTrack()))));
-				} catch (NumberFormatException e) {
-					tempTrack.setTrackNumber(0);
-				}
-				tempTrack.setName(RemNull(tag.getTitle()));
-				tempTrack.setAlbum(RemNull(tag.getAlbum()));
-				String artist = tag.getArtist();
-				if (artist == null || artist.equals(""))
-					artist = tag.getAlbumArtist();
-				if (artist == null || artist.equals(""))
-					artist = tag.getOriginalArtist();
-				if (artist == null || artist.equals(""))
-					artist = tag.getComposer();
-				tempTrack.setArtist(RemNull(artist));
-				tempTrack.setGenre(RemNull(tag.getGenreDescription()));
-				tempTrack.setYear(RemNull(tag.getYear()));
-				tempTrack.setLength((int) mp3file.getLengthInSeconds());
-				tempTrack.setDateAdded(new Date(mp3file.getLastModified()));
+		
+		if(StaticMethods.getExtension(sourceFile).equals("wav")){
+			try{
 				tempTrack.setLocation(sourceFile.getPath());
-
-				/*
-				 * byte[] albumImageData = tag.getAlbumImage(); if (albumImageData != null) { // System.out.println("Have album image data, length: " + albumImageData.length + " bytes"); // System.out.println("Album image mime type: " + tag.getAlbumImageMimeType()); try { BufferedImage img = ImageIO.read(new ByteArrayInputStream(albumImageData));
-				 * 
-				 * artwork.put(sourceFile.getPath(), img); tempTrack.setArtwork(true);
-				 * 
-				 * } catch (IOException e) { tempTrack.setArtwork(false); } }
-				 */
-			} else if (mp3file.hasId3v1Tag()) {
-				// ID3v1
-				ID3v1 tag = mp3file.getId3v1Tag();
-				try {
-					tempTrack.setTrackNumber(Integer.parseInt(RemNull(RemSlash(tag.getTrack()))));
-				} catch (NumberFormatException e) {
-					tempTrack.setTrackNumber(0);
-				}
-				tempTrack.setName(RemNull(tag.getTitle()));
-				tempTrack.setAlbum(RemNull(tag.getAlbum()));
-				tempTrack.setArtist(RemNull(tag.getArtist()));
-				tempTrack.setGenre(RemNull(tag.getGenreDescription()));
-				tempTrack.setYear(RemNull(tag.getYear()));
-				tempTrack.setLength((int) mp3file.getLengthInSeconds());
-				tempTrack.setDateAdded(new Date(mp3file.getLastModified()));
-				tempTrack.setLocation(sourceFile.getPath());
-
-			} else {
-				// no tag
-				tempTrack.setLocation(sourceFile.getPath());
-			}
-
-			// cleanup name
-			if (tempTrack.getName() == null || tempTrack.getName().equals("Unknown") || tempTrack.getName().equals("")) {
+				tempTrack.setTrackNumber(1);
 				String file_name = StripTitle(tempTrack.getLocation());
 				tempTrack.setName(file_name);
-			}
-			// cleanup dateadded
-			if (tempTrack.getDateAdded() == null || tempTrack.getDateAdded().getYear() + 1900 < 1970)
-				tempTrack.setDateAdded(new Date());
-
-			tracks.add(tempTrack);
+				tempTrack.setAlbum(RemNull(null));
+				tempTrack.setArtist(RemNull(null));
+				tempTrack.setGenre(RemNull(null));
+				tempTrack.setYear(RemNull(null));
+				try{
+					tempTrack.setLength(StaticMethods.getWavDuration(sourceFile));
+				}catch(Exception e){
+					tempTrack.setLength(0);
+				}
+				tempTrack.setDateAdded(new Date(sourceFile.lastModified()));
+				
+				// cleanup dateadded
+				if (tempTrack.getDateAdded() == null || tempTrack.getDateAdded().getYear() + 1900 < 1970)
+					tempTrack.setDateAdded(new Date());
 			
-			if(updater != null)
-				updater.update();
+				tracks.add(tempTrack);
+				
+				if(updater != null)
+					updater.update();
+				
+			}catch(Exception e){
+				Logger.log(e, LogType.ERROR_LOG);
+			}
+			
+		}else{
 
-		} catch (InvalidDataException e) {
-			// no tag
-			return;
-
-		} catch (UnsupportedTagException e) {
-			// no tag
-			return;
-		} catch (IOException e) {
-			return;
+			try {
+				mp3file = new Mp3File(sourceFile.getPath());
+	
+				if (mp3file.hasId3v2Tag()) {
+					// ID3v2
+					ID3v2 tag = mp3file.getId3v2Tag();
+					try {
+						tempTrack.setTrackNumber(Integer.parseInt(RemNull(RemSlash(tag.getTrack()))));
+					} catch (NumberFormatException e) {
+						tempTrack.setTrackNumber(0);
+					}
+					tempTrack.setName(RemNull(tag.getTitle()));
+					tempTrack.setAlbum(RemNull(tag.getAlbum()));
+					String artist = tag.getArtist();
+					if (artist == null || artist.equals(""))
+						artist = tag.getAlbumArtist();
+					if (artist == null || artist.equals(""))
+						artist = tag.getOriginalArtist();
+					if (artist == null || artist.equals(""))
+						artist = tag.getComposer();
+					tempTrack.setArtist(RemNull(artist));
+					tempTrack.setGenre(RemNull(tag.getGenreDescription()));
+					tempTrack.setYear(RemNull(tag.getYear()));
+					tempTrack.setLength((int) mp3file.getLengthInSeconds());
+					tempTrack.setDateAdded(new Date(mp3file.getLastModified()));
+					tempTrack.setLocation(sourceFile.getPath());
+	
+					/*
+					 * byte[] albumImageData = tag.getAlbumImage(); if (albumImageData != null) { // System.out.println("Have album image data, length: " + albumImageData.length + " bytes"); // System.out.println("Album image mime type: " + tag.getAlbumImageMimeType()); try { BufferedImage img = ImageIO.read(new ByteArrayInputStream(albumImageData));
+					 * 
+					 * artwork.put(sourceFile.getPath(), img); tempTrack.setArtwork(true);
+					 * 
+					 * } catch (IOException e) { tempTrack.setArtwork(false); } }
+					 */
+				} else if (mp3file.hasId3v1Tag()) {
+					// ID3v1
+					ID3v1 tag = mp3file.getId3v1Tag();
+					try {
+						tempTrack.setTrackNumber(Integer.parseInt(RemNull(RemSlash(tag.getTrack()))));
+					} catch (NumberFormatException e) {
+						tempTrack.setTrackNumber(0);
+					}
+					tempTrack.setName(RemNull(tag.getTitle()));
+					tempTrack.setAlbum(RemNull(tag.getAlbum()));
+					tempTrack.setArtist(RemNull(tag.getArtist()));
+					tempTrack.setGenre(RemNull(tag.getGenreDescription()));
+					tempTrack.setYear(RemNull(tag.getYear()));
+					tempTrack.setLength((int) mp3file.getLengthInSeconds());
+					tempTrack.setDateAdded(new Date(mp3file.getLastModified()));
+					tempTrack.setLocation(sourceFile.getPath());
+	
+				} else {
+					// no tag
+					tempTrack.setLocation(sourceFile.getPath());
+				}
+	
+				// cleanup name
+				if (tempTrack.getName() == null || tempTrack.getName().equals("Unknown") || tempTrack.getName().equals("")) {
+					String file_name = StripTitle(tempTrack.getLocation());
+					tempTrack.setName(file_name);
+				}
+				// cleanup dateadded
+				if (tempTrack.getDateAdded() == null || tempTrack.getDateAdded().getYear() + 1900 < 1970)
+					tempTrack.setDateAdded(new Date());
+	
+				tracks.add(tempTrack);
+				
+				if(updater != null)
+					updater.update();
+	
+			} catch (InvalidDataException e) {
+				// no tag
+				return;
+	
+			} catch (UnsupportedTagException e) {
+				// no tag
+				return;
+			} catch (IOException e) {
+				return;
+			}
 		}
 	}
 

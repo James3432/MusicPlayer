@@ -1,13 +1,21 @@
 package jk509.player.core;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import jk509.player.Constants;
+import jk509.player.gui.GenericExtFilter;
 import christophedelory.playlist.AbstractPlaylistComponent;
 import christophedelory.playlist.Media;
 import christophedelory.playlist.Parallel;
 import christophedelory.playlist.Sequence;
+
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.DataLine;
 
 public class StaticMethods {
 
@@ -72,16 +80,27 @@ public class StaticMethods {
 			if(loc.startsWith("..")){
 				String loc2 = loc.substring(3);
 				for(Song s : tracks){
-					if(s.getLocation().endsWith(loc2))
+					if(endsWith(s.getLocation(), loc2))
 						res.add(s);
 				}
 			}
 			for(Song s : tracks){
-				if(s.getLocation().equals(loc))
+				if(locEquals(s.getLocation() ,loc))
 					res.add(s);
 			}
 		}
 		return res;
+	}
+	
+	public static boolean endsWith(String a, String b){
+		String a2 = a.toLowerCase();
+		String b2 = b.toLowerCase();
+		String a3;
+		if(a2.contains("/"))
+			a3 = a2.replace("/", "\\");
+		else
+			a3 = a2.replace("\\", "/");
+		return (a2.endsWith(b2) || a3.endsWith(b2));
 	}
 	
 	/*
@@ -104,9 +123,21 @@ public class StaticMethods {
 		if(loc == null || loc.equals("") || tracks == null || tracks.size() < 1)
 			return null;
 		for(int i=0; i<tracks.size(); ++i)
-			if(tracks.get(i).getLocation().equals(loc))
+			if(locEquals(tracks.get(i).getLocation(), loc))
 					return tracks.get(i);
 		return null;
+	}
+	
+	/*
+	 * Compare two song locations
+	 */
+	public static boolean locEquals(String a, String b){
+		String a2;
+		if(a.contains("/"))
+			a2 = a.replace("/", "\\");
+		else
+			a2 = a.replace("\\", "/");
+		return(a.toLowerCase().equals(b.toLowerCase()) || a2.toLowerCase().equals(b.toLowerCase()));
 	}
 	
 	/*
@@ -125,6 +156,64 @@ public class StaticMethods {
 		for(Song s : songs)
 			res.add(s.getAudioFeatures());
 		return res;
+	}
+	
+	/*
+	 * Delete all temp files in the settings directory
+	 */
+	public static void deleteTempFiles(){
+		String folder = getSettingsDir();
+		String ext = ".mp3";
+	    GenericExtFilter filter = new GenericExtFilter(ext);
+	    File dir = new File(folder);
+	 
+	    String[] list = dir.list(filter);
+	 
+	    if (list.length == 0) return;
+	 
+	    File fileDelete;
+	 
+	    for (String file : list){
+	    	String temp = new StringBuffer(folder).append(File.separator).append(file).toString();
+	    	fileDelete = new File(temp);
+	    	boolean isdeleted = fileDelete.delete();
+	    	System.out.println("file : " + temp + " is deleted : " + isdeleted);
+	    }
+	}
+	 
+	/*
+	 * Get the extension of a file.
+	 */
+	public static String getExtension(File f) {
+		String ext = null;
+		String s = f.getName();
+		int i = s.lastIndexOf('.');
+
+		if (i > 0 && i < s.length() - 1) {
+			ext = s.substring(i + 1).toLowerCase();
+		}
+		return ext;
+	}
+	
+	public static int getWavDuration(File file) throws Exception {
+        AudioInputStream stream;
+        stream = AudioSystem.getAudioInputStream(file);
+        AudioFormat format = stream.getFormat();
+        if (format.getEncoding() != AudioFormat.Encoding.PCM_SIGNED) {
+            format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, format
+                    .getSampleRate(), format.getSampleSizeInBits() * 2, format
+                    .getChannels(), format.getFrameSize() * 2, format
+                    .getFrameRate(), true); // big endian
+            stream = AudioSystem.getAudioInputStream(format, stream);
+        }
+        DataLine.Info info = new DataLine.Info(Clip.class, stream.getFormat(),
+                ((int) stream.getFrameLength() * format.getFrameSize()));
+        Clip clip = (Clip) AudioSystem.getLine(info);
+        clip.close();
+        double output = clip.getBufferSize()
+                / (clip.getFormat().getFrameSize() * clip.getFormat()
+                        .getFrameRate());
+        return (int) Math.ceil(output);
 	}
 	
 	/*

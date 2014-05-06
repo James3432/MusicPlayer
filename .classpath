@@ -40,8 +40,8 @@
 	<classpathentry kind="lib" path="castor-xml.jar"/>
 	<classpathentry kind="lib" path="json-simple-1.1.1.jar"/>
 	<classpathentry kind="lib" path="itunesutils.jar"/>
-	<classpathentry kind="lib" path="weka_min.jar"/>
-	<classpathentry kind="lib" path="JsonLogs.jar"/>
+	<classpathentry kind="lib" path="weka_min.jar" sourcepath="weka-src"/>
+	<classpathentry kind="lib" path="json-logging.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path="bin"/>
 	<referencedentry kind="lib" path="lib/tritonus_remaining-0.3.6.jar" sourcepath="C:/Users/James/Downloads/tritonus/tritonus/tritonus/src"/>

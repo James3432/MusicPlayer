@@ -122,7 +122,9 @@ import jk509.player.core.StaticMethods;
 import jk509.player.core.TableSorter;
 import jk509.player.core.TableSorter.Directive;
 import jk509.player.core.TrackTime;
+import jk509.player.gui.AddPlaylistDialog;
 import jk509.player.gui.GUIupdater;
+import jk509.player.gui.GetInfoDialog;
 import jk509.player.gui.ParseDiskDialog;
 import jk509.player.gui.ParseItunesDialog;
 import jk509.player.gui.SmartPlaylistDialog;
@@ -200,6 +202,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	Library library;
 	SoundJLayer player;
 	private Boolean[] setupValid;
+	private boolean setuphasfinished = false;
 	private JPanel pnlListControls;
 	private JPanel pnlPlaylistCtrls;
 	private JButton btnAdd;
@@ -290,6 +293,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JMenuItem mntmaddQ;
 	private JMenuItem mntmPlaynext;
 	private JMenuItem mntmDel;
+	private JMenuItem mntmInfo;
 	private JPopupMenu mnuRCPlaylist;
 	private JMenuItem mntmSwitch;
 	private AbstractButton mntmStartTop;
@@ -317,6 +321,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JMenuItem mntmResetSongClusters;
 	private JMenuItem mntmResetUploads;
 	private JMenuItem mntmClearSongFeatures;
+	private JMenuItem mntmSaveFeatures;
 	private JMenuItem mntmSaveClusters;
 	private JMenu mnDeveloper;
 	private JMenuItem mntmPrintProbabilities;
@@ -328,6 +333,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JProgressBar statusBar;
 	private JLabel lblStatus;
 	private JLabel lblStatusProg;
+	private JMenuItem mntmImportPlaylists;
 
 	/**
 	 * Create the application.
@@ -1184,6 +1190,17 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			}
 		});
 		mnuRCTrack.add(mntmaddQ);
+		
+		mnuRCTrack.addSeparator();
+
+		mntmInfo = new JMenuItem("Set Info...");
+		mntmInfo.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				SetInfo();
+			}
+		});
+		mnuRCTrack.add(mntmInfo);
 
 		mnuRCTrack.addSeparator();
 
@@ -1309,6 +1326,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		mntmAddFiles = new JMenuItem("Add files...");
 		mntmAddFiles.addActionListener(new MntmAddFilesActionListener());
 		mnFile.add(mntmAddFiles);
+		
+		mntmImportPlaylists = new JMenuItem("Import playlists");
+		mntmImportPlaylists.addActionListener(new MntmImportPlaylistsActionListener());
+		mnFile.add(mntmImportPlaylists);
 		mnFile.add(mntmExportData);
 
 		mntmExit = new JMenuItem("Exit");
@@ -1392,6 +1413,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		mnDeveloper.add(mntmLearnPlaylists);
 		mnDeveloper.add(mntmLearnTestHistory);
 		
+		mntmSaveFeatures = new JMenuItem("Save Features");
+		mnDeveloper.add(mntmSaveFeatures);
+		
 		mntmSaveClusters = new JMenuItem("Save Clusters");
 		mnDeveloper.add(mntmSaveClusters);
 		
@@ -1400,6 +1424,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		mntmClearSongFeatures = new JMenuItem("Clear Song Features");
 		mnDeveloper.add(mntmClearSongFeatures);
 		mntmClearSongFeatures.addActionListener(new MntmClearSongFeaturesActionListener());
+		mntmSaveFeatures.addActionListener(new MntmSaveFeaturesActionListener());
 		mntmSaveClusters.addActionListener(new MntmSaveClustersActionListener());
 
 		mnHelp = new JMenu("Help");
@@ -1440,6 +1465,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			s.addWindowListener(new WindowAdapter() {
 				@Override
 				public void windowClosed(WindowEvent e) {
+					// This gets entered twice for some reason
 					SetupStatus();
 				}
 			});
@@ -1506,9 +1532,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				if(resp == JOptionPane.YES_OPTION){
 					int response = JOptionPane.showConfirmDialog(frmMusicPlayer, "Are you sure you want to revert to factory defaults?\nAll library data, settings and learned preferences will be deleted.", "Confirm factory reset", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 					if (response == JOptionPane.YES_OPTION) {
-						//File settings = new File(Constants.SETTINGS_PATH);
-						if (settings.exists()) {
-							settings.delete();
+						File setts = new File(Constants.SETTINGS_PATH);
+						if (setts.exists()) {
+							setts.delete();
 						}
 						JOptionPane.showMessageDialog(frmMusicPlayer, "Music Factory will now close to finish reverting settings.", "Settings deleted", JOptionPane.INFORMATION_MESSAGE);
 						
@@ -1550,14 +1576,18 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 
 	private void SetupStatus() {
-		boolean success = setupValid[0].booleanValue();
-		if(success || Constants.DEBUG_IGNORE_SETUP){
-			chckbxmntmAutoSendUsage.setSelected(library.autoupload);
-			UpdateLibrary();
-			DisplayLibrary();
-			RefreshPlaylists();
-		}else{
-			System.exit(0);
+		if(!setuphasfinished){
+			boolean success = setupValid[0].booleanValue();
+			if(success || Constants.DEBUG_IGNORE_SETUP){
+				chckbxmntmAutoSendUsage.setSelected(library.autoupload);
+				UpdateLibrary();
+				DisplayLibrary();
+				RefreshPlaylists();
+				UploadUsageData();
+			}else{
+				System.exit(0);
+			}
+			setuphasfinished = true;
 		}
 	}
 	
@@ -1590,6 +1620,21 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 						statusBar.setValue(0);
 					}
 				});
+				
+				while(statusBar.getValue() < 40){
+					SwingUtilities.invokeLater(new Thread(){
+						@Override public void run(){
+								lblStatusProg.setText((statusBar.getValue()+1)+"%");
+								statusBar.setValue(statusBar.getValue()+1);
+						}
+					});
+					try {
+						Thread.sleep(20);
+					} catch (InterruptedException e) {
+						Logger.log(e, LogType.ERROR_LOG);
+					}
+				}
+				
 				FileUploader.upload();
 				library.lastUpdateDay = Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays();
 				
@@ -1903,7 +1948,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 	}
 
-	private void SetView(List<Directive> sort, int[] sel, Point pos) {
+	private void SetView(List<Directive> sort, int[] sel, final Point pos) {
 		if (sort != null && sort.size() > 0)
 			((TableSorter) tabMain.getModel()).setFullSortingStatus(sort);
 		else {
@@ -1926,7 +1971,12 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			 */
 			SetSelectedRows(sel);
 			// tabMain.scrollRectToVisible(tabMain.getCellRect(sel[0], 0, true));
-			((JViewport) tabMain.getParent()).setViewPosition(pos);
+			SwingUtilities.invokeLater(new Runnable() {
+			   public void run() {
+				   ((JViewport) tabMain.getParent()).setViewPosition(pos);
+			   }
+			});
+			
 		}
 	}
 
@@ -2132,8 +2182,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}
 
 		if (library.getQueue().isValid() && playlistPlaying != next.playlist) {
+			playlistPlayingSorter = getPlaylistSorter(next.playlist);
 			playlistPlaying = next.playlist;
-			playlistPlayingSorter = getPlaylistSorter(playlistPlaying);
 		}
 
 		if (!library.getQueue().isValid()) {
@@ -2535,10 +2585,11 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 						history.remove(currentTrack); // only need to remove once since can't accumulate more than 1
 						history.add(currentTrack);
 					}
-					if(Constants.DEBUG_NEXTTRACKPATHS)
-						//System.out.println(library.getClusters().getIndexList(currentTrack));
-						Logger.log(library.getClusters().getIndexList(currentTrack), LogType.LEARNING_LOG);
-					
+					if(Constants.DEBUG_NEXTTRACKPATHS){
+						Logger.log("Track "+library.getClusters().getIndexList(currentTrack), LogType.LEARNING_LOG);
+						System.out.println("Track "+library.getClusters().getIndexList(currentTrack));
+					}
+						
 					RefreshMainList();
 					UpdateTrackDisplay();
 				} else {
@@ -2829,7 +2880,19 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				/*
 				 * if (stopped) return; if (searching && !playingInSearch) { Stop(); return; } if (repeatone) { playAgain(); } else { if (shuffle) { playRandom(); } else if (rowPlaying == library.getPlaylist(playlistPlaying).size() - 1) { if (repeat) playFirst(); else { UpdatePlayCount(); Stop(); } } else { playNext(); } }
 				 */
-				playNext(); // which does all the above commented-out stuff
+				try {
+					if(SwingUtilities.isEventDispatchThread())
+						playNext();
+					else
+						SwingUtilities.invokeAndWait(new Runnable() {
+							@Override
+							public void run() {
+								playNext(); // which does all the above commented-out stuff
+							}
+						});
+				} catch (Exception e) {
+					Logger.log(e, LogType.ERROR_LOG);
+				} 
 			}
 		}
 
@@ -2907,6 +2970,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		// int[] sel = tabMain.getSelectedRows();
 		tabMain.invalidate();
 		tabMain.repaint();
+		//tabMain.getParent().repaint();
+		//scrlMain.repaint();
 		// SetSelectedRows(sel);
 	}
 
@@ -3383,6 +3448,41 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			}
 		}
 	}
+	
+	// set info for selected rows
+	private void SetInfo(){
+		if (tabMain.getSelectedRowCount() < 1 || tabMain.getRowCount() < 1)
+			return;
+
+		int[] selectedRows = tabMain.getSelectedRows();
+		
+		if (((Playlist) listPlaylists.getSelectedValue()).getType() == Playlist.DEFAULT){
+			// setting from main list
+		}else{
+			// setting from a playlist
+		}
+
+		// are songs in playlists the same objects?? YES
+		
+		List<Song> tracks = new ArrayList<Song>();
+		
+		for (int i = 0; i < selectedRows.length; ++i) {
+			int rowV = selectedRows[i];
+			int rowM = ViewToModel(rowV);
+			tracks.add(library.get(rowM));
+		}
+		
+		if(tracks.size() > 0){
+			GetInfoDialog d = new GetInfoDialog(tracks);
+			d.setLocationRelativeTo(frmMusicPlayer);
+			d.setVisible(true);
+			
+			//refresh display
+			UpdateLibrary();
+			UpdateTrackDisplay(); // ?
+			RefreshMainList();
+		}
+	}
 
 	private int getRowsInView() {
 		Rectangle vr = tabMain.getVisibleRect();
@@ -3815,10 +3915,17 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			UpdateLibrary();
 		}
 	}
+	private class MntmSaveFeaturesActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			List<Song> ls = library.getPlaylists().get(Library.MAIN_PLAYLIST).getList();
+			Logger.backupAllFeatures(ls);
+		}
+	}
 	private class MntmSaveClustersActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
 			SongCluster cs = library.getClusters();
-			PrintClustersToFile(cs, "clustering.txt");
+			// PrintClustersToFile(cs, Constants.CLUSTERS_PATH);
+			Logger.backupClusters(cs);
 		}
 	}
 	private class MntmResetProbabilitiesActionListener implements ActionListener {
@@ -3856,6 +3963,15 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			library.autoupload = chckbxmntmAutoSendUsage.isSelected();
 		}
 	}
+	private class MntmImportPlaylistsActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			AddPlaylistDialog d = new AddPlaylistDialog(library);
+			d.setLocationRelativeTo(frmMusicPlayer);
+			d.setVisible(true);
+			RefreshPlaylists();
+			UpdateLibrary();
+		}
+	}
 	
 	//@SuppressWarnings("unused")
 	private void PrintClusters(SongCluster cs, String branch) {
@@ -3873,6 +3989,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}
 	}
 	
+	@SuppressWarnings("unused")
 	private void PrintClustersToFile(SongCluster cs, String file) {
 		File out = new File(file);
 		try {
@@ -4230,7 +4347,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 		@Override
 		public String getDescription() {
-			String des = "MP3 files";
+			String des = "Audio files";
 			return des;
 		}
 
@@ -4242,7 +4359,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 			String extension = getExtension(f);
 			if (extension != null) {
-				if (extension.equals("mp3") || extension.equals("mpeg3")) {
+				if (extension.equals("mp3") || extension.equals("mpeg3") || extension.equals("MP3") || extension.equals("wav") || extension.equals("WAV")) {
 					return true;
 				} else {
 					return false;
@@ -4306,6 +4423,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 		public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
 			Playlist pl = (Playlist) value;
+			
+			if(pl == null)
+				return this;
 
 			// Display the text for this item
 			setText(" " + pl.getName());

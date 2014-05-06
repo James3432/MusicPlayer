@@ -87,7 +87,17 @@ public class KMeansClusterer extends AbstractClusterer {
 			else
 				dataset.add(new Instance(1.0, results.get(i)));
 		}*/
-
+		
+		boolean[] featurelessTracks = new boolean[tracks.size()];
+		for(int i=0; i<tracks.size(); ++i) {
+			Song s = tracks.get(i);
+			if (s.getAudioFeatures() == null || s.getAudioFeatures().length != Constants.FEATURES)
+				featurelessTracks[i] = true;
+			else
+				featurelessTracks[i] = false;
+		}
+		
+		// This method only picks out valid-feature tracks
 		Instances dataset = getSongFeatures(tracks);
 		// TODO: need to deal with any songs still without features here
 		//System.out.println("Dataset ready");
@@ -111,9 +121,9 @@ public class KMeansClusterer extends AbstractClusterer {
 
 			clusters = new ArrayList<ArrayList<Song>>();
 
-			for (int i = 0; i < tracks.size(); ++i) {
-				//if (!featurelessTracks[i]) {
-					int clusterNum = assignments[i];
+			for (int i = 0, j=0; i < tracks.size(); ++i) {
+				if (!featurelessTracks[i]) {
+					int clusterNum = assignments[j];
 					// add more clusters to result if needed
 					while (clusters.size() <= clusterNum)
 						clusters.add(new ArrayList<Song>());
@@ -121,8 +131,8 @@ public class KMeansClusterer extends AbstractClusterer {
 					clusters.get(clusterNum).add(tracks.get(i));
 					// System.out.printf("Instance %d -> Cluster %d", i, clusterNum);
 					// System.out.println();
-					//j++;
-				//}
+					j++;
+				}
 			}
 			if (Constants.DEBUG_SAVE_CLUSTERS) {
 				System.out.println("Saving to disk...");
