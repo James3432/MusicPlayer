@@ -779,7 +779,11 @@ public class SongCluster extends AbstractCluster {
 		if(c > -1){
 			ls.add(c);
 			if(!(clusters.get(c) instanceof LeafCluster))
-				ls.addAll(((SongCluster) clusters.get(c)).getIndexList(s));
+				try{
+					ls.addAll(((SongCluster) clusters.get(c)).getIndexList(s));
+				}catch(NullPointerException e){
+					return null;
+				}
 			return ls;
 		}else
 			return null;

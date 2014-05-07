@@ -59,7 +59,7 @@ public class SmartPlaylistDialog extends JDialog {
 		}
 
 		spinner = new JSpinner();
-		spinner.setModel(new SpinnerNumberModel(20, 1, TRACK_COUNT, 1));
+		spinner.setModel(new SpinnerNumberModel((TRACK_COUNT < 20 ? TRACK_COUNT : 20), 1, TRACK_COUNT, 1));
 		spinner.setBounds(106, 65, 46, 20);
 		contentPanel.add(spinner);
 
