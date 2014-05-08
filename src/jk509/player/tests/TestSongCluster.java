@@ -40,7 +40,7 @@ public class TestSongCluster {
 			}catch(Exception e){
 				Logger.log(e, LogType.ERROR_LOG);
 			}
-			cluster = new SongCluster(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList(), null);
+			cluster = new SongCluster(library.getMainList(), null);
 			System.out.println("Test data:");
 			for(int i=0; i<100; ++i)
 				System.out.println(i+" "+library.get(i)/*.toString()*/);

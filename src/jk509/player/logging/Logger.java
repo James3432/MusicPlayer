@@ -9,7 +9,9 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 import jk509.player.Constants;
 import jk509.player.clustering.AbstractCluster;
@@ -24,15 +26,6 @@ import org.json.simple.parser.ParseException;
 
 public class Logger {
 	
-	public static void main(String[] args){
-		//Tests
-		Statistics s = new Statistics();
-		s.values[0] = 1.6234;
-		s.values[1] = -0.203;
-		writeJson(s);
-		System.out.println(readJson());
-	}
-	
 	public enum LogType {
 		ERROR_LOG,
 		STATS_LOG,
@@ -44,7 +37,7 @@ public class Logger {
 		PrintWriter out = null;
 		switch(t){
 			case ERROR_LOG: out = new PrintWriter(new BufferedWriter(new FileWriter(Constants.ERROR_LOG, true))); break;
-			case STATS_LOG: out = new PrintWriter(new BufferedWriter(new FileWriter(Constants.STATS_LOG, true))); break;
+			case STATS_LOG: out = new PrintWriter(new BufferedWriter(new FileWriter(Constants.STATS_LOG, false))); break;
 			case USAGE_LOG: out = new PrintWriter(new BufferedWriter(new FileWriter(Constants.USAGE_LOG, true))); break;
 			case LEARNING_LOG: out = new PrintWriter(new BufferedWriter(new FileWriter(Constants.LEARNING_LOG, true))); break;
 			default: break;
@@ -122,7 +115,7 @@ public class Logger {
 	}
 	
 	public static Statistics readJson(){
-		String fpath = Constants.STATS_LOG;
+		String fpath = Constants.STAT_DATA;
 		
 		JSONParser parser = new JSONParser();
 		
@@ -173,7 +166,7 @@ public class Logger {
 		
 		FileWriter file = null;
 		try {
-			file = new FileWriter(Constants.STATS_LOG);
+			file = new FileWriter(Constants.STAT_DATA);
 			file.write(JsonWriter.formatJson(obj.toJSONString()));
 			file.flush();
 			file.close();
@@ -340,6 +333,69 @@ public class Logger {
 			}
 		}
 		return arr;
+	}
+	
+	public static void backupP(SongCluster cs){
+		PrintWriter out = null;
+		try {
+			out = SetWriter(LogType.STATS_LOG);
+			out.print(new Date() + ": ");
+		
+			out.println();
+			int level = 0;
+			int cluster = 0;
+			Queue<AbstractCluster> clusts = new LinkedList<AbstractCluster>();
+			clusts.add(cs);
+			int clustersPerLevel = 1;
+			int clustersPerNextLevel = 0;
+			while(!clusts.isEmpty()){
+				AbstractCluster current = clusts.poll();
+				if(current instanceof SongCluster){
+					SongCluster c = ((SongCluster) current);
+					out.println("Level "+level+" Cluster "+cluster);
+					out.println();
+					for(int i=0; i<c.p.size(); ++i){
+						for(int j=0; j<c.p.get(i).size(); ++j){
+							out.print(c.p.get(i).get(j) + " | ");
+						}
+						out.println();
+					}
+					out.println();
+					clusts.addAll(c.getChildren());
+					clustersPerNextLevel += c.getChildren().size();
+				}else{
+					out.println("Level "+level+" Cluster "+cluster);
+					out.println();
+					out.println("Leaf: "+((LeafCluster)current).getTrack().toString());
+					out.println();
+				}
+				cluster++;
+				if(cluster >= clustersPerLevel){
+					clustersPerLevel = clustersPerNextLevel;
+					clustersPerNextLevel = 0;
+					level++;
+					cluster = 0;
+					//if(level > maxlevel)
+					//	break;
+				}
+			}
+		} catch (IOException e) {
+			
+		}
+		finally{
+			out.close();
+		}
+	}
+	
+	public static void backupStats(String[] args){ // TODO what's the input? how is data stored internally before json o/p ?
+		//Tests
+		
+		// use readJson and writeJson
+		Statistics s = new Statistics();
+		s.values[0] = 1.6234;
+		s.values[1] = -0.203;
+		writeJson(s);
+		System.out.println(readJson());
 	}
 	
 }

@@ -27,6 +27,7 @@ import jk509.player.core.Library;
 import jk509.player.core.Playlist;
 import jk509.player.core.Song;
 import jk509.player.core.StaticMethods;
+import jk509.player.learning.UserAction;
 import jk509.player.logging.Logger;
 import jk509.player.logging.Logger.LogType;
 import christophedelory.playlist.SpecificPlaylist;
@@ -203,7 +204,42 @@ public class AddPlaylistDialog extends JDialog {
 				ImportItunesPlaylists(itunespath);
 			}
 			library.addPlaylists(playlists);
+			LearnPlaylists(playlists);
+			Logger.log(playlists.size()+" playlists imported.", LogType.USAGE_LOG);
 			dispose();
+		}
+	}
+	private void LearnPlaylists(List<Playlist> playlists){
+		for(int i=0; i<playlists.size(); ++i){
+			List<Song> pl = playlists.get(i).getList();
+			LearnPlaylist(pl);
+		}
+	}
+	
+	private void LearnPlaylist(List<Song> pl){
+		SendPlaylistUserAction(UserAction.PLAYLIST_ADJACENT, pl);
+		SendPlaylistUserAction(UserAction.PLAYLIST_SHARED, pl);
+	}
+	private void SendPlaylistUserAction(final int ac, final List<Song> pl){
+		switch(ac){
+			case UserAction.PLAYLIST_ADJACENT: {
+				for(int i=0; i<pl.size() - 1; ++i){
+					Song a = pl.get(i);
+					Song b = pl.get(i+1);
+					library.getClusters().Update(new UserAction(UserAction.PLAYLIST_ADJACENT, 0., a, b, null));
+				}
+			} break;
+			case UserAction.PLAYLIST_SHARED: {
+				for(int i=0; i<pl.size(); ++i){
+					for(int j=i+1; j<pl.size(); ++j){
+						Song a = pl.get(i);
+						Song b = pl.get(j);
+						// Both directions
+						library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., a, b, null));
+						library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., b, a, null));
+					}
+				}
+			} break;
 		}
 	}
 	private class BtnBrowseActionListener implements ActionListener {
@@ -292,7 +328,7 @@ public class AddPlaylistDialog extends JDialog {
 				christophedelory.playlist.Playlist genericPlaylist = specificPlaylist.toPlaylist();
 				List<String> locs = new ArrayList<String>();
 				StaticMethods.playlistConverter(genericPlaylist.getRootSequence(), locs);
-				List<Song> playlist = StaticMethods.getSongsByLocation(locs, library.getPlaylists().get(Library.MAIN_PLAYLIST).getList());
+				List<Song> playlist = StaticMethods.getSongsByLocation(locs, library.getMainList());
 				Playlist p = new Playlist(StaticMethods.getFileName(fpath), Playlist.USER, playlist);
 				return p;
 			}
@@ -325,7 +361,7 @@ public class AddPlaylistDialog extends JDialog {
 					} catch (UnsupportedEncodingException e) {
 						Logger.log(e, LogType.ERROR_LOG);
 					}
-					Song s = StaticMethods.GetSongByLoc(loc, library.getPlaylists().get(Library.MAIN_PLAYLIST).getList());
+					Song s = StaticMethods.GetSongByLoc(loc, library.getMainList());
 					if(s != null)
 						//continue outerloop;
 						pl.add(s);

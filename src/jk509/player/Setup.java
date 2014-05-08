@@ -3,12 +3,18 @@ package jk509.player;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Frame;
+import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
@@ -212,6 +218,7 @@ public class Setup extends JDialog {
 	 * Create the dialog.
 	 */
 	public Setup(Library library, Boolean[] success) {
+		super((Frame)null,Dialog.ModalityType.TOOLKIT_MODAL);
 		setModalityType(ModalityType.APPLICATION_MODAL);
 		dialog = this;
 		this.library = library;
@@ -227,8 +234,10 @@ public class Setup extends JDialog {
 		setLocationRelativeTo(null);
 		setAlwaysOnTop(true);
 		setBounds(100, 100, 800, 600);
-		setIconImage((new ImageIcon(this.getClass().getResource("/jk509/player/res/icon.png"))).getImage());
-
+		List<Image> iconArray = new ArrayList<Image>();
+		iconArray.add(Toolkit.getDefaultToolkit().getImage(MusicPlayer.class.getResource("/jk509/player/res/icon-16.png")));
+		iconArray.add(Toolkit.getDefaultToolkit().getImage(MusicPlayer.class.getResource("/jk509/player/res/icon-32.png")));
+		setIconImages(iconArray);
 		splitPane = new JSplitPane();
 		splitPane.setEnabled(false);
 		splitPane.setDividerLocation(0.5);
@@ -781,6 +790,8 @@ public class Setup extends JDialog {
 		panel_42.add(btnPrevious4, BorderLayout.WEST);
 
 		btnNext4 = new JButton("Next");
+		btnNext4.addMouseListener(new BtnNext4MouseListener());
+		btnNext4.setEnabled(false);
 		btnNext4.setBackground(Color.WHITE);
 		btnNext4.setFont(new Font("Tahoma", Font.BOLD, 11));
 		btnNext4.addActionListener(new BtnNextActionListener());
@@ -1088,6 +1099,9 @@ public class Setup extends JDialog {
 			listTracksDisk.repaint();
 			listPlaylistsDisk.repaint();
 		//}
+			
+			if(library.getPlaylists().get(Library.MAIN_PLAYLIST).size() >= Constants.MIN_LIBRARY_SIZE)
+				btnNext4.setEnabled(true);
 	}
 
 	private class BtnNextActionListener implements ActionListener {
@@ -1167,7 +1181,7 @@ public class Setup extends JDialog {
 							Logger.log(e, LogType.ERROR_LOG);
 						} 
 						
-						SongCluster clusters = new SongCluster(library.getPlaylists().get(Library.MAIN_PLAYLIST).getList(), new GuiUpdaterAdapter(context));
+						SongCluster clusters = new SongCluster(library.getMainList(), new GuiUpdaterAdapter(context));
 						library.setClusters(clusters);
 					}
 				}).start();
@@ -1333,7 +1347,7 @@ public class Setup extends JDialog {
 					} catch (UnsupportedEncodingException e) {
 						Logger.log(e, LogType.ERROR_LOG);
 					}
-					Song s = StaticMethods.GetSongByLoc(loc, library.getPlaylists().get(Library.MAIN_PLAYLIST).getList());
+					Song s = StaticMethods.GetSongByLoc(loc, library.getMainList());
 					if(s != null)
 						//continue outerloop;
 						pl.add(s);
@@ -1466,8 +1480,12 @@ public class Setup extends JDialog {
 		public void actionPerformed(ActionEvent arg0) {
 			if(playlistChooser == null){
 				playlistChooser = new JFileChooser();
-			
+				
 				String startat = StaticMethods.getHomeDir();
+				
+				if(new File(StaticMethods.getHomeDir() + "\\Music\\Playlists").exists() && new File(StaticMethods.getHomeDir() + "\\Music\\Playlists").isDirectory())
+					startat = StaticMethods.getHomeDir() + "\\Music\\Playlists";
+				
 				playlistChooser.setCurrentDirectory(new File(startat));
 				//playlistChooser.setFileFilter(new MP3filter());
 				
@@ -1504,6 +1522,15 @@ public class Setup extends JDialog {
 			}
 		}
 	}
+	private class BtnNext4MouseListener extends MouseAdapter {
+		@Override
+		public void mouseClicked(MouseEvent arg0) {
+			if(!btnNext4.isEnabled()){
+				Object[] options = {"OK"};
+				JOptionPane.showOptionDialog(Setup.this, "Sorry, you need to add at least "+Constants.MIN_LIBRARY_SIZE+" tracks before proceeding", "Cannot continue", JOptionPane.PLAIN_MESSAGE, JOptionPane.ERROR_MESSAGE, null, options, options[0]);
+			}
+		}
+	}
 	
 	private void processPlaylists(){
 		if(chckbxImportPlaylists.isSelected()){
@@ -1536,8 +1563,9 @@ public class Setup extends JDialog {
 
 		parser.run();
 
+		List<Song> toimport = library.getAllNotContained(parser.getTracks());
 		library.clearViews();
-		library.addToPlaylist(Library.MAIN_PLAYLIST, parser.getTracks());
+		library.addToPlaylist(Library.MAIN_PLAYLIST, toimport);
 
 		return true;
 

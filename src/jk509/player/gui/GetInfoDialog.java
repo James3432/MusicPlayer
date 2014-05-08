@@ -2,31 +2,34 @@ package jk509.player.gui;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.List;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
+import javax.swing.JFormattedTextField;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
-
-import java.util.List;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.text.DefaultFormatter;
 
 import jk509.player.MusicPlayer;
 import jk509.player.core.Song;
-
-import javax.swing.JLabel;
-import javax.swing.JTextField;
-import javax.swing.JCheckBox;
-
-import java.awt.Font;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
-
-import javax.swing.JSpinner;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.SwingConstants;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
 
 public class GetInfoDialog extends JDialog {
 
@@ -63,16 +66,18 @@ public class GetInfoDialog extends JDialog {
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 		contentPanel.setLayout(null);
-		setBounds(100, 100, 233, 290);
+		setBounds(100, 100, 275, 290);
 		getContentPane().setLayout(new BorderLayout());
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
 		
 		lblSettingInfoFor = new JLabel("Setting info for "+tracks.size()+" tracks");
+		lblSettingInfoFor.setFocusable(false);
 		lblSettingInfoFor.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 		lblSettingInfoFor.setBounds(10, 11, 165, 14);
 		contentPanel.add(lblSettingInfoFor);
 		{
 			JLabel lblTrack = new JLabel("Track #");
+			lblTrack.setFocusable(false);
 			lblTrack.setHorizontalAlignment(SwingConstants.TRAILING);
 			lblTrack.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 12));
 			lblTrack.setBounds(20, 50, 46, 14);
@@ -80,6 +85,7 @@ public class GetInfoDialog extends JDialog {
 		}
 		{
 			JLabel lblName = new JLabel("Name");
+			lblName.setFocusable(false);
 			lblName.setHorizontalAlignment(SwingConstants.TRAILING);
 			lblName.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 12));
 			lblName.setBounds(20, 75, 46, 14);
@@ -87,6 +93,7 @@ public class GetInfoDialog extends JDialog {
 		}
 		{
 			JLabel lblAlbum = new JLabel("Album");
+			lblAlbum.setFocusable(false);
 			lblAlbum.setHorizontalAlignment(SwingConstants.TRAILING);
 			lblAlbum.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 12));
 			lblAlbum.setBounds(20, 100, 46, 14);
@@ -94,6 +101,7 @@ public class GetInfoDialog extends JDialog {
 		}
 		{
 			JLabel lblArtist = new JLabel("Artist");
+			lblArtist.setFocusable(false);
 			lblArtist.setHorizontalAlignment(SwingConstants.TRAILING);
 			lblArtist.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 12));
 			lblArtist.setBounds(20, 125, 46, 14);
@@ -101,6 +109,7 @@ public class GetInfoDialog extends JDialog {
 		}
 		{
 			JLabel lblGenre = new JLabel("Genre");
+			lblGenre.setFocusable(false);
 			lblGenre.setHorizontalAlignment(SwingConstants.TRAILING);
 			lblGenre.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 12));
 			lblGenre.setBounds(20, 150, 46, 14);
@@ -109,62 +118,81 @@ public class GetInfoDialog extends JDialog {
 		
 		txtName = new JTextField(getStartName());
 		txtName.addFocusListener(new TxtNameFocusListener());
-		txtName.setBounds(80, 72, 86, 20);
+		txtName.setBounds(80, 72, 133, 20);
 		contentPanel.add(txtName);
 		txtName.setColumns(10);
 		
 		txtAlbum = new JTextField(getStartAlbum());
 		txtAlbum.addFocusListener(new TxtAlbumFocusListener());
 		txtAlbum.setColumns(10);
-		txtAlbum.setBounds(80, 97, 86, 20);
+		txtAlbum.setBounds(80, 97, 133, 20);
 		contentPanel.add(txtAlbum);
 		
 		txtArtist = new JTextField(getStartArtist());
 		txtArtist.addFocusListener(new TxtArtistFocusListener());
 		txtArtist.setColumns(10);
-		txtArtist.setBounds(80, 122, 86, 20);
+		txtArtist.setBounds(80, 122, 133, 20);
 		contentPanel.add(txtArtist);
 		
 		txtGenre = new JTextField(getStartGenre());
 		txtGenre.addFocusListener(new TxtGenreFocusListener());
 		txtGenre.setColumns(10);
-		txtGenre.setBounds(80, 147, 86, 20);
+		txtGenre.setBounds(80, 147, 133, 20);
 		contentPanel.add(txtGenre);
 		
 		checkNum = new JCheckBox("");
-		checkNum.setBounds(172, 45, 26, 23);
+		checkNum.setFocusable(false);
+		checkNum.setBounds(219, 45, 26, 23);
 		contentPanel.add(checkNum);
 		
 		checkName = new JCheckBox("");
-		checkName.setBounds(172, 70, 31, 23);
+		checkName.setFocusable(false);
+		checkName.setBounds(219, 70, 31, 23);
 		contentPanel.add(checkName);
 		
 		checkAlbum = new JCheckBox("");
-		checkAlbum.setBounds(172, 95, 31, 23);
+		checkAlbum.setFocusable(false);
+		checkAlbum.setBounds(219, 95, 31, 23);
 		contentPanel.add(checkAlbum);
 		
 		checkArtist = new JCheckBox("");
-		checkArtist.setBounds(172, 120, 31, 23);
+		checkArtist.setFocusable(false);
+		checkArtist.setBounds(219, 120, 31, 23);
 		contentPanel.add(checkArtist);
 		
 		checkGenre = new JCheckBox("");
-		checkGenre.setBounds(172, 145, 31, 23);
+		checkGenre.setFocusable(false);
+		checkGenre.setBounds(219, 145, 31, 23);
 		contentPanel.add(checkGenre);
 		
 		checkPlays = new JCheckBox("");
-		checkPlays.setBounds(172, 185, 26, 23);
+		checkPlays.setFocusable(false);
+		checkPlays.setBounds(219, 185, 26, 23);
 		contentPanel.add(checkPlays);
 		
 		lblResetPlayCount = new JLabel("Reset play count");
+		lblResetPlayCount.setFocusable(false);
+		lblResetPlayCount.addMouseListener(new LblResetPlayCountMouseListener());
 		lblResetPlayCount.setHorizontalAlignment(SwingConstants.TRAILING);
 		lblResetPlayCount.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 12));
-		lblResetPlayCount.setBounds(56, 186, 105, 20);
+		lblResetPlayCount.setBounds(115, 186, 93, 20);
 		contentPanel.add(lblResetPlayCount);
 		
 		txtNum = new JSpinner();
+	    JComponent comp = txtNum.getEditor();
+	    JFormattedTextField field = (JFormattedTextField) comp.getComponent(0);
+	    DefaultFormatter formatter = (DefaultFormatter) field.getFormatter();
+	    formatter.setCommitsOnValidEdit(true);
+	    txtNum.addChangeListener(new ChangeListener() {
+	        @Override
+	        public void stateChanged(ChangeEvent e) {
+	        	checkNum.setSelected(true);		        
+			}
+	    });
+		txtNum.addChangeListener(new TxtNumChangeListener());
 		txtNum.addFocusListener(new TxtNumFocusListener());
 		txtNum.setModel(new SpinnerNumberModel(new Integer(getStartNum()), new Integer(0), null, new Integer(1)));
-		txtNum.setBounds(80, 47, 86, 20);
+		txtNum.setBounds(80, 47, 133, 20);
 		contentPanel.add(txtNum);
 		{
 			JPanel buttonPane = new JPanel();
@@ -184,6 +212,10 @@ public class GetInfoDialog extends JDialog {
 				buttonPane.add(cancelButton);
 			}
 		}
+		txtName.setCaretPosition(0);
+		txtAlbum.setCaretPosition(0);
+		txtArtist.setCaretPosition(0);
+		txtGenre.setCaretPosition(0);
 	}
 	
 	private int getStartNum(){
@@ -305,6 +337,17 @@ public class GetInfoDialog extends JDialog {
 	private class CancelButtonActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
 			dispose();
+		}
+	}
+	private class LblResetPlayCountMouseListener extends MouseAdapter {
+		@Override
+		public void mouseClicked(MouseEvent arg0) {
+			checkPlays.setSelected(!checkPlays.isSelected());
+		}
+	}
+	private class TxtNumChangeListener implements ChangeListener {
+		public void stateChanged(ChangeEvent arg0) {
+			checkNum.setSelected(true);
 		}
 	}
 }

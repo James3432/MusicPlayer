@@ -1,8 +1,8 @@
 package jk509.player;
 
-import org.joda.time.DateTime;
-
 import jk509.player.core.StaticMethods;
+
+import org.joda.time.DateTime;
 
 public interface Constants {
 
@@ -32,8 +32,9 @@ public interface Constants {
 	public static final double REWARD_TRACK_PLAYLIST_ADJ = 0.8;        // tracks adajcent in playlist
 	
 	// Clustering
-	public static final int MAX_CLUSTERS = 5;        // DEFAULT: 10
+	public static final int MAX_CLUSTERS = 6;      //TODO  // DEFAULT: 10
 	public static final int KMEANS_SEED = 10;        // seed value for k-means algorithm
+	public static final double SAME_CLUSTER_DIST_THRESHOLD = 0.0; // If new song is this close to exiting cluster, put it there even if there's space to add a new leaf
 	
 	// Feature extraction
 	public static final int SAMPLING_RATE = 16;      // kHz
@@ -68,7 +69,7 @@ public interface Constants {
 	public static final boolean CUSTOM_FEATUREPROC_CODE = false;  // whether to use the tweaked code which avoid errors but produces different results in feature extraction
 	public static final boolean DEBUG_DISPLAY_UPDATES = true;     // display learning updates as they are processed
 	public static final boolean DEBUG_NEXTTRACKPATHS = true;      // display details of track chosen by next()
-	public static final boolean DEBUG_SETTINGS = true;//TODO            // use the debug version of settings.ser
+	public static final boolean DEBUG_SETTINGS = false;//TODO            // use the debug version of settings.ser
 	public static final boolean DEBUG_SHOW_SETUP = false;         // show setup screen always, for testing
 	public static final boolean DEBUG_IGNORE_SETUP = false;        // ignore result of setup screen, load prog anyway
 	public static final boolean DEBUG_PRINT_CLUSTERS = true;       // print clusters after clustering
@@ -86,17 +87,19 @@ public interface Constants {
 	public static final String featureXMLLocation = StaticMethods.getSettingsDir()+"features.xml";
 	public static final int TEMP_FILE_NAME_LENGTH = 10;
 	public static final String UPLOAD_URL = "http://www.james.eu.org/upload.php";
-	public static final String SETTINGS_PATH = StaticMethods.getSettingsDir() + (DEBUG_SETTINGS ? "library_debug2.ser" : "library.ser");
+	public static final String SETTINGS_PATH = StaticMethods.getSettingsDir() + (DEBUG_SETTINGS ? "library_debug.ser" : "library.ser");
+	public static final String BACKUP_PATH = StaticMethods.getSettingsDir() + "library_backup.ser";
 	public static final String PATH_TO_LAME = StaticMethods.getSettingsDir() + "lame.exe";
 	public static final boolean USERNAME_AS_ID = false; // Whether to capture current username as part of data upload ID string (cf. ethics agreement)
-	public static final String ERROR_LOG = StaticMethods.getSettingsDir()+"errorlog.txt";
-	public static final String STATS_LOG = StaticMethods.getSettingsDir()+"statslog.txt";
-	public static final String USAGE_LOG = StaticMethods.getSettingsDir()+"usagelog.txt";
-	public static final String LEARNING_LOG = StaticMethods.getSettingsDir()+"learninglog.txt";
-	public static final String FEATURES_LOG = StaticMethods.getSettingsDir()+"features.json";
-	public static final String CLUSTERS_LOG = StaticMethods.getSettingsDir()+"clusters.json";
+	public static final String ERROR_LOG = StaticMethods.getSettingsDir()+"errorlog.txt";  // errors
+	public static final String STATS_LOG = StaticMethods.getSettingsDir()+"statslog.txt";  // matrices
+	public static final String USAGE_LOG = StaticMethods.getSettingsDir()+"usagelog.txt";  // usage reports
+	public static final String LEARNING_LOG = StaticMethods.getSettingsDir()+"learninglog.txt"; // updates & track indices
+	public static final String STAT_DATA = StaticMethods.getSettingsDir()+"stats.json";    // core stats 
+	public static final String FEATURES_LOG = StaticMethods.getSettingsDir()+"features.json"; // features
+	public static final String CLUSTERS_LOG = StaticMethods.getSettingsDir()+"clusters.json"; // clusters
 	public static final int MIN_LIBRARY_SIZE = 2 * MAX_CLUSTERS;  // # tracks a user must add to use the player
-	public static final String[] UPLOAD_FILE_LIST = { /*SETTINGS_PATH, */ERROR_LOG, STATS_LOG, USAGE_LOG, LEARNING_LOG, CLUSTERS_LOG }; //TODO!
+	public static final String[] UPLOAD_FILE_LIST = { /*SETTINGS_PATH, */ERROR_LOG, STATS_LOG, USAGE_LOG, LEARNING_LOG, STAT_DATA, CLUSTERS_LOG }; 
 
 	public static final DateTime STUDY_START_DATE = new DateTime(2014, 5, 1, 12, 0, 0, 0);
 	

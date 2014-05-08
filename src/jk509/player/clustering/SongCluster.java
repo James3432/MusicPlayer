@@ -12,7 +12,6 @@ import java.util.Stack;
 import jk509.player.Constants;
 import jk509.player.core.Song;
 import jk509.player.core.StaticMethods;
-import jk509.player.gui.GUIupdater;
 import jk509.player.gui.Updater;
 import jk509.player.learning.UserAction;
 import jk509.player.logging.Logger;
@@ -24,7 +23,7 @@ public class SongCluster extends AbstractCluster {
 	private static final long serialVersionUID = 1L;
 	
 	private List<AbstractCluster> clusters; // child clusters. only non-null if leaf==False
-	private ArrayList<ArrayList<Double>> p; // cluster transition probabilities between all child clusters. only non-null if leaf==False
+	public ArrayList<ArrayList<Double>> p; // cluster transition probabilities between all child clusters. only non-null if leaf==False
 											// p.get(from).get(to) is the structure. ie. List<Row> where Row = List<Val>
 											/*
 											 *  From | To: A  B  C  ...
@@ -39,7 +38,7 @@ public class SongCluster extends AbstractCluster {
 	                             // like a STATIONARY DISTRIBUTION :)  except measured directly
 	//private Deque<Song> history;
 	//private SimpleKMeans clusterController;
-	protected double[] centroid;
+	protected double[] centroid; // These aren't normalised
 	
 	private int clusterPlaying = -1; // only > -1 if playing==True. Equivalent to the current "state" in a machine-learning sense
 
@@ -55,11 +54,16 @@ public class SongCluster extends AbstractCluster {
 		updater.resume();
 	}
 
-	public SongCluster(LeafCluster c, GUIupdater updater) {
+	public SongCluster(LeafCluster c/*, GUIupdater updater*/) {
 		super(Arrays.asList(c.getTrack()), c.getLevel(), c.getParent());
 		leaf = false;
 		clusters = new ArrayList<AbstractCluster>();
 		clusters.add(c);
+		c.setLevel(c.getLevel()+1);
+		assignments = new int[1];
+		assignments[0] = 0;
+		preferred = new double[1]; // TODO init values?
+		centroid = c.getTrack().getAudioFeatures();
 		InitPMatrix();
 	}
 	
@@ -121,6 +125,8 @@ public class SongCluster extends AbstractCluster {
 		
 		// Don't need to call ResetLearning because each level's constructor calls this function, so initP gets called at every level
 		InitPMatrix();
+		
+		Logger.backupClusters(this);
 		
 		// Clear out temp file
 		StaticMethods.deleteTempFiles();
@@ -250,9 +256,54 @@ public class SongCluster extends AbstractCluster {
 	private void setClusterPlaying(int c) {
 		clusterPlaying = c;
 	}
+	
+	protected void recomputeCentroid(){
+		int size = getChildren().size();
+		for(int x=0; x<centroid.length; ++x){
+			double tot = 0.0;
+			for(AbstractCluster c : getChildren())
+				tot += c.getCentroid()[x];
+			centroid[x] = tot / size;
+		}
+	}
 
+	/*
+	 * Add track, assuming it's not a duplicate
+	 */
 	public void AddTrack(Song s) {
-		// TODO
+		AbstractCluster current = this;
+		boolean addClusterHere = false;
+		while( ! (current instanceof LeafCluster || addClusterHere) ){
+			current.tracks.add(s);
+			addClusterHere = (current instanceof SongCluster && ((SongCluster) current).getChildren().size() < Constants.MAX_CLUSTERS);  // NOTE this requires max_clusters to match library!!
+			int closest = StaticMethods.nearestCluster(((SongCluster) current).getChildren(), s);
+			if(StaticMethods.computeDistance(((SongCluster) current).getChildren().get(closest).getCentroid(), s.getAudioFeatures()) < Constants.SAME_CLUSTER_DIST_THRESHOLD)
+				addClusterHere = false;
+			current = ((SongCluster) current).getChildren().get(closest);
+		}
+		if(current instanceof LeafCluster){
+			SongCluster newCluster = new SongCluster((LeafCluster) current);
+			newCluster.getChildren().add(new LeafCluster(newCluster.getLevel()+1, newCluster, s));
+			SongCluster root = current.getParent();
+			root.clusters.remove(current);
+			root.clusters.add(newCluster);
+			newCluster.assignments = new int[]{0, 1}; 
+			newCluster.preferred = new double[2];// TODO init?
+			newCluster.tracks.add(s);
+			newCluster.InitPMatrix();
+			current = newCluster;
+		}else{
+			((SongCluster) current).getChildren().add(new LeafCluster(current.getLevel()+1, (SongCluster) current, s));
+			((SongCluster) current).assignments = arrayAppend(((SongCluster) current).assignments, ((SongCluster) current).getChildren().size()-1);
+			((SongCluster) current).preferred = arrayAppend(((SongCluster) current).preferred, 0.0); // TODO init?
+			((SongCluster) current).AddClusterP();
+		}
+		
+		while(current.level > 0){
+			((SongCluster) current).recomputeCentroid();
+			current = current.getParent();
+		}
+				
 		/*
 		 * at lowest level, add to songcluster if size < cluster_size, else group with child into new songcluster
 		 * 
@@ -265,9 +316,9 @@ public class SongCluster extends AbstractCluster {
 		*/
 	}
 
-	public void AddTracks(Song[] s) {
-		for (int i = 0; i < s.length; ++i)
-			AddTrack(s[i]);
+	public void AddTracks(List<Song> ss) {
+		for(Song s : ss)
+			AddTrack(s);
 	}
 
 	public void RemoveTrack(Song s) {
@@ -306,13 +357,15 @@ public class SongCluster extends AbstractCluster {
 			preferred = arrayRemove(preferred, deletedIndex);
 			RemoveClusterP(deletedIndex);
 			
+			NormaliseP();
+			
 		}
 	}
 	
 	/*
 	 * remove element from an array
 	 */
-	private double[] arrayRemove(double[] arr, int index){
+	protected double[] arrayRemove(double[] arr, int index){
 		if(index >= arr.length)
 			return arr;
 		double[] out = new double[arr.length-1];
@@ -320,12 +373,24 @@ public class SongCluster extends AbstractCluster {
 		System.arraycopy(arr, index+1, out, index, arr.length - 1 - index);
 		return out;
 	}
-	private int[] arrayRemove(int[] arr, int index){
+	protected int[] arrayRemove(int[] arr, int index){
 		if(index >= arr.length)
 			return arr;
 		int[] out = new int[arr.length-1];
 		System.arraycopy(arr, 0, out, 0, index);
 		System.arraycopy(arr, index+1, out, index, arr.length - 1 - index);
+		return out;
+	}
+	protected double[] arrayAppend(double[] arr, double a){
+		double[] out = new double[arr.length+1];
+		System.arraycopy(arr, 0, out, 0, arr.length);
+		out[arr.length] = a;
+		return out;
+	}
+	protected int[] arrayAppend(int[] arr, int a){
+		int[] out = new int[arr.length+1];
+		System.arraycopy(arr, 0, out, 0, arr.length);
+		out[arr.length] = a;
 		return out;
 	}
 
@@ -425,8 +490,9 @@ public class SongCluster extends AbstractCluster {
 		 * Randomness is the key variable here: from 0 (not random - exploitation) to 1.0 (fully random - exploration)
 		 */
 		
+		double randomness = getNetRandomness();
+		
 		// Find the most probable next cluster
-		@SuppressWarnings("unused")
 		int maxrow = -1;
 		double max = 0.;
 		for(int i=0; i<row.size(); ++i){
@@ -436,14 +502,29 @@ public class SongCluster extends AbstractCluster {
 			}
 		}
 	
-		// TODO: the inbetween choice, using randomness to skew probabilities from {0, 0, 1, 0, 0} (ie. the above) to fully random (ie. more extreme than below)
+		// The inbetween choice, using randomness to skew probabilities from {0, 0, 1, 0, 0} (ie. the above) to fully random (ie. more extreme than below)
+		double evens = 1. / row.size();
+		
+		ArrayList<Double> newrow = new ArrayList<Double>();
+		for(int i=0; i<row.size(); ++i){
+			newrow.add(StaticMethods.Interpolate(randomness, (i==maxrow ? 1 : 0), row.get(i), evens));
+		}
+		
+		// Normalise
+		double tot = 0.;
+		for(int i=0; i<newrow.size(); ++i){
+			tot += newrow.get(i);
+		}
+		for(int i=0; i<newrow.size(); ++i){
+			newrow.set(i, newrow.get(i) / tot);
+		}
 		
 		// Pick cluster based on probabilities
 		double rand = Math.random();
-		double tot = 0.;
+		tot = 0.;
 		int choice = -1;
-		for(int i=0; i<row.size(); ++i){
-			tot += row.get(i);
+		for(int i=0; i<newrow.size(); ++i){
+			tot += newrow.get(i);
 			if(rand < tot){
 				choice = i;
 				break;
@@ -462,6 +543,8 @@ public class SongCluster extends AbstractCluster {
 	 *  This method searches for tracks within cluster. Will step up a level to parent cluster if none found
 	 */
 	private Song heuristicChoice(Song source, SongCluster startcluster, List<Song> history, List<Double> history_weights){
+		// double randomness = getNetRandomness();
+		// won't use randomness here at all
 		Song choice = null;
 		SongCluster cluster = startcluster; // TODO: set Constants.MIN_HEURISTIC_SIZE then if not enough options here, jump up a level (if parent != null). ideally want this after counting #tracks not in history though.
 		while (choice == null && cluster != null){
@@ -518,11 +601,17 @@ public class SongCluster extends AbstractCluster {
 					distances[i] = StaticMethods.computeDistance(features, centroids[i]);*/
 				
 				// Basic implementation which uses feature distances
-				double[] features = source.getAudioFeatures();
+				double[] features = Normalise(source.getAudioFeatures());
 				double[] dists = new double[songs.size()];
 				for(int i=0; i<songs.size(); ++i){
-					dists[i] = StaticMethods.computeDistance(features, songs.get(i).getAudioFeatures());
+					dists[i] = StaticMethods.computeDistance(features, Normalise(songs.get(i).getAudioFeatures()));
 					votes[i] = 1. / dists[i]; // a higher vote is better, which corresponds to a shorter distance
+				}
+				
+				double[] prefs = normTo(cluster.preferred, 5);
+				for(int i=0; i<songs.size(); ++i){
+					int clust = cluster.getClusterIndex(songs.get(i));
+					votes[i] *= prefs[clust];
 				}
 			}
 			
@@ -530,11 +619,15 @@ public class SongCluster extends AbstractCluster {
 			 * Weight any tracks in history
 			 */
 			for(int i=0; i<songs.size(); ++i){
-				if(songs.get(i) == source || songs.get(i) == null)
+				if(Double.isInfinite(votes[i]))
+					votes[i] = Double.MAX_VALUE;
+				if(songs.get(i).equals(source) || songs.get(i) == null)
 					votes[i] = 0;
 				int pos = history.indexOf(songs.get(i));
 				if(pos > -1)
 					votes[i] *= history_weights.get(pos);
+				if(Double.isNaN(votes[i]))
+					votes[i] = 0.0;
 			}
 			
 			/*
@@ -569,6 +662,62 @@ public class SongCluster extends AbstractCluster {
 		return choice;
 	}
 	
+	private double[] Normalise(double[] in){
+		double[] out = new double[in.length];
+		out[0] = in[0] / 22.;
+		out[1] = in[1] / 0.15;
+		out[2] = in[2] / 0.002;
+		out[3] = in[3] / 1600;
+		out[4] = in[4] / 0.003;
+		out[5] = in[5] / 0.15;
+		out[6] = in[6] / 0.55;
+		out[7] = in[7] / 60;
+		out[8] = in[8] / 200;
+		out[9] = in[9] / 1000;
+		out[10] = in[10] / 0.009;
+		out[11] = (in[11] + 500) / 400;
+		out[12] = in[12] / 3;
+		out[13] = in[13] / 3;
+		out[14] = in[14] / 2;
+		out[15] = in[15] / 1;
+		out[16] = in[16] + 1;
+		out[17] = in[17] + 1;
+		out[18] = in[18] + 1;
+		out[19] = in[19] + 1;
+		out[20] = in[20] + 1;
+		out[21] = in[21] + 1;
+		out[22] = in[22] + 1;
+		out[23] = in[23] + 1;
+		out[24] = in[24] + 2;
+		out[25] = in[25] + 1;
+		out[26] = in[26] + 1;
+		out[27] = in[27] + 1;
+		out[28] = in[28] + 1;
+		out[29] = in[29] + 1;
+		out[30] = in[30] + 1;
+		out[31] = in[31] + 1;
+		out[32] = in[32] + 1;
+		out[33] = in[33] + 1;
+		out[34] = in[34] / 0.5;
+		out[35] = in[35] / 50;
+		out[36] = in[36] / 3000;
+		out[37] = in[37] / 200000;
+		out[38] = in[38] / 30000000;
+		return out;
+	}
+	
+	private double[] normTo(double[] arr, double max){
+		double highest = 0;
+		for(int i=0; i<arr.length; ++i)
+			if(arr[i] > highest)
+				highest = arr[i];
+		double scale = max / highest;
+		double[] out = new double[arr.length];
+		for(int i=0; i<arr.length; ++i)
+			out[i] = arr[i] * scale;
+		return out;
+	}
+	
 	/*
 	 * Update p matrix as a result of an action
 	 * 
@@ -581,9 +730,9 @@ public class SongCluster extends AbstractCluster {
 		if(this.level != 0)
 			return;
 		
+		Logger.log(action.toString(), LogType.LEARNING_LOG);
 		if(Constants.DEBUG_DISPLAY_UPDATES){
 			System.out.println(action.toString());
-			Logger.log(action.toString(), LogType.LEARNING_LOG);
 		}
 		
 		Song source = action.source;
@@ -601,7 +750,7 @@ public class SongCluster extends AbstractCluster {
 		if(!action.requiresChosen()){
 			for(int level = 0; level <= lca; level++){
 				SongCluster current = (SongCluster) next;
-				current.localUpdate(action, TrackLink.SOURCE_TO_TARGET);
+				current.localUpdate(action, TrackLink.SOURCE_TO_TARGET, levelMultiplier(lca - level));
 				next = current.getChildren().get(sourceBranch.get(level));
 			}
 		}else{
@@ -615,29 +764,34 @@ public class SongCluster extends AbstractCluster {
 			// Update: not any more!
 			for(int level = 0; level <= lca1; level++){
 				SongCluster current = (SongCluster) next;
-				current.localUpdate(action, TrackLink.SOURCE_TO_TARGET);
+				current.localUpdate(action, TrackLink.SOURCE_TO_TARGET, levelMultiplier(lca1 - level));
 				next = current.getChildren().get(sourceBranch.get(level));
 			}
 			next = this;
 			for(int level = 0; level <= lca2; level++){
 				SongCluster current = (SongCluster) next;
-				current.localUpdate(action, TrackLink.SOURCE_TO_CHOSEN);
+				current.localUpdate(action, TrackLink.SOURCE_TO_CHOSEN, levelMultiplier(lca2 - level));
 				next = current.getChildren().get(sourceBranch.get(level));
 			}
 			next = this;
 			for(int level = 0; level <= lca3; level++){
 				SongCluster current = (SongCluster) next;
-				current.localUpdate(action, TrackLink.TARGET_TO_CHOSEN);
+				current.localUpdate(action, TrackLink.TARGET_TO_CHOSEN, levelMultiplier(lca3 - level));
 				next = current.getChildren().get(targetBranch.get(level));
 			}
 		}
 		
 	}
 	
+	// Exponential function which weights rewards more heavily for changes close the the lca (since all others are just i=j points in P)
+	private double levelMultiplier(int distFromLca){
+		return 1. / Math.pow(2, distFromLca);
+	}
+	
 	/*
 	 * Update just this level's p matrix for the given action
 	 */
-	private void localUpdate(UserAction action, TrackLink link){
+	private void localUpdate(UserAction action, TrackLink link, double reward_multiplier){
 		int type = action.type;
 		double val = action.value;
 		Song source = action.source;
@@ -720,6 +874,8 @@ public class SongCluster extends AbstractCluster {
 			} break;
 		}
 		
+		reward = reward * reward_multiplier;
+		
 		UpdateP(from, to, reward);
 		
 		if(Constants.BACK_UPDATES)
@@ -754,6 +910,8 @@ public class SongCluster extends AbstractCluster {
 		pr = pr + Constants.LEARNING_RATE * (reward + Constants.DISCOUNT_FACTOR * optimal_future - pr);
 		
 		p.get(fromI).set(toI, pr);
+		
+		preferred[toI] += reward;
 	}
 	
 	/*
@@ -766,6 +924,30 @@ public class SongCluster extends AbstractCluster {
 		// remove column
 		for(int i=0; i<p.size(); ++i)
 			p.get(i).remove(r);
+	}
+	
+	/*
+	 * Add a cluster and redistribute weights accordingly
+	 */
+	protected void AddClusterP(){
+		for(int y=0; y<p.size(); ++y){
+			double avg = 0.;
+			for(int x=0; x<p.get(y).size(); ++x){
+				avg += p.get(y).get(x);
+			}
+			avg = avg / p.get(y).size();
+			p.get(y).add(avg);
+		}
+		
+		ArrayList<Double> newrow = new ArrayList<Double>();
+		for(int i=0; i<getChildren().size();++i)
+			if(Constants.PROBABILITIES_INITIALLY_SPREAD)
+				newrow.add(1. / getChildren().size());
+			else
+				p.get(i).add((i==getChildren().size()-1 ? 1.0 : 0.0));
+		p.add(newrow);
+		
+		NormaliseP();
 	}
 	
 	/*

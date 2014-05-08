@@ -253,7 +253,7 @@ public class FileScanner implements LibraryParser {
 
 	@Override
 	public List<Song> getTracks() {
-		return tracks;
+		return StaticMethods.deduplicate(tracks);
 	}
 
 	/*public Map<String, BufferedImage> getArtwork() {

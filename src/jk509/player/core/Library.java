@@ -4,7 +4,7 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +23,8 @@ public class Library implements Serializable, Cloneable {
 
 	// private List<Song> tracks; // todo: won't use
 	private List<Playlist> playlists;
-	private Map<String, BufferedImage> artwork;
+	//private Map<String, BufferedImage> artwork;
+	private HashSet<String> songset;
 	private int currentPlaylist = 2; // currently viewing, not currently playing, playlist.
 	private int volume = 100; // 0-100
 	private int[] colWidths;
@@ -45,7 +46,8 @@ public class Library implements Serializable, Cloneable {
 	public Library() {
 		// tracks = new ArrayList<Song>();
 		playlists = new ArrayList<Playlist>();
-		artwork = new HashMap<String, BufferedImage>();
+		//artwork = new HashMap<String, BufferedImage>();
+		songset = new HashSet<String>();
 		colWidths = new int[] { 25, 25, 300, 200, 200, 100, 80, 80, 100 };
 		Initialise();
 	}
@@ -54,7 +56,7 @@ public class Library implements Serializable, Cloneable {
 		// tracks = ts;
 		this();
 		playlists = ps;
-		artwork = art;
+		//artwork = art;
 		Initialise();
 	}
 
@@ -114,9 +116,9 @@ public class Library implements Serializable, Cloneable {
 		return res;
 	}
 
-	public Map<String, BufferedImage> getArtwork() {
+	/*public Map<String, BufferedImage> getArtwork() {
 		return artwork;
-	}
+	}*/
 
 	public int size() {
 		// return tracks.size();
@@ -130,6 +132,7 @@ public class Library implements Serializable, Cloneable {
 
 	public void remove(int i) {
 		// tracks.remove(i);
+		getClusters().RemoveTrack(playlists.get(currentPlaylist).get(i));
 		playlists.get(currentPlaylist).remove(i);
 	}
 
@@ -179,13 +182,13 @@ public class Library implements Serializable, Cloneable {
 		playlists.addAll(ps);
 	}
 
-	public void addArtwork(String s, BufferedImage im) {
+	/*public void addArtwork(String s, BufferedImage im) {
 		artwork.put(s, im);
 	}
 
 	public void addArtwork(Map<String, BufferedImage> map) {
 		artwork.putAll(map);
-	}
+	}*/
 
 	public int getVolume() {
 		return volume;
@@ -318,7 +321,7 @@ public class Library implements Serializable, Cloneable {
 		} catch (CloneNotSupportedException e) {
 			return null;
 		}
-		lib.artwork = this.artwork;
+		//lib.artwork = this.artwork;
 		lib.playlists = this.playlists; // deep clone not required because we don't edit playlists after cloning (for lib file save)
 		return lib;
 	}
@@ -351,6 +354,43 @@ public class Library implements Serializable, Cloneable {
 	
 	public void setClusters(SongCluster sc){
 		clusters = sc;
+	}
+	
+	public List<Song> getMainList(){
+		return getPlaylists().get(Library.MAIN_PLAYLIST).getList();
+	}
+	
+	public boolean contains(Song s){
+		return contains(s.getLocation());
+	}
+	public boolean contains(String s){
+		if(songset == null)
+			rebuildSet();
+		return songset.contains(s.toLowerCase().replace("/", "\\"));
+	}
+	
+	public void addToSet(Song s){
+		if(songset == null)
+			rebuildSet();
+		songset.add(s.getLocation().toLowerCase().replace("/", "\\"));
+	}
+	
+	public void rebuildSet(){
+		List<Song> ls = getMainList();
+		if(songset == null)
+			songset = new HashSet<String>();
+		else
+			songset.clear();
+		for(Song s : ls)
+			addToSet(s);
+	}
+	
+	public List<Song> getAllNotContained(List<Song> songs){
+		List<Song> res = new ArrayList<Song>();
+		for(Song s : songs)
+			if(! contains(s))
+				res.add(s);
+		return res;
 	}
 	
 }

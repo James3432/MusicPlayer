@@ -12,7 +12,6 @@ import jk509.player.logging.Logger;
 import jk509.player.logging.Logger.LogType;
 
 import org.apache.http.HttpEntity;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -30,26 +29,28 @@ public class FileUploader {
 	/*
 	 * TODO; handle errors, set file list from Constants
 	 */
-	public static void upload() {
-		String uniqueString = GenerateString(10);
-		String anon_id = Security.getSerialNumber(Constants.USERNAME_AS_ID);
-		int date = Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays();
-		/*File[] files = new File[] { 
-				new File(StaticMethods.getSettingsDir() + "features.txt"),
-				new File(StaticMethods.getSettingsDir() + "clusters.txt")
-		};*/
+	public static void upload() throws Exception {
+		CloseableHttpClient httpclient = null;
+		try{
+			String uniqueString = GenerateString(10);
+			String anon_id = Security.getSerialNumber(Constants.USERNAME_AS_ID);
+			int date = Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays();
+			/*File[] files = new File[] { 
+					new File(StaticMethods.getSettingsDir() + "features.txt"),
+					new File(StaticMethods.getSettingsDir() + "clusters.txt")
+			};*/
+			
+			List<File> files = new ArrayList<File>();
+			for(int i=0; i<Constants.UPLOAD_FILE_LIST.length; ++i){
+				File afile = new File(Constants.UPLOAD_FILE_LIST[i]);
+				if(afile.exists())
+					files.add(afile);
+			}
 		
-		List<File> files = new ArrayList<File>();
-		for(int i=0; i<Constants.UPLOAD_FILE_LIST.length; ++i){
-			File afile = new File(Constants.UPLOAD_FILE_LIST[i]);
-			if(afile.exists())
-				files.add(afile);
-		}
-	
-		// String[] descriptors = new String[] { "Features file", "Clusters file" };
-	
-		CloseableHttpClient httpclient = HttpClients.createDefault();
-		try {
+			// String[] descriptors = new String[] { "Features file", "Clusters file" };
+		
+			httpclient = HttpClients.createDefault();
+			
 			HttpPost httppost = new HttpPost(Constants.UPLOAD_URL);
 	
 			MultipartEntityBuilder reqEntity = MultipartEntityBuilder.create();
@@ -87,17 +88,14 @@ public class FileUploader {
 			} finally {
 				response.close();
 			}
-		} catch (ClientProtocolException e) {
-			Logger.log(e, LogType.ERROR_LOG);
-		} catch (IOException e) {
-			Logger.log(e, LogType.ERROR_LOG);
-		} finally {
+		} finally{
 			try {
 				httpclient.close();
 			} catch (IOException e) {
 				Logger.log(e, LogType.ERROR_LOG);
 			}
 		}
+		
 	}
 
 	private static String GenerateString(int n) {

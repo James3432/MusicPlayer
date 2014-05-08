@@ -116,7 +116,7 @@ public class JLayerPlayerPausable {
 		startTime = frameIndexStart;
 
 		if (this.listener != null) {
-			this.listener.playbackStarted(new PlaybackEvent(this, PlaybackEvent.EventType.Started, this.audioDevice.getPosition()));
+			this.listener.playbackStarted(new PlaybackEvent(this.audioPath, PlaybackEvent.EventType.Started, this.audioDevice.getPosition()));
 		}
 
 		if (frameIndexFinal < 0) {
@@ -157,7 +157,7 @@ public class JLayerPlayerPausable {
 					// NullPointerException("attribute audioDevice in " +
 					// this.getClass() + " is NULL");
 				}
-				PlaybackEvent playbackEvent = new PlaybackEvent(this, PlaybackEvent.EventType.Stopped, audioDevicePosition);
+				PlaybackEvent playbackEvent = new PlaybackEvent(this.audioPath, PlaybackEvent.EventType.Stopped, audioDevicePosition);
 				this.listener.playbackFinished(playbackEvent);
 			}
 		}
@@ -180,7 +180,7 @@ public class JLayerPlayerPausable {
 			try {
 				this.bitstream.close();
 			} catch (Exception ex) {
-				ex.printStackTrace();
+				Logger.log("Error closing audio stream", LogType.ERROR_LOG);
 			}
 		}
 	}
@@ -210,6 +210,7 @@ public class JLayerPlayerPausable {
 							try{
 								this.audioDevice.write(output.getBuffer(), 0, output.getBufferLength());
 							}catch(IllegalArgumentException e){
+								Logger.log("Audio buffer error in JLayerPlayerPausable line 213", LogType.ERROR_LOG);
 								return false;
 							}
 						}
@@ -233,6 +234,7 @@ public class JLayerPlayerPausable {
 			// ex);
 			this.bitstream.closeFrame();
 			returnValue = true;
+			Logger.log("Error decoding: frame skipped", LogType.ERROR_LOG);
 		}
 
 		return returnValue;
@@ -242,7 +244,7 @@ public class JLayerPlayerPausable {
 		if (!stopped) {
 			paused = true;
 			if (listener != null) {
-				listener.playbackPaused(new PlaybackEvent(this, PlaybackEvent.EventType.Paused, this.audioDevice.getPosition()));
+				listener.playbackPaused(new PlaybackEvent(this.audioPath, PlaybackEvent.EventType.Paused, this.audioDevice.getPosition()));
 			}
 			this.close();
 		}
@@ -263,13 +265,13 @@ public class JLayerPlayerPausable {
 	public void stop() {
 		if (!this.stopped) {
 			if (!this.closed) {
-				this.listener.playbackFinished(new PlaybackEvent(this, PlaybackEvent.EventType.Stopped, this.audioDevice.getPosition()));
+				this.listener.playbackFinished(new PlaybackEvent(this.audioPath, PlaybackEvent.EventType.Stopped, this.audioDevice.getPosition()));
 				this.close();
 			} else if (this.paused) {
 				int audioDevicePosition = -1; // this.audioDevice.getPosition(),
 												// audioDevice is null
 				if (this.listener != null) // m.berger fix
-					this.listener.playbackFinished(new PlaybackEvent(this, PlaybackEvent.EventType.Stopped, audioDevicePosition));
+					this.listener.playbackFinished(new PlaybackEvent(this.audioPath, PlaybackEvent.EventType.Stopped, audioDevicePosition));
 			}
 			this.stopped = true;
 		}
@@ -317,7 +319,7 @@ public class JLayerPlayerPausable {
 
 	// inner classes
 	public static class PlaybackEvent {
-		public JLayerPlayerPausable source;
+		public String path;
 		public EventType eventType;
 		public int frameIndex; // int
 
@@ -325,8 +327,8 @@ public class JLayerPlayerPausable {
 			Started, Stopped, Paused, FrameDecoded
 		};
 
-		public PlaybackEvent(JLayerPlayerPausable source, EventType eventType, int frameIndex) {
-			this.source = source;
+		public PlaybackEvent(/*JLayerPlayerPausable source*/String path, EventType eventType, int frameIndex) {
+			this.path = path;
 			this.eventType = eventType;
 			this.frameIndex = frameIndex;
 		}

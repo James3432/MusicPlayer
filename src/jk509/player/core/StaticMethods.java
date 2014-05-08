@@ -2,20 +2,22 @@ package jk509.player.core;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-
-import jk509.player.Constants;
-import jk509.player.gui.GenericExtFilter;
-import christophedelory.playlist.AbstractPlaylistComponent;
-import christophedelory.playlist.Media;
-import christophedelory.playlist.Parallel;
-import christophedelory.playlist.Sequence;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.DataLine;
+
+import jk509.player.Constants;
+import jk509.player.clustering.AbstractCluster;
+import jk509.player.gui.GenericExtFilter;
+import christophedelory.playlist.AbstractPlaylistComponent;
+import christophedelory.playlist.Media;
+import christophedelory.playlist.Parallel;
+import christophedelory.playlist.Sequence;
 
 public class StaticMethods {
 
@@ -32,6 +34,69 @@ public class StaticMethods {
 		if(Double.isInfinite(res) || Double.isNaN(res))
 			res = Double.MAX_VALUE;
 		return res;
+	}
+	
+	/*
+	 * Nearest cluster to a song
+	 */
+	public static int nearestCluster(List<AbstractCluster> ls, Song s){
+		int result = -1;
+		double[] target = s.getAudioFeatures();
+		double closest = Double.MAX_VALUE;
+		for(int i=0; i<ls.size(); ++i){
+			double dist = computeDistance(ls.get(i).getCentroid(), target);
+			if(dist < closest){
+				closest = dist;
+				result = i;
+			}
+		}
+		return result;
+	}
+	
+	/*
+	 * Interpolate based on randomness
+	 * return double 0.0 <= x <= 1.0
+	 * 
+	 */
+	public static double Interpolate(double randomness, double low, double mid, double high){
+		// up the mid value a bit if it's too low
+		if(mid < 0.05)
+			mid = 0.05;
+		
+		// when randomness = 1, return high. when randomness = 0, return low. when randomness = 0.5, return mid.
+		if(randomness > 0.5){
+			return high + (mid-high)*2*(1. - randomness);
+		}else{
+			return mid + (low-mid)*(1 - 2*randomness);
+		}
+	}
+	
+	/*
+	 * Remove duplicates from a song list
+	 */
+	public static List<Song> deduplicate(List<Song> songs){
+		HashSet<String> songset = new HashSet<String>();
+		List<Song> res = new ArrayList<Song>();
+		for(Song s : songs){
+			String str = s.getLocation().toLowerCase().replace("/", "\\");
+			if(! songset.contains(str)){
+				songset.add(str);
+				res.add(s);
+			}
+		}
+		return res;
+	}
+	
+	/*
+	 * Get randomness value to use
+	 */
+	public static double getRandomness(double system, double user){
+		double r_user = user - 0.5; // centre about 0.
+		r_user = Constants.RANDOMNESS_USER_CONTROL * r_user; // scale down user control
+		double r_tot = system + r_user; // now combine
+		r_tot = Math.max(r_tot, Constants.RANDOMNESS_MIN);
+		r_tot = Math.min(r_tot, Constants.RANDOMNESS_MAX);
+		return r_tot;
 	}
 	
 	/*
@@ -185,6 +250,17 @@ public class StaticMethods {
 	 * Get the extension of a file.
 	 */
 	public static String getExtension(File f) {
+		String ext = null;
+		String s = f.getName();
+		int i = s.lastIndexOf('.');
+
+		if (i > 0 && i < s.length() - 1) {
+			ext = s.substring(i + 1).toLowerCase();
+		}
+		return ext;
+	}
+	public static String getExtension(String str) {
+		File f = new File(str);
 		String ext = null;
 		String s = f.getName();
 		int i = s.lastIndexOf('.');

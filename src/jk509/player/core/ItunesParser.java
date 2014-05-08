@@ -202,7 +202,7 @@ public class ItunesParser extends DefaultHandler implements LibraryParser {
 
 	@Override
 	public List<Song> getTracks() {
-		return tracks;
+		return StaticMethods.deduplicate(tracks);
 	}
 
 	public List<Playlist> getPlaylists() {

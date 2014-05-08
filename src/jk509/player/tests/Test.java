@@ -8,20 +8,15 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.DataLine;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineEvent;
 import javax.sound.sampled.LineListener;
 import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
-import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.swing.JButton;
+import javax.swing.JFrame;
 
 import jk509.player.Constants;
 import jk509.player.core.Security;
@@ -67,6 +62,19 @@ public class Test {
 
 				line = (Clip) AudioSystem.getLine(info);
 				line.open(is);
+				line.addLineListener(new LineListener() {
+					@Override
+					public void update(LineEvent event) {
+						LineEvent.Type type = event.getType();
+
+						if (type == LineEvent.Type.START) {
+							System.out.println("Playback started.");
+
+						} else if (type == LineEvent.Type.STOP) {
+							System.out.println("Playback completed.");
+						}
+					}
+				});
 				Thread time = new Thread() {
 					int pos = 0;
 
@@ -90,26 +98,14 @@ public class Test {
 				time.start();
 
 				line.start();
-				// Thread.sleep(2000);
-				// line.stop();
-				// Thread.sleep(2000);
-				// line.start();
+				 Thread.sleep(2000);
+				 line.stop();
+				 Thread.sleep(2000);
+				 line.start();
 				// line.setMicrosecondPosition(line.getMicrosecondLength() - 10000000);
 				Thread.sleep(5000);
 				time.interrupt();
-				line.addLineListener(new LineListener() {
-					@Override
-					public void update(LineEvent event) {
-						LineEvent.Type type = event.getType();
-
-						if (type == LineEvent.Type.START) {
-							System.out.println("Playback started.");
-
-						} else if (type == LineEvent.Type.STOP) {
-							System.out.println("Playback completed.");
-						}
-					}
-				});
+				
 
 			} catch (LineUnavailableException ex) {
 				// Handle the error.
