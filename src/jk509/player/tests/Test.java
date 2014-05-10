@@ -8,13 +8,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
-import javax.sound.sampled.AudioInputStream;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Clip;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.LineEvent;
-import javax.sound.sampled.LineListener;
-import javax.sound.sampled.LineUnavailableException;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 
@@ -49,7 +42,14 @@ public class Test {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
-		String path = "C:\\users\\james\\music\\13 Venus Morena.wav";
+		
+		/*Statistics stats = new Statistics();
+		for(int i=0; i<stats.size(); ++i)
+			stats.values[i] = 5*i + 0.4623;
+		
+		Logger.backupStats(6, stats);*/
+		
+		/*String path = "C:\\users\\james\\music\\13 Venus Morena.wav";
 		try {
 			AudioInputStream is = AudioSystem.getAudioInputStream(new File(path));
 			final Clip line;
@@ -112,13 +112,13 @@ public class Test {
 				// ...
 			}
 
-			/*
+			
 			 * String path = "C:\\users\\james\\music\\13 Venus Morena.wav"; FoundationAudioStream f = new FoundationAudioStream(); f.setDataSource(new File(path)); f.initLine(); f.start(); Thread.sleep(2000); f.pause(); Thread.sleep(2000); f.resume();
-			 */
+			 
 
-			/*
+			
 			 * AudioInputStream stream; stream = AudioSystem.getAudioInputStream(new File(path)); AudioFormat format = stream.getFormat(); if (format.getEncoding() != AudioFormat.Encoding.PCM_SIGNED) { format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, format .getSampleRate(), format.getSampleSizeInBits() * 2, format .getChannels(), format.getFrameSize() * 2, format .getFrameRate(), true); // big endian stream = AudioSystem.getAudioInputStream(format, stream); } DataLine.Info info = new DataLine.Info(Clip.class, stream.getFormat(), ((int) stream.getFrameLength() * format.getFrameSize())); Clip clip = (Clip) AudioSystem.getLine(info); clip.close(); double output = clip.getBufferSize() / (clip.getFormat().getFrameSize() * clip.getFormat() .getFrameRate()); System.out.println(output);
-			 */
+			 
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -128,7 +128,7 @@ public class Test {
 		int days = Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays();
 		System.out.println(days);
 		StaticMethods.deleteTempFiles();
-		Logger.backupFeatures(5, new double[] { 5.2, 0.5, 6.3, 1.2, 2.35234, 1023. });
+		Logger.backupFeatures(5, new double[] { 5.2, 0.5, 6.3, 1.2, 2.35234, 1023. });*/
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {

@@ -44,6 +44,10 @@ public abstract class AbstractClusterer {
 		return clusters;
 	}
 	
+	public List<Song> getTracksUsed(){
+		return tracks;
+	}
+	
 	public int[] getAssignments(){
 		return assignments;
 	}
@@ -142,7 +146,7 @@ public abstract class AbstractClusterer {
 		}
 	}
 	
-	protected List<Song> GetSongsWithoutFeatures(List<Song> in) {
+	public static List<Song> GetSongsWithoutFeatures(List<Song> in) {
 		ArrayList<Song> out = new ArrayList<Song>();
 		for (Song s : in) {
 			if (s.getAudioFeatures() == null || s.getAudioFeatures().length != Constants.FEATURES)

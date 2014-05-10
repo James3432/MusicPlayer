@@ -144,7 +144,7 @@ public class FeatureGrabber implements Constants {
 		try{
 			processorTemp = new FeatureProcessor(Constants.WINDOW_SIZE, Constants.WINDOW_OVERLAP, Constants.SAMPLING_RATE*1000, Constants.NORMALISE_AUDIO, features, defaults, cancel);
 		}catch(Exception e){
-			return;
+			Logger.log(e, LogType.ERROR_LOG);
 		}
 		final FeatureProcessor processor = processorTemp;
 		
@@ -179,7 +179,8 @@ public class FeatureGrabber implements Constants {
 									}
 								}).start();
 							}catch(Exception e){
-								System.out.println("Feature extraction failed for file #"+t);
+								System.out.println("Feature extraction failed for file #"+t+" - \""+tracks.get(t).toString()+"\"");
+								Logger.log(e, LogType.ERROR_LOG);
 							}
 							System.gc();
 						}

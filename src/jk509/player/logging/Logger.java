@@ -114,68 +114,7 @@ public class Logger {
 		}
 	}
 	
-	public static Statistics readJson(){
-		String fpath = Constants.STAT_DATA;
-		
-		JSONParser parser = new JSONParser();
-		
-		Statistics s = new Statistics();
-		 
-		try {
-	 
-			Object obj = parser.parse(new FileReader(fpath));
-	 
-			JSONObject jsonObject = (JSONObject) obj;
-			
-			for(int i=0; i<s.descriptors.length; ++i){
-				s.values[i] = (Double) jsonObject.get(s.descriptors[i]);
-			}
-	 
-			/*// loop array
-			JSONArray msg = (JSONArray) jsonObject.get("messages");
-			Iterator<String> iterator = msg.iterator();
-			while (iterator.hasNext()) {
-				System.out.println(iterator.next());
-			}*/
-	 
-		} catch (FileNotFoundException e) {
-			Logger.log(e, LogType.ERROR_LOG);
-		} catch (IOException e) {
-			Logger.log(e, LogType.ERROR_LOG);
-		} catch (ParseException e) {
-			Logger.log(e, LogType.ERROR_LOG);
-		}
-		
-		return s;
-	}
-	
 	@SuppressWarnings("unchecked")
-	public static void writeJson(Statistics s){
-		JSONObject obj = new JSONObject();
-		int items = Math.max(s.descriptors.length, s.values.length);
-		for(int i=0; i<items; ++i){
-			obj.put(s.descriptors[i], s.values[i]);
-		}
-	 
-		/*JSONArray list = new JSONArray();
-		list.add("msg 1");
-		list.add("msg 2");
-		list.add("msg 3");
-	 
-		obj.put("messages", list);*/
-		
-		FileWriter file = null;
-		try {
-			file = new FileWriter(Constants.STAT_DATA);
-			file.write(JsonWriter.formatJson(obj.toJSONString()));
-			file.flush();
-			file.close();
-		} catch (IOException e) {
-			Logger.log(e, LogType.ERROR_LOG);
-		}
-	 
-	}
-	
 	public static synchronized void backupFeatures(int file, double[] features){
 		String fpath = Constants.FEATURES_LOG;
 		
@@ -267,6 +206,7 @@ public class Logger {
 	}
 	
 	
+	@SuppressWarnings("unchecked")
 	public static void backupAllFeatures(List<Song> tracks){
 		String fpath = Constants.FEATURES_LOG;
 		
@@ -300,6 +240,7 @@ public class Logger {
 	}
 	
 	
+	@SuppressWarnings("unchecked")
 	public static void backupClusters(SongCluster root){
 		
 		String fpath = Constants.CLUSTERS_LOG;
@@ -322,6 +263,7 @@ public class Logger {
 		
 	}
 	
+	@SuppressWarnings("unchecked")
 	private static JSONArray SubClustersToJson(SongCluster cs){
 		List<AbstractCluster> nested = cs.getChildren();
 		JSONArray arr = new JSONArray();
@@ -387,15 +329,83 @@ public class Logger {
 		}
 	}
 	
-	public static void backupStats(String[] args){ // TODO what's the input? how is data stored internally before json o/p ?
-		//Tests
+	@SuppressWarnings("unchecked")
+	public static void backupStats(int day, Statistics new_stats) throws Exception {
 		
-		// use readJson and writeJson
-		Statistics s = new Statistics();
-		s.values[0] = 1.6234;
-		s.values[1] = -0.203;
-		writeJson(s);
-		System.out.println(readJson());
+		/*
+		 * We'll store an array of jsonObjs, each of which has a day (int) and an object, where the object is a <descriptor, value> lookup key table
+		 */
+		
+		//try{
+			
+			String path = Constants.STAT_DATA;
+			
+			// The overall stats list
+			List<Long> days_in_file = new ArrayList<Long>();
+			List<Statistics> stats_in_file = new ArrayList<Statistics>();
+			
+			//read
+			JSONParser parser = new JSONParser();
+			
+			try {
+		 
+				Object obj = parser.parse(new FileReader(path));
+		 
+				JSONObject jsonObject = (JSONObject) obj;
+				
+				JSONArray ls = (JSONArray) jsonObject.get("Stats list");
+				Iterator<Object> iterator = ls.iterator();
+				while (iterator.hasNext()) {
+					JSONObject dayStat = (JSONObject) iterator.next();
+					days_in_file.add((Long) dayStat.get("Day"));
+					Statistics s = new Statistics();
+					JSONObject stat = (JSONObject) dayStat.get("Stats");
+					for(int i=0; i<s.size(); ++i)
+						s.values[i] = (Double) stat.get(s.descriptors[i]);
+					stats_in_file.add(s);
+				}
+		 
+			} catch (FileNotFoundException e) {
+				Logger.log(e, LogType.ERROR_LOG);
+			} catch (IOException e) {
+				Logger.log(e, LogType.ERROR_LOG);
+			} catch (ParseException e) {
+				Logger.log(e, LogType.ERROR_LOG);
+			}
+			
+			days_in_file.add((long) day);
+			stats_in_file.add(new_stats);
+			
+			//write
+		 
+			JSONArray master_list = new JSONArray();
+			for(int i=0; i<days_in_file.size(); ++i){
+				JSONObject newObj = new JSONObject();
+				newObj.put("Day", days_in_file.get(i));
+				JSONObject statObj = new JSONObject();
+				Statistics stats = stats_in_file.get(i);
+				for(int j=0; j<stats.size(); ++j)
+					statObj.put(stats.descriptors[j], stats.values[j]);
+				newObj.put("Stats", statObj);
+				master_list.add(newObj);
+			}
+		 
+			JSONObject master_obj = new JSONObject();
+			master_obj.put("Stats list", master_list);
+			
+			FileWriter file = null;
+			//try {
+				file = new FileWriter(path);
+				file.write(JsonWriter.formatJson(master_obj.toJSONString()));
+				file.flush();
+				file.close();
+			//} catch (IOException e) {
+			//	Logger.log(e, LogType.ERROR_LOG);
+			//}
+			
+		//}catch(Exception e){
+		//	Logger.log(e, LogType.ERROR_LOG);
+		//}
 	}
 	
 }

@@ -221,7 +221,7 @@ public class GetInfoDialog extends JDialog {
 	private int getStartNum(){
 		boolean allsame = true;
 		for(int i=0; i<tracks.size()-1; ++i)
-			if(tracks.get(i).getTrackNumber() != tracks.get(i+1).getTrackNumber())
+			if(tracks.get(i).getTrackNumber() < 0 || tracks.get(i+1).getTrackNumber() < 0 || tracks.get(i).getTrackNumber() != tracks.get(i+1).getTrackNumber())
 				allsame = false;
 		if(allsame)
 			return tracks.get(0).getTrackNumber();
@@ -232,7 +232,7 @@ public class GetInfoDialog extends JDialog {
 	private String getStartName(){
 		boolean allsame = true;
 		for(int i=0; i<tracks.size()-1; ++i)
-			if(! tracks.get(i).getName().toLowerCase().equals(tracks.get(i+1).getName().toLowerCase()))
+			if(tracks.get(i).getName() == null || tracks.get(i+1).getName() == null || !tracks.get(i).getName().toLowerCase().equals(tracks.get(i+1).getName().toLowerCase()))
 				allsame = false;
 		if(allsame)
 			return tracks.get(0).getName();
@@ -243,7 +243,7 @@ public class GetInfoDialog extends JDialog {
 	private String getStartAlbum(){
 		boolean allsame = true;
 		for(int i=0; i<tracks.size()-1; ++i)
-			if(! tracks.get(i).getAlbum().toLowerCase().equals(tracks.get(i+1).getAlbum().toLowerCase()))
+			if(tracks.get(i).getAlbum() == null || tracks.get(i+1).getAlbum() == null || !tracks.get(i).getAlbum().toLowerCase().equals(tracks.get(i+1).getAlbum().toLowerCase()))
 				allsame = false;
 		if(allsame)
 			return tracks.get(0).getAlbum();
@@ -254,7 +254,7 @@ public class GetInfoDialog extends JDialog {
 	private String getStartArtist(){
 		boolean allsame = true;
 		for(int i=0; i<tracks.size()-1; ++i)
-			if(! tracks.get(i).getArtist().toLowerCase().equals(tracks.get(i+1).getArtist().toLowerCase()))
+			if(tracks.get(i).getArtist() == null || tracks.get(i+1).getArtist() == null || !tracks.get(i).getArtist().toLowerCase().equals(tracks.get(i+1).getArtist().toLowerCase()))
 				allsame = false;
 		if(allsame)
 			return tracks.get(0).getArtist();
@@ -265,7 +265,7 @@ public class GetInfoDialog extends JDialog {
 	private String getStartGenre(){
 		boolean allsame = true;
 		for(int i=0; i<tracks.size()-1; ++i)
-			if(! tracks.get(i).getGenre().toLowerCase().equals(tracks.get(i+1).getGenre().toLowerCase()))
+			if(tracks.get(i).getGenre() == null || tracks.get(i+1).getGenre() == null || !tracks.get(i).getGenre().toLowerCase().equals(tracks.get(i+1).getGenre().toLowerCase()))
 				allsame = false;
 		if(allsame)
 			return tracks.get(0).getGenre();

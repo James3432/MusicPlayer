@@ -14,8 +14,8 @@ public abstract class AbstractCluster implements Constants, Serializable {
 	protected SongCluster parent;
 	protected int level; // level within cluster hierarchy: 0 = root, n = leaf
 	protected boolean leaf; // if True, this cluster is just 1 song
-	protected double randomness = Constants.RANDOMNESS_MAX; // from RAND_MIN ~ 0 (not random - exploitation) to RAND_MAX ~ 1 (fully random - exploration)
-	protected double user_randomness = 0.;                  // from 0 (not random) to 1.0 (very random)
+	private double randomness = Constants.RANDOMNESS_MAX; // from RAND_MIN ~ 0 (not random - exploitation) to RAND_MAX ~ 1 (fully random - exploration)
+	private double user_randomness = 0.;                  // from 0 (not random) to 1.0 (very random)
 	
 	protected List<Song> tracks;
 

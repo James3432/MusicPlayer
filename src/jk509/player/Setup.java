@@ -1106,6 +1106,8 @@ public class Setup extends JDialog {
 
 	private class BtnNextActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
+			if(stage == 1)
+				Setup.this.setAlwaysOnTop(false);
 			if(stage == 4 && library.getPlaylists().get(Library.MAIN_PLAYLIST).size() < Constants.MIN_LIBRARY_SIZE){
 				Object[] options = {"OK"};
 				JOptionPane.showOptionDialog(Setup.this, "Sorry, you need to add at least "+Constants.MIN_LIBRARY_SIZE+" tracks before proceeding", "Cannot continue", JOptionPane.PLAIN_MESSAGE, JOptionPane.ERROR_MESSAGE, null, options, options[0]);
@@ -1159,7 +1161,7 @@ public class Setup extends JDialog {
 
 	private class BtnGoActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			Setup.this.setAlwaysOnTop(false);
+			
 			btnPrevious5.setEnabled(false);
 			lblThisMayTake.setText("Importing playlists...");
 			

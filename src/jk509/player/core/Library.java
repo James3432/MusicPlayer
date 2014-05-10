@@ -13,6 +13,7 @@ import jk509.player.MusicPlayer;
 import jk509.player.clustering.SongCluster;
 import jk509.player.core.Playlist.Shuffle;
 import jk509.player.core.TableSorter.Directive;
+import jk509.player.logging.Statistics;
 
 /*
  *  Library format for save files
@@ -25,6 +26,7 @@ public class Library implements Serializable, Cloneable {
 	private List<Playlist> playlists;
 	//private Map<String, BufferedImage> artwork;
 	private HashSet<String> songset;
+	private HashSet<String> coverage;
 	private int currentPlaylist = 2; // currently viewing, not currently playing, playlist.
 	private int volume = 100; // 0-100
 	private int[] colWidths;
@@ -37,10 +39,15 @@ public class Library implements Serializable, Cloneable {
 	private int[] searchToNormal;
 	private SongQueue queue;
 	private SongCluster clusters;
+	private String user_id;
+	
+	private Statistics stats;
 	
 	public int lastUpdateDay = 0;
+	public int lastStatsDay = 0;
 	public boolean smartPlay = Constants.SMART_PLAY_DEFAULT;
 	public boolean autoupload = true;
+	private boolean ignoreFeatureless = false;
 	//private Deque<Song> history; // from oldest--->recent
 
 	public Library() {
@@ -50,6 +57,7 @@ public class Library implements Serializable, Cloneable {
 		songset = new HashSet<String>();
 		colWidths = new int[] { 25, 25, 300, 200, 200, 100, 80, 80, 100 };
 		Initialise();
+		generateUserID();
 	}
 
 	public Library(List<Song> ts, List<Playlist> ps, Map<String, BufferedImage> art) {
@@ -60,9 +68,51 @@ public class Library implements Serializable, Cloneable {
 		Initialise();
 	}
 
+	public boolean ignoreFeatureless(){
+		return ignoreFeatureless;
+	}
+	public void ignoreFeatureless(boolean t){
+		ignoreFeatureless = t;
+	}
+	
 	public List<Song> getTracks() {
 		// return tracks;
 		return playlists.get(currentPlaylist).getList();
+	}
+	
+	public Statistics getStats(){
+		if(stats == null)
+			stats = new Statistics();
+		return stats;
+	}
+	// Plan is to never use this, as all stats are cumulative
+	public void resetStats(){
+		stats = new Statistics();
+	}
+	public void setStat(int pos, double val){
+		if(stats == null)
+			stats = new Statistics();
+		try{
+			stats.values[pos] = val;
+		}catch(ArrayIndexOutOfBoundsException e){
+			stats = new Statistics();
+			stats.values[pos] = val;
+		}
+	}
+	public double getStat(int pos){
+		if(stats == null)
+			stats = new Statistics();
+		return stats.values[pos];
+	}
+	public void updateStat(int pos, double val){
+		if(stats == null)
+			stats = new Statistics();
+		try{
+			stats.values[pos] += val;
+		}catch(ArrayIndexOutOfBoundsException e){
+			stats = new Statistics();
+			stats.values[pos] += val;
+		}
 	}
 
 	public List<Playlist> getPlaylists() {
@@ -323,9 +373,18 @@ public class Library implements Serializable, Cloneable {
 		}
 		//lib.artwork = this.artwork;
 		lib.playlists = this.playlists; // deep clone not required because we don't edit playlists after cloning (for lib file save)
+		lib.user_id = this.user_id;
 		return lib;
 	}
 
+	public String getUserID(){
+		if(user_id == null || user_id.equals("") || user_id.length() < 1)
+			generateUserID();
+		return user_id;
+	}
+	private void generateUserID() {
+		user_id = StaticMethods.generateString(Constants.USER_ID_LENGTH);
+	}
 	public SongQueue getQueue() {
 		return queue;
 	}
@@ -383,6 +442,22 @@ public class Library implements Serializable, Cloneable {
 			songset.clear();
 		for(Song s : ls)
 			addToSet(s);
+	}
+	
+	public void addCoverage(Song s){
+		if(coverage == null)
+			coverage = new HashSet<String>();
+		coverage.add(s.getLocation());
+	}
+	public int coverage(){
+		if(coverage == null)
+			coverage = new HashSet<String>();
+		return coverage.size();
+	}
+	public HashSet<String> getCoverageSet(){
+		if(coverage == null)
+			coverage = new HashSet<String>();
+		return coverage;
 	}
 	
 	public List<Song> getAllNotContained(List<Song> songs){

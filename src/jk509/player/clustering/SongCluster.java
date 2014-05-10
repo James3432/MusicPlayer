@@ -7,11 +7,13 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.Stack;
+
+import javax.swing.JFrame;
 
 import jk509.player.Constants;
 import jk509.player.core.Song;
 import jk509.player.core.StaticMethods;
+import jk509.player.gui.GUIupdater;
 import jk509.player.gui.Updater;
 import jk509.player.learning.UserAction;
 import jk509.player.logging.Logger;
@@ -63,6 +65,7 @@ public class SongCluster extends AbstractCluster {
 		assignments = new int[1];
 		assignments[0] = 0;
 		preferred = new double[1]; // TODO init values?
+		preferred[0] = 0.5;
 		centroid = c.getTrack().getAudioFeatures();
 		InitPMatrix();
 	}
@@ -83,19 +86,27 @@ public class SongCluster extends AbstractCluster {
 
 		clusters = new ArrayList<AbstractCluster>();
 		
+		// TODO could be a bug here, as tracks features won't be analysed!
 		if(tracks.size() <= Constants.MAX_CLUSTERS){
 			assignments = new int[tracks.size()];
+			preferred = new double[tracks.size()];
+			double pr = 1. / tracks.size();
+			for(int i=0; i<tracks.size(); ++i)
+				preferred[i] = pr;
+			
 			for(int i=0; i<tracks.size(); ++i){
 				LeafCluster leaf = new LeafCluster(level + 1, this, tracks.get(i));
 				//leaf.setCentroid(tracks.get(i).getAudioFeatures());
 				clusters.add(leaf);
 				assignments[i] = i;
+				preferred[i] += (tracks.get(i).getPlayCount() * 1. / tracks.size());
 			}
 		}else{
 		
 			AbstractClusterer clusterer = new KMeansClusterer(tracks);
 			clusterer.run(updater);
 			// PrintClusters(clusterer.getResult());
+			tracks = clusterer.getTracksUsed();
 			assignments = clusterer.getAssignments();
 			if(assignments == null)
 				assignments = new int[0];
@@ -105,6 +116,10 @@ public class SongCluster extends AbstractCluster {
 			//System.out.println(clusterController.listOptions());
 			
 			List<ArrayList<Song>> cs = clusterer.getResult();
+			preferred = new double[cs.size()];
+			double pr = 1. / cs.size();
+			for(int i=0; i<cs.size(); ++i)
+				preferred[i] = pr;
 			int i=0;
 			for (ArrayList<Song> cluster : cs) {
 				Instance in = ((KMeansClusterer) clusterer).getClusterer().getClusterCentroids().instance(i);
@@ -116,6 +131,7 @@ public class SongCluster extends AbstractCluster {
 					newCluster = /*clusters.add(*/new LeafCluster(level + 1, this, cluster.get(0));
 				}
 				clusters.add(newCluster);
+				preferred[i] += getTotPreferred(newCluster);
 				newCluster.setCentroid(centroid);
 				//if(level==0)
 					//System.out.println("Root cluster added");
@@ -138,6 +154,11 @@ public class SongCluster extends AbstractCluster {
 	public void ResetLearning(){
 		p = null;
 		InitPMatrix();
+		int size = getChildren().size();
+		preferred = new double[size];
+		double pr = 1. / size;
+		for(int i=0; i<size; ++i)
+			preferred[i] = pr;
 		for(AbstractCluster c : clusters)
 			if(c instanceof SongCluster)
 				((SongCluster) c).ResetLearning();
@@ -156,10 +177,6 @@ public class SongCluster extends AbstractCluster {
 					p.get(i).add((i==j ? 1.0 : 0.0));
 			}
 		}
-		preferred = new double[size];
-		double pr = 1. / size;
-		for(int i=0; i<size; ++i)
-			preferred[i] = pr;
 	}
 	
 	public List<ArrayList<Double>> getP(){
@@ -233,7 +250,11 @@ public class SongCluster extends AbstractCluster {
 		if(clusterPlaying > -1){
 			ls.add(clusterPlaying);
 			if(!(clusters.get(clusterPlaying) instanceof LeafCluster))
-				ls.addAll(((SongCluster) clusters.get(clusterPlaying)).getClusterPlayingPath());
+				try{
+					ls.addAll(((SongCluster) clusters.get(clusterPlaying)).getClusterPlayingPath());
+				}catch(Exception e){
+					return null;
+				}
 			return ls;
 		}else
 			return null;
@@ -270,38 +291,55 @@ public class SongCluster extends AbstractCluster {
 	/*
 	 * Add track, assuming it's not a duplicate
 	 */
-	public void AddTrack(Song s) {
-		AbstractCluster current = this;
-		boolean addClusterHere = false;
-		while( ! (current instanceof LeafCluster || addClusterHere) ){
-			current.tracks.add(s);
-			addClusterHere = (current instanceof SongCluster && ((SongCluster) current).getChildren().size() < Constants.MAX_CLUSTERS);  // NOTE this requires max_clusters to match library!!
-			int closest = StaticMethods.nearestCluster(((SongCluster) current).getChildren(), s);
-			if(StaticMethods.computeDistance(((SongCluster) current).getChildren().get(closest).getCentroid(), s.getAudioFeatures()) < Constants.SAME_CLUSTER_DIST_THRESHOLD)
-				addClusterHere = false;
-			current = ((SongCluster) current).getChildren().get(closest);
-		}
-		if(current instanceof LeafCluster){
-			SongCluster newCluster = new SongCluster((LeafCluster) current);
-			newCluster.getChildren().add(new LeafCluster(newCluster.getLevel()+1, newCluster, s));
-			SongCluster root = current.getParent();
-			root.clusters.remove(current);
-			root.clusters.add(newCluster);
-			newCluster.assignments = new int[]{0, 1}; 
-			newCluster.preferred = new double[2];// TODO init?
-			newCluster.tracks.add(s);
-			newCluster.InitPMatrix();
-			current = newCluster;
-		}else{
-			((SongCluster) current).getChildren().add(new LeafCluster(current.getLevel()+1, (SongCluster) current, s));
-			((SongCluster) current).assignments = arrayAppend(((SongCluster) current).assignments, ((SongCluster) current).getChildren().size()-1);
-			((SongCluster) current).preferred = arrayAppend(((SongCluster) current).preferred, 0.0); // TODO init?
-			((SongCluster) current).AddClusterP();
-		}
+	public boolean AddTrack(Song s, JFrame form) {
+	
+		List<Song> ls = new ArrayList<Song>();
+		ls.add(s);
+		AbstractClusterer clusterer = new KMeansClusterer(ls);
+		clusterer.run(new GUIupdater(form));
+		// PrintClusters(clusterer.getResult());
+		List<Song> used = clusterer.getTracksUsed();
+		if(used.contains(s) && s.getAudioFeatures() != null){
 		
-		while(current.level > 0){
-			((SongCluster) current).recomputeCentroid();
-			current = current.getParent();
+			AbstractCluster current = this;
+			boolean addClusterHere = false;
+			while( ! (current instanceof LeafCluster || addClusterHere) ){
+				current.tracks.add(s);
+				addClusterHere = (current instanceof SongCluster && ((SongCluster) current).getChildren().size() < Constants.MAX_CLUSTERS);  // NOTE this requires max_clusters to match library!!
+				int closest = StaticMethods.nearestCluster(((SongCluster) current).getChildren(), s);
+				if(StaticMethods.computeDistance(((SongCluster) current).getChildren().get(closest).getCentroid(), s.getAudioFeatures()) < Constants.SAME_CLUSTER_DIST_THRESHOLD)
+					addClusterHere = false;
+				current = ((SongCluster) current).getChildren().get(closest);
+			}
+			if(current instanceof LeafCluster){
+				SongCluster newCluster = new SongCluster((LeafCluster) current);
+				newCluster.getChildren().add(new LeafCluster(newCluster.getLevel()+1, newCluster, s));
+				SongCluster root = current.getParent();
+				root.clusters.remove(current);
+				root.clusters.add(newCluster);
+				newCluster.assignments = new int[]{0, 1}; 
+				newCluster.preferred = new double[2];// TODO init?
+				newCluster.preferred[0] = 0.5; newCluster.preferred[1] = 0.5;
+				newCluster.tracks.add(s);
+				newCluster.InitPMatrix();
+				current = newCluster;
+			}else{
+				((SongCluster) current).getChildren().add(new LeafCluster(current.getLevel()+1, (SongCluster) current, s));
+				((SongCluster) current).assignments = arrayAppend(((SongCluster) current).assignments, ((SongCluster) current).getChildren().size()-1);
+				((SongCluster) current).preferred = arrayAppend(((SongCluster) current).preferred, 0.0); // TODO init?
+				((SongCluster) current).AddClusterP();
+			}
+			
+			while(current.level > 0){
+				((SongCluster) current).recomputeCentroid();
+				current = current.getParent();
+			}
+		
+			return true;
+			
+		}else{
+			// error processing
+			return false;
 		}
 				
 		/*
@@ -316,9 +354,12 @@ public class SongCluster extends AbstractCluster {
 		*/
 	}
 
-	public void AddTracks(List<Song> ss) {
+	public boolean AddTracks(List<Song> ss, JFrame form) {
+		boolean result = true;
 		for(Song s : ss)
-			AddTrack(s);
+			if(!AddTrack(s, form))
+				result = false;
+		return result;
 	}
 
 	public void RemoveTrack(Song s) {
@@ -443,35 +484,43 @@ public class SongCluster extends AbstractCluster {
 		
 		Song choice = null;
 		
+		double randomness = getNetRandomness();
+		
 		if(clusterPlaying < 0 || clusterPlaying >= clusters.size()){
 			choice = heuristicChoice(null, this, history, history_weights);
 		}else{
 			// Location of what was previously playing
 			List<Integer> sourcePath = getClusterPlayingPath();
 			Song source = getClusterPlayingSong();
-			AbstractCluster next = this;
-			int nextCluster = 0;
-			for(int level = 0; level <= sourcePath.size(); ++level){
-				if(!(next instanceof SongCluster)){
-					// base case: need to step back up a level probably
-					// several cases: source a leaf but next isnt, next a leaf but source isn't, both leaves. stepping up a level
-					// account for all factors in heuristic method
-					SongCluster nextup = next.getParent();
-					choice = heuristicChoice(source, nextup, history, history_weights);
-					break;
-				}else{
-					SongCluster current = (SongCluster) next;
-					//choose next cluster
-					ArrayList<Double> row = current.getP().get(sourcePath.get(level));
-					nextCluster = chooseNextCluster(row);
-					if(nextCluster == sourcePath.get(level))
-						next = current.getChildren().get(nextCluster); // the only recursive case
-					else{
-						if(current.getChildren().get(nextCluster) instanceof LeafCluster)
-							choice = heuristicChoice(source, current, history, history_weights);
-						else
-							choice = heuristicChoice(source, (SongCluster) current.getChildren().get(nextCluster), history, history_weights);
+			if(sourcePath == null || source == null){
+				choice = heuristicChoice(null, this, history, history_weights);
+			}else{
+				AbstractCluster next = this;
+				int nextCluster = 0;
+				for(int level = 0; level <= sourcePath.size(); ++level){
+					if(!(next instanceof SongCluster)){
+						// base case: need to step back up a level probably
+						// several cases: source a leaf but next isnt, next a leaf but source isn't, both leaves. stepping up a level
+						// account for all factors in heuristic method
+						SongCluster nextup = next.getParent();
+						choice = heuristicChoice(source, nextup, history, history_weights);
 						break;
+					}else{
+						SongCluster current = (SongCluster) next;
+						//choose next cluster
+						ArrayList<Double> row = current.getP().get(sourcePath.get(level));
+						nextCluster = chooseNextCluster(row, randomness);
+						if(nextCluster < 0){
+							choice = heuristicChoice(source, current, history, history_weights);
+						}else if(nextCluster == sourcePath.get(level))
+							next = current.getChildren().get(nextCluster); // the only recursive case
+						else{
+							if(current.getChildren().get(nextCluster) instanceof LeafCluster)
+								choice = heuristicChoice(source, current, history, history_weights);
+							else
+								choice = heuristicChoice(source, (SongCluster) current.getChildren().get(nextCluster), history, history_weights);
+							break;
+						}
 					}
 				}
 			}
@@ -482,15 +531,28 @@ public class SongCluster extends AbstractCluster {
 		return choice;
 	}
 	
+	private void DeNan(ArrayList<Double> row){
+		boolean reset = false;
+		for(int i=0; i<row.size(); ++i){
+			if (Double.isNaN(row.get(i)))
+				reset = true;
+		}
+		if(reset){
+			for(int i=0; i<row.size(); ++i){
+				row.set(i, 1. / row.size());
+			}
+			Logger.log("Removed NaN values from P matrix", LogType.ERROR_LOG);
+		}
+	}
+	
 	/*
 	 * Pick the next cluster to explore. If we've played all these tracks too recently, the heuristic will look one or more levels upwards
 	 */
-	private int chooseNextCluster(ArrayList<Double> row){
+	private int chooseNextCluster(ArrayList<Double> row, double randomness){
 		/*
 		 * Randomness is the key variable here: from 0 (not random - exploitation) to 1.0 (fully random - exploration)
 		 */
-		
-		double randomness = getNetRandomness();
+		DeNan(row);
 		
 		// Find the most probable next cluster
 		int maxrow = -1;
@@ -516,7 +578,7 @@ public class SongCluster extends AbstractCluster {
 			tot += newrow.get(i);
 		}
 		for(int i=0; i<newrow.size(); ++i){
-			newrow.set(i, newrow.get(i) / tot);
+			newrow.set(i, (tot==0.0 ? 1. / newrow.size() : newrow.get(i) / tot));
 		}
 		
 		// Pick cluster based on probabilities
@@ -530,6 +592,11 @@ public class SongCluster extends AbstractCluster {
 				break;
 			}
 		}
+		
+		if(choice < 0){
+			Logger.log("Error choosing next cluster. Tot="+tot+" Rand="+rand+" RowInSize="+row.size()+" RowOutSize="+newrow.size()+"  Row:"+row.toString()+"  NewRow: "+newrow.toString(), LogType.ERROR_LOG);
+		}
+		
 		return choice;
 	}
 	
@@ -552,8 +619,6 @@ public class SongCluster extends AbstractCluster {
 			List<Song> songs = cluster.getTracks();
 			double[] votes = new double[songs.size()];
 			
-			//TODO PROBLEM: features aren't normalised!! are centroids? have a look...
-			
 			if(source == null){
 				// we are choosing from all songs
 				/*while(choice == null || history.contains(choice)){
@@ -563,10 +628,12 @@ public class SongCluster extends AbstractCluster {
 				}*/
 				
 				// Basic implementation which uses 'preferred'
-				for(int i=0; i<votes.length; ++i)
+				
+				// Removed, inefficient:
+				/*for(int i=0; i<votes.length; ++i)
 					votes[i] = 1.0;
 				Stack<SongCluster> next = new Stack<SongCluster>();
-				next.push(this);
+				next.push(s_cluster);
 				while(!next.empty()){
 					SongCluster current = next.pop();
 					int i=0;
@@ -580,7 +647,26 @@ public class SongCluster extends AbstractCluster {
 							next.push((SongCluster) c);
 						}
 					}
+				}*/
+				SongCluster next = cluster;
+				while(true){
+					double[] prefs = next.preferred;
+					int h = StaticMethods.maxArrayIndex(prefs);
+					AbstractCluster child = next.getChildren().get(h);
+					if(child instanceof LeafCluster){
+						// use 
+						Song s = ((LeafCluster) child).getTrack();
+						int v = songs.indexOf(s);
+						if(v > -1)
+							votes[v] = 100;
+						else
+							votes[0] = 100; // error
+						break;
+					}else{
+						next = (SongCluster) child;
+					}
 				}
+				
 			}else{
 				// heuristic called because we've made a long jump between clusters so no P matrix is available
 				/*while(choice == null || history.contains(choice)){
@@ -608,10 +694,10 @@ public class SongCluster extends AbstractCluster {
 					votes[i] = 1. / dists[i]; // a higher vote is better, which corresponds to a shorter distance
 				}
 				
-				double[] prefs = normTo(cluster.preferred, 5);
+				//double[] prefs = normTo(cluster.preferred, Constants.MAX_PREFERRED_EFFECT);
 				for(int i=0; i<songs.size(); ++i){
 					int clust = cluster.getClusterIndex(songs.get(i));
-					votes[i] *= prefs[clust];
+					votes[i] *= cluster.preferred[clust];
 				}
 			}
 			
@@ -621,7 +707,7 @@ public class SongCluster extends AbstractCluster {
 			for(int i=0; i<songs.size(); ++i){
 				if(Double.isInfinite(votes[i]))
 					votes[i] = Double.MAX_VALUE;
-				if(songs.get(i).equals(source) || songs.get(i) == null)
+				if(songs.get(i) == null || (source != null && songs.get(i).equals(source)))
 					votes[i] = 0;
 				int pos = history.indexOf(songs.get(i));
 				if(pos > -1)
@@ -656,7 +742,7 @@ public class SongCluster extends AbstractCluster {
 		
 		if(choice == null){
 			System.out.println("Couldn't choose next track");
-			Logger.log("Couldn't choose next track in SongCluster line 566", LogType.ERROR_LOG);
+			Logger.log("Couldn't choose next track in SongCluster line 692", LogType.ERROR_LOG);
 		}
 		
 		return choice;
@@ -706,6 +792,7 @@ public class SongCluster extends AbstractCluster {
 		return out;
 	}
 	
+	@SuppressWarnings("unused")
 	private double[] normTo(double[] arr, double max){
 		double highest = 0;
 		for(int i=0; i<arr.length; ++i)
@@ -820,6 +907,13 @@ public class SongCluster extends AbstractCluster {
 				double time_played = val;
 				reward =  min + (time_played * (max - min));
 			} break;
+		case UserAction.TRACK_QUEUED:
+			{
+				// User queued track. Ignore val
+				from = source;
+				to = target;
+				reward =  Constants.REWARD_TRACK_QUEUED;
+			} break;
 		case UserAction.TRACK_CHANGED:
 			{
 				// User changed track manually. Use val and source,target,chosen
@@ -911,7 +1005,20 @@ public class SongCluster extends AbstractCluster {
 		
 		p.get(fromI).set(toI, pr);
 		
-		preferred[toI] += reward;
+		// This is the only place 'preferred' gets updated
+		preferred[toI] = Math.max(0., preferred[toI] + reward);
+		// And add it to every parent
+		SongCluster c = this;
+		try{
+		while(c.getParent() != null){
+			int ind = c.getParent().getChildren().indexOf((AbstractCluster) c);
+			c = c.getParent();
+			c.preferred[ind] = Math.max(0., preferred[ind] + reward);
+		}
+		}catch(Exception e){
+			Logger.log("Error whilst updating matrix of preferred tracks:", LogType.ERROR_LOG);
+			Logger.log(e, LogType.ERROR_LOG);
+		}
 	}
 	
 	/*
@@ -924,6 +1031,10 @@ public class SongCluster extends AbstractCluster {
 		// remove column
 		for(int i=0; i<p.size(); ++i)
 			p.get(i).remove(r);
+	}
+	
+	public double[] getPrefs(){
+		return preferred;
 	}
 	
 	/*
@@ -1006,12 +1117,23 @@ public class SongCluster extends AbstractCluster {
 		}
 		
 		int index = getClusterIndex(s);
-		if(index < 0 || (clusterPlaying > -1 && clusterPlaying != index && clusters.get(clusterPlaying) instanceof SongCluster))
+		if(clusterPlaying > -1 && clusterPlaying != index && clusters.get(clusterPlaying) instanceof SongCluster)
 			((SongCluster) clusters.get(clusterPlaying)).clearPlaying();
 		clusterPlaying = index;
-		if(index > -1 && clusters.get(clusterPlaying) instanceof SongCluster)
+		if(clusterPlaying > -1 && clusters.get(clusterPlaying) instanceof SongCluster)
 			((SongCluster) clusters.get(clusterPlaying)).setPlayingCluster(s);
 		
+	}
+	
+	private double getTotPreferred(AbstractCluster c){
+		if(c instanceof LeafCluster)
+			return 0.;
+		else{
+			double tot = StaticMethods.arraySum(((SongCluster) c).preferred);
+			for(AbstractCluster cs : ((SongCluster) c).getChildren())
+				tot += getTotPreferred(cs);
+			return tot;
+		}
 	}
 	
 	/*

@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -51,6 +52,40 @@ public class StaticMethods {
 			}
 		}
 		return result;
+	}
+	
+	public static int maxArrayIndex(double[] arr){
+		double max = 0.;
+		int ind = 0;
+		for(int i=0; i<arr.length; ++i)
+			if(arr[i] > max){
+				max = arr[i];
+				ind = i;
+			}
+		return ind;
+	}
+	
+	/*
+	 * Sum an array
+	 */
+	public static double arraySum(double[] arr){
+		double tot = 0.;
+		for(int i=0; i<arr.length; ++i)
+			tot += arr[i];
+		return tot;
+	}
+	
+	/*
+	 * Generate random string of length n
+	 */
+	public static String generateString(int n) {
+		String s = "";
+		for (int i = 0; i < n; ++i) {
+			Random r = new Random();
+			char c = (char) (r.nextInt(26) + 'a');
+			s = s + c;
+		}
+		return s;
 	}
 	
 	/*

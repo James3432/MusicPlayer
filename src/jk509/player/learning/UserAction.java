@@ -16,6 +16,7 @@ public class UserAction implements Serializable {
 	public final static int TRACK_CHANGED = 2;     // user picked song 'chosen' after (value * target.length) seconds through 'target' which was chosen after 'source'
 	public final static int PLAYLIST_SHARED = 3;   // 'source' and 'target' are in the same user-playlist (imported or otherwise)
 	public final static int PLAYLIST_ADJACENT = 4; // 'target' directly follows 'source' in a user-playlist (imported or otherwise)
+	public final static int TRACK_QUEUED = 5;      // 'source' was playing and then user added 'target' to the play queue
 
 	public int type;     // one of the above
 	public double value; // 0.0 - 1.0 eg. fraction of way through track at which user skipped
@@ -44,6 +45,7 @@ public class UserAction implements Serializable {
 		case TRACK_CHANGED: str += "Track changed"; break;
 		case PLAYLIST_SHARED: str += "Tracks in playlist"; break;
 		case PLAYLIST_ADJACENT: str += "Tracks adjacent"; break;
+		case TRACK_QUEUED: str += "Track queued"; break;
 		}
 		str += "  Value: "+value;
 		str += "  Source: "+source.getName();

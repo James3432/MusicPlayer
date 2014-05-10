@@ -64,6 +64,7 @@ import javax.swing.DropMode;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -106,6 +107,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
 import jk509.player.clustering.AbstractCluster;
+import jk509.player.clustering.KMeansClusterer;
 import jk509.player.clustering.LeafCluster;
 import jk509.player.clustering.SongCluster;
 import jk509.player.core.FileScanner;
@@ -115,6 +117,7 @@ import jk509.player.core.JLayerPlayerPausable;
 import jk509.player.core.Library;
 import jk509.player.core.LibraryParser;
 import jk509.player.core.Playlist;
+import jk509.player.core.Security;
 import jk509.player.core.Song;
 import jk509.player.core.SongQueueElement;
 import jk509.player.core.SoundJLayer;
@@ -134,6 +137,7 @@ import jk509.player.learning.UserAction;
 import jk509.player.learning.UserHistoryDemo;
 import jk509.player.logging.Logger;
 import jk509.player.logging.Logger.LogType;
+import jk509.player.logging.Statistics;
 
 import org.joda.time.DateTime;
 import org.joda.time.Days;
@@ -232,7 +236,6 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	public static int FIXED_PLAYLIST_ELEMENTS = 3; // number of system-set
 													// playlists (ie. tracks,
 													// artists, albums)
-	public static int UPDATE_PLAY_COUNT_WINDOW = 20; // no. seconds off end of song within which a skip will still cause the play count to be incremented
 	private Point start;
 	private PlaybackListener playbackListener = new PlaybackListener();
 	private int THREAD_SLEEP = 10;
@@ -326,8 +329,11 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JMenuItem mntmPrintProbabilities;
 	private JMenuItem mntmResetProbabilities;
 	private JMenuItem mntmPrintCentroids;
+	private JMenuItem mntmPrintPrefs;
 	private JMenuItem mntmLearnTestHistory;
 	private JMenuItem mntmLearnPlaylists;
+	private JMenuItem mntmClrStats;
+	private JMenuItem mntmOutputStats;
 	private JCheckBoxMenuItem chckbxmntmAutoSendUsage;
 	private JMenuItem mntmUploadDataNow;
 	private JProgressBar statusBar;
@@ -1437,6 +1443,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		mntmResetProbabilities.addActionListener(new MntmResetProbabilitiesActionListener());
 		mnDeveloper.add(mntmResetProbabilities);
 		
+		mntmPrintPrefs = new JMenuItem("Print prefs");
+		mntmPrintPrefs.addActionListener(new MntmPrintPrefsActionListener());
+		mnDeveloper.add(mntmPrintPrefs);
+		
 		mntmPrintCentroids = new JMenuItem("Print centroids");
 		mntmPrintCentroids.addActionListener(new MntmPrintCentroidsActionListener());
 		mnDeveloper.add(mntmPrintCentroids);
@@ -1448,6 +1458,13 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		mntmLearnPlaylists.addActionListener(new MntmLearnPlaylistsActionListener());
 		mnDeveloper.add(mntmLearnPlaylists);
 		mnDeveloper.add(mntmLearnTestHistory);
+		
+		mntmClrStats = new JMenuItem("Clear stats");
+		mntmClrStats.addActionListener(new MntmClearStatsActionListener());
+		mnDeveloper.add(mntmClrStats);
+		mntmOutputStats = new JMenuItem("Output stats");
+		mntmOutputStats.addActionListener(new MntmOutputStatsActionListener());
+		mnDeveloper.add(mntmOutputStats);
 		
 		mntmSaveFeatures = new JMenuItem("Save Features");
 		mnDeveloper.add(mntmSaveFeatures);
@@ -1525,9 +1542,11 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				}
 				try{
 					chckbxmntmAutoSendUsage.setSelected(library.autoupload);
+					mntmUploadDataNow.setEnabled(! library.autoupload);
 				}catch(Exception e){
 					library.autoupload = true;
 					chckbxmntmAutoSendUsage.setSelected(true);
+					mntmUploadDataNow.setEnabled(false);
 				}
 				sliderVol.repaint();
 				if (library.getVolume() < 0)
@@ -1557,7 +1576,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				//(new Thread(){
 				//	@Override
 				//	public void run(){
-						StartupRoutines();
+				StartupRoutines();
 				//	}
 				//}).start();
 				// System.out.println("lib read");
@@ -1573,11 +1592,14 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					int response = JOptionPane.showConfirmDialog(frmMusicPlayer, "Are you sure you want to revert to factory defaults?\nAll library data, settings and learned preferences will be deleted.", "Confirm factory reset", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 					if (response == JOptionPane.YES_OPTION) {
 						File setts = new File(Constants.SETTINGS_PATH);
+						boolean res = false;
 						if (setts.exists()) {
-							setts.delete();
+							res = setts.delete();
 						}
-						JOptionPane.showMessageDialog(frmMusicPlayer, "Music Factory will now close to finish reverting settings.", "Settings deleted", JOptionPane.INFORMATION_MESSAGE);
-						
+						if(res)
+							JOptionPane.showMessageDialog(frmMusicPlayer, "Music Factory will now close to finish reverting settings.", "Settings deleted", JOptionPane.INFORMATION_MESSAGE);
+						else
+							JOptionPane.showMessageDialog(frmMusicPlayer, "Error deleting settings file: please delete manually", "File error", JOptionPane.ERROR_MESSAGE);
 					}
 				}
 				System.exit(0);
@@ -1609,6 +1631,22 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					
 					if(library.autoupload && targetUploads > previousUpload)
 						UploadUsageData();
+					
+					int previousStats = 0;
+					try{
+						 previousStats = library.lastStatsDay;
+					}catch(Exception e){
+						library.lastStatsDay = 0;
+					}
+					if(daysPassed > previousStats){ // just 1 day cycles
+						SetFixedStats();
+						try{
+							Logger.backupStats(daysPassed, library.getStats());
+							library.lastStatsDay = daysPassed;
+						} catch (Exception e) {
+							Logger.log(e, LogType.ERROR_LOG);
+						}		
+					}
 				}
 			}
 		}).start();
@@ -1662,10 +1700,49 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		if(library.autoupload && targetUploads > previousUpload)
 			UploadUsageData();
 		
+		int previousStats = 0;
+		try{
+			 previousStats = library.lastStatsDay;
+		}catch(Exception e){
+			library.lastStatsDay = 0;
+		}
+		if(daysPassed > previousStats){ // just 1 day cycles
+			SetFixedStats();
+			try{
+				Logger.backupStats(daysPassed, library.getStats());
+				library.lastStatsDay = daysPassed;
+			} catch (Exception e) {
+				Logger.log(e, LogType.ERROR_LOG);
+			}		
+		}
+		
 		// Then set randomness
 		double stage = Math.min(1.0, daysPassed / Constants.RANDOMNESS_SHIFT_TIME);
 		double randomness = Constants.RANDOMNESS_MAX - stage * (Constants.RANDOMNESS_MAX - Constants.RANDOMNESS_MIN);
-		library.getClusters().setRandomness(randomness); // TODO but how does this interact with user randomness setting?
+		library.getClusters().setRandomness(randomness);
+		
+		CheckAnalysesComplete();
+		
+		UpdateLibrary();
+	}
+	
+	private void CheckAnalysesComplete(){
+		if(! library.ignoreFeatureless()){
+			Logger.log("Checking for tracks missing features...", LogType.USAGE_LOG);
+			List<Song> featureless = KMeansClusterer.GetSongsWithoutFeatures(library.getMainList());
+			if(featureless.size() > 0){
+				Logger.log("Tracks lacking features found on startup", LogType.USAGE_LOG);
+				JCheckBox checkbox = new JCheckBox("Don't ask about this again");  
+				String message = "Your library contains "+featureless.size()+" track(s) which have not been analysed.\nAttempt analysis now?";  
+				Object[] params = {message, checkbox};  
+				int n = JOptionPane.showConfirmDialog(frmMusicPlayer, params, "Missing features", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);  
+				library.ignoreFeatureless(checkbox.isSelected());  
+				if(n == JOptionPane.YES_OPTION)
+					library.getClusters().ResetClusters(new GUIupdater(frmMusicPlayer));
+			}else{
+				library.ignoreFeatureless(true);
+			}
+		}
 	}
 	
 	private void UploadUsageData(){
@@ -1684,8 +1761,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				while(statusBar.getValue() < 40){
 					SwingUtilities.invokeLater(new Thread(){
 						@Override public void run(){
+							if(statusBar.getValue() < 40){
 								lblStatusProg.setText((statusBar.getValue()+1)+"%");
 								statusBar.setValue(statusBar.getValue()+1);
+							}
 						}
 					});
 					try {
@@ -1696,7 +1775,12 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				}
 				
 				try{
-					FileUploader.upload();
+					String anon_id = "";
+					if(Constants.USE_RAND_IDENTIFIER)
+						anon_id = library.getUserID();
+					else
+						anon_id = Security.getSerialNumber(Constants.USERNAME_AS_ID);
+					FileUploader.upload(anon_id);
 					
 					// Only if upload succeeded:
 					library.lastUpdateDay = Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays();
@@ -1708,8 +1792,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				while(statusBar.getValue() < 100){
 					SwingUtilities.invokeLater(new Thread(){
 						@Override public void run(){
+							if(statusBar.getValue() < 100){
 								lblStatusProg.setText((statusBar.getValue()+1)+"%");
 								statusBar.setValue(statusBar.getValue()+1);
+							}
 						}
 					});
 					try {
@@ -1802,7 +1888,35 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			Logger.log(e, LogType.ERROR_LOG);
 		}
 	}
+	
+	private void SetFixedStats(){
+		library.setStat(Statistics.Stored_tracks, library.getMainList().size());
+		library.setStat(Statistics.Stored_time, totalTime(library.getMainList()));
+		library.setStat(Statistics.Auto_playlists, countAutoPlaylists());
+		library.setStat(Statistics.Manual_playlists, countManualPlaylists());
+	}
 
+	private int totalTime(List<Song> tracks){
+		int tot = 0;
+		for(Song s : tracks)
+			tot += s.getLengthS();
+		return tot;
+	}
+	private int countAutoPlaylists(){
+		int count = 0;
+		for(int i=0; i<library.getPlaylists().size(); ++i)
+			if(library.getPlaylists().get(i).getType() == Playlist.AUTO)
+				count++;
+		return count;
+	}
+	private int countManualPlaylists(){
+		int count = 0;
+		for(int i=0; i<library.getPlaylists().size(); ++i)
+			if(library.getPlaylists().get(i).getType() == Playlist.USER)
+				count++;
+		return count;
+	}
+	
 	private class BtnImportFromItunesActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
 			LibraryParser parser = new ItunesParser();
@@ -1834,11 +1948,26 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		
 		List<Song> toimport = library.getAllNotContained(parser.getTracks());
 		library.addToPlaylist(Library.MAIN_PLAYLIST, toimport);
-		library.getClusters().AddTracks(toimport);
+		boolean result = library.getClusters().AddTracks(toimport, frmMusicPlayer);
+		if(!result){
+			Object[] options = {"OK"};
+			if(toimport.size() > 1)
+				JOptionPane.showOptionDialog(frmMusicPlayer,
+		    		"Sorry, there was an error processing one or more of these files.\nAll songs will be added to your library, but some may not be compatible with Smart Play mode.",
+		    		"Analysis error",
+		    		JOptionPane.PLAIN_MESSAGE,
+		    		JOptionPane.ERROR_MESSAGE,                null,                 options,                  options[0]);
+			else
+				JOptionPane.showOptionDialog(frmMusicPlayer,
+			    		"Sorry, there was an error processing this file.\nIt will be added to your library, but may not be compatible with Smart Play mode.",
+			    		"Analysis error",
+			    		JOptionPane.PLAIN_MESSAGE,
+			    		JOptionPane.ERROR_MESSAGE,                 null,                options,              options[0]);
+		}
 		// library.addToPlaylist(1, parser.getTracks());
 		// library.addToPlaylist(2, parser.getTracks());
 		
-		Logger.log(toimport.size()+" files imported.", LogType.USAGE_LOG);
+		Logger.log(toimport.size()+" files imported."+(result ? "" : " One or more errors occurred."), LogType.USAGE_LOG);
 
 		library.setSelection(tabMain.getSelectedRows());
 		library.setViewPos(((JViewport) tabMain.getParent()).getViewPosition());
@@ -1955,7 +2084,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		// else
 		// currentTableSorter = new TableSorter(tabMain.getModel(), h, new TableRowSortedListener(), tabMain);
 		// /////////
-		if (playlistPlaying == listPlaylists.getSelectedIndex())
+		if (playlistPlaying == listPlaylists.getSelectedIndex() && !searching)
 			playlistPlayingSorter = currentTableSorter;
 
 		tabMain.setModel(currentTableSorter);
@@ -2192,27 +2321,39 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private void playSelectedNext() {
 		int[] sel = tabMain.getSelectedRows();
 		if (sel.length > 0 && !library.hasQueue())
-			library.createQueue(new SongQueueElement(library.getPlaylist(playlistPlaying).get(trackPlaying), playlistPlaying, (searching ? library.searchToNormalModel(trackPlaying) : trackPlaying)));
+			library.createQueue(new SongQueueElement(library.getPlaylist(playlistPlaying).get(trackPlaying), playlistPlaying, (searching && playingInSearch ? library.searchToNormalModel(trackPlaying) : trackPlaying)));
+		List<Song> tracks = new ArrayList<Song>();
 		for (int i = sel.length - 1; i >= 0; --i) {
 			int row = ((TableSorter) tabMain.getModel()).modelIndex(sel[i]);
-			Song track = library.getPlaylist(listPlaylists.getSelectedIndex()).get(row);
-			SongQueueElement el = new SongQueueElement(track, listPlaylists.getSelectedIndex(), (searching ? library.searchToNormalModel(row) : row));
+			if(searching)
+				 row = library.searchToNormalModel(row);
+			Song track = library.getPlaylists().get(Library.MAIN_PLAYLIST+listPlaylists.getSelectedIndex()).get(row);
+			tracks.add(track);
+			SongQueueElement el = new SongQueueElement(track, listPlaylists.getSelectedIndex(),  row);
 			library.getQueue().PlayNext(el);
 		}
+		SendQueueUserAction(currentTrack, tracks);
 		RefreshUpNext();
+		library.updateStat(Statistics.Queues, 1);
 	}
 
 	private void addSelectedToQueue() {
 		int[] sel = tabMain.getSelectedRows();
 		if (sel.length > 0 && !library.hasQueue())
-			library.createQueue(new SongQueueElement(library.getPlaylist(playlistPlaying).get(trackPlaying), playlistPlaying, (searching ? library.searchToNormalModel(trackPlaying) : trackPlaying)));
+			library.createQueue(new SongQueueElement(library.getPlaylist(playlistPlaying).get(trackPlaying), playlistPlaying, (searching && playingInSearch ? library.searchToNormalModel(trackPlaying) : trackPlaying)));
+		List<Song> tracks = new ArrayList<Song>();
 		for (int i = 0; i < sel.length; ++i) {
 			int row = ((TableSorter) tabMain.getModel()).modelIndex(sel[i]);
-			Song track = library.getPlaylist(listPlaylists.getSelectedIndex()).get(row);
-			SongQueueElement el = new SongQueueElement(track, listPlaylists.getSelectedIndex(), (searching ? library.searchToNormalModel(row) : row));
+			if(searching)
+				row = library.searchToNormalModel(row);
+			Song track = library.getPlaylists().get(Library.MAIN_PLAYLIST+listPlaylists.getSelectedIndex()).get(row);
+			tracks.add(track);
+			SongQueueElement el = new SongQueueElement(track, listPlaylists.getSelectedIndex(), row);
 			library.getQueue().AddToTail(el);
 		}
+		SendQueueUserAction(currentTrack, tracks);
 		RefreshUpNext();
+		library.updateStat(Statistics.Queues, 1);
 	}
 
 	private TableSorter getPlaylistSorter(int playlist) {
@@ -2284,40 +2425,44 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 	private int GetNextInQueue() {
 		int nextUp = -1;
-
-		SongQueueElement next = library.getQueue().next();
-		if (next == null) {
-			// Stop();
-			library.deleteQueue();
-			RefreshUpNext();
-			return -1;
-		}
-
-		if (library.getQueue().isValid() && playlistPlaying != next.playlist) {
-			playlistPlayingSorter = getPlaylistSorter(next.playlist);
-			playlistPlaying = next.playlist;
-		}
-
-		if (!library.getQueue().isValid()) {
-			library.deleteQueue();
-			if (searching)
-				nextUp = ((TableSorter) tabMain.getModel()).viewIndex(library.normalToSearchModel(next.index)) + 1;
-			else {
-				playlistPlayingSorter = getPlaylistSorter(next.playlist);
-				nextUp = playlistPlayingSorter.viewIndex(next.index) + 1;
+		try{
+			SongQueueElement next = library.getQueue().next();
+			if (next == null) {
+				// Stop();
+				library.deleteQueue();
+				RefreshUpNext();
+				return -1;
 			}
-			playlistPlaying = next.playlist;
-		} else {
-			if (searching)
-				nextUp = ((TableSorter) tabMain.getModel()).viewIndex(library.normalToSearchModel((next.index)));
-			else
-				nextUp = playlistPlayingSorter.viewIndex(next.index);
+	
+			if (library.getQueue().isValid() && playlistPlaying != next.playlist) {
+				playlistPlayingSorter = getPlaylistSorter(next.playlist);
+				playlistPlaying = next.playlist;
+			}
+	
+			if (!library.getQueue().isValid()) {
+				library.deleteQueue();
+				if (searching)
+					nextUp = ((TableSorter) tabMain.getModel()).viewIndex(library.normalToSearchModel(next.index)) + 1;
+				else {
+					playlistPlayingSorter = getPlaylistSorter(next.playlist);
+					nextUp = playlistPlayingSorter.viewIndex(next.index) + 1;
+				}
+				playlistPlaying = next.playlist;
+			} else {
+				if (searching)
+					nextUp = ((TableSorter) tabMain.getModel()).viewIndex(library.normalToSearchModel((next.index)));
+				else
+					nextUp = playlistPlayingSorter.viewIndex(next.index);
+			}
+	
+			RefreshUpNext();
+			RefreshPlaylists();
+			
+			UpdateSmartModeEnabled();
+		}catch(Exception e){
+			nextUp = -1;
+			Logger.log(e, LogType.ERROR_LOG);
 		}
-
-		RefreshUpNext();
-		RefreshPlaylists();
-		
-		UpdateSmartModeEnabled();
 
 		return nextUp;
 	}
@@ -2362,6 +2507,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		UpdatePlayCount();
 		
 		SendUserAction(UserAction.TRACK_CHANGED);
+		library.updateStat(Statistics.Jumps, 1);
 		
 		// This is the only method which can start playing tracks from a
 		// different playlist. So save the new playlistPlaying and table model
@@ -2413,50 +2559,61 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 	
 	private void SendUserAction(final int ac){
-		if(previousTrack == null || currentTrack == null || playlistPlaying < 0 || trackPlaying < 0)
-			return;
+		try{
+			
 		
-		final Song t1 = previousTrack;
-		final Song t2 = currentTrack;
-		
-		// decide whether t3 valid
-		int r = tabMain.getSelectedRow();
-		if(ac == UserAction.TRACK_CHANGED && r < 0)
-			return;
-		Song t3t = null;
-		if(r > -1)
-			t3t = library.getPlaylist(listPlaylists.getSelectedIndex()).get(currentTableSorter.modelIndex(r));
-		final Song t3 = t3t;
-		
-		final double val = ((double) seconds + ((player.isWav ? 0 : timing_offset) / 1000.0)) / (double) library.getPlaylist(playlistPlaying).get(trackPlaying).getLengthS();
-		
-		(new Thread() {
-			@Override
-			public	void run(){
-				
-				switch(ac){
-					case UserAction.TRACK_FINISHED: { // Unused: this just gets called as track_skipped in the play method, with val = 1.0
-						library.getClusters().Update(new UserAction(UserAction.TRACK_FINISHED, 0., t1, t2, null));
-					} break;
-					case UserAction.TRACK_SKIPPED: // The important one
-					{
-						library.getClusters().Update(new UserAction(UserAction.TRACK_SKIPPED, val, t1, t2, null));
-					} break;
-					case UserAction.TRACK_CHANGED: { // Careful to avoid doubling up here, since the above is called for source->target, so just need the other two?
-						if(playlistPlaying < 0 || trackPlaying < 0)
-							return;
-						if(t3 == null)
-							return;
-						library.getClusters().Update(new UserAction(UserAction.TRACK_CHANGED, val, t1, t2, t3));
-					} break;
-					case UserAction.PLAYLIST_ADJACENT: {} break;
+			if(previousTrack == null || currentTrack == null || playlistPlaying < 0 || trackPlaying < 0)
+				return;
+			
+			final Song t1 = previousTrack;
+			final Song t2 = currentTrack;
+			
+			// decide whether t3 valid
+			int r = tabMain.getSelectedRow();
+			if(ac == UserAction.TRACK_CHANGED && r < 0)
+				return;
+			Song t3t = null;
+			if(r > -1)
+				t3t = library.getPlaylists().get((searching ? 0 : Library.MAIN_PLAYLIST+listPlaylists.getSelectedIndex())).get(currentTableSorter.modelIndex(r));
+			final Song t3 = t3t;
+			
+			final double val = ((double) seconds + ((player.isWav ? 0 : timing_offset) / 1000.0)) / (double) library.getPlaylist(playlistPlaying).get(trackPlaying).getLengthS();
+			
+			(new Thread() {
+				@Override
+				public	void run(){
 					
-					case UserAction.PLAYLIST_SHARED: {} break;
+					switch(ac){
+						case UserAction.TRACK_FINISHED: { // Unused: this just gets called as track_skipped in the play method, with val = 1.0
+							library.getClusters().Update(new UserAction(UserAction.TRACK_FINISHED, 0., t1, t2, null));
+						} break;
+						case UserAction.TRACK_SKIPPED: // The important one
+						{
+							library.getClusters().Update(new UserAction(UserAction.TRACK_SKIPPED, val, t1, t2, null));
+						} break;
+						case UserAction.TRACK_CHANGED: { // Careful to avoid doubling up here, since the above is called for source->target, so just need the other two?
+							if(playlistPlaying < 0 || trackPlaying < 0)
+								return;
+							if(t3 == null)
+								return;
+							library.getClusters().Update(new UserAction(UserAction.TRACK_CHANGED, val, t1, t2, t3));
+						} break;
+						case UserAction.PLAYLIST_ADJACENT: {} break;
+						
+						case UserAction.PLAYLIST_SHARED: {} break;
+					}
+			
 				}
+			}).start();
+		}catch(Exception e){
+			Logger.log(e, LogType.ERROR_LOG);
+		}
 		
-			}
-		}).start();
-		
+	}
+	
+	private void SendQueueUserAction(Song current, List<Song> queued){
+		for(Song q : queued)
+			library.getClusters().Update(new UserAction(UserAction.TRACK_QUEUED, 0., current, q, null));
 	}
 	
 	private void SendPlaylistUserAction(final int ac, final List<Song> pl){
@@ -2469,13 +2626,15 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				}
 			} break;
 			case UserAction.PLAYLIST_SHARED: {
-				for(int i=0; i<pl.size(); ++i){
-					for(int j=i+1; j<pl.size(); ++j){
-						Song a = pl.get(i);
-						Song b = pl.get(j);
-						// Both directions
-						library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., a, b, null));
-						library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., b, a, null));
+				if(pl.size() <= Constants.MAX_PLAYLIST_UPDATE_SIZE){
+					for(int i=0; i<pl.size(); ++i){
+						for(int j=i+1; j<pl.size(); ++j){
+							Song a = pl.get(i);
+							Song b = pl.get(j);
+							// Both directions
+							library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., a, b, null));
+							library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., b, a, null));
+						}
 					}
 				}
 			} break;
@@ -2491,30 +2650,43 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private int GetViewIndexOf(Song s){
 		int view = -1;
 		int model = GetModelIndexOf(s);
-		view = currentTableSorter.viewIndex(model);
+		view = playlistPlayingSorter.viewIndex(model);
 		return view;
 	}
 	
 	private int GetModelIndexOf(Song s){
-		for(int i=0; i<library.getPlaylist(listPlaylists.getSelectedIndex()).size(); ++i){
-			if(library.getPlaylist(listPlaylists.getSelectedIndex()).get(i).equals(s))
+		for(int i=0; i<library.getPlaylist(playlistPlaying).size(); ++i){
+			if(library.getPlaylist(playlistPlaying).get(i).equals(s))
 				return i;
 		}
 		return -1;
+	}
+	
+	private void UpdateStats(){
+		if (((double) seconds + ((player.isWav ? 0 : timing_offset) / 1000.0)) < Constants.IGNORE_SKIP_TIME){
+			library.updateStat(Statistics.Early_skips, 1);
+		}
+		if (currentTrack != null && (((double) seconds + ((player.isWav ? 0 : timing_offset) / 1000.0)) < currentTrack.getLengthS() - Constants.UPDATE_PLAY_COUNT_WINDOW)){
+			library.updateStat(Statistics.Skips, 1);
+		}
 	}
 	
 	private void playNext() {
 
 		if (player == null || stopped)
 			return;
+		
+		if(milliseconds < 50)
+			return;
 
-		if (searching && !playingInSearch) {
+		UpdatePlayCount();
+		UpdateStats();
+		
+		if (searching && !playingInSearch && /*!library.hasQueue() && */playlistSearching == playlistPlaying) {
 			Stop();
 			Logger.log("Stopped due to search occurring", LogType.USAGE_LOG);
 			return;
 		}
-
-		UpdatePlayCount();
 		
 		SendUserAction(UserAction.TRACK_SKIPPED);
 
@@ -2522,19 +2694,22 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		// if (stopped)
 		// return;
 		if (repeatone) {
-			nextUp = rowPlaying;
+			nextUp = playlistPlayingSorter.viewIndex(trackPlaying);
 		} else {
 			if (library.hasQueue()) {
 				nextUp = GetNextInQueue();
 			} else if (library.smartPlay && playlistPlaying==0 && !playingInSearch){
 				Song n = null;
-				if(currentTrack != null)
+				if(currentTrack != null){
+					if (previousTrack != null && (timing_offset < 1000*Constants.IGNORE_SKIP_TIME || milliseconds < 1000*Constants.IGNORE_SKIP_TIME))
+						currentTrack = previousTrack;
 					n = GetSmartTrack(currentTrack);
-				else
+				}else
 					n = GetSmartSeedSong();
 				if(n != null){
 					// change to main view and play song there
-					listPlaylists.setSelectedIndex(0); // Changelistener should then force display to update if this actually changes playlist
+					//listPlaylists.setSelectedIndex(0); // Changelistener should then force display to update if this actually changes playlist
+					// actually, don't, because can only happen when viewing a different playlist and press skip
 					nextUp = GetViewIndexOf(n);
 				}else{
 					if (rowPlaying == library.getPlaylist(playlistPlaying).size() - 1) {
@@ -2603,36 +2778,37 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			return;
 
 		UpdatePlayCount();
+		
+		if (searching && !playingInSearch &&/* !library.hasQueue() &&*/ playlistSearching == playlistPlaying) {
+			Stop();
+			Logger.log("Stopped due to search occurring", LogType.USAGE_LOG);
+			return;
+		}
 
 		boolean paused = player.isPaused();
 
 		// restart current if not near beginning
 		if (timing_offset > 3000 || milliseconds > 3000 /* || rowPlaying == 0 */) {
-			play(rowPlaying);
-
+			play(playlistPlayingSorter.viewIndex(trackPlaying));
 		} else {
 			int nextUp;
 			if (stopped)
 				return;
-			if (searching && !playingInSearch) {
+			//if (repeatone) {
+			//	nextUp = rowPlaying;
+			//} else {
+			if (library.hasQueue()) {
+				nextUp = GetPrevInQueue();
+			} else if (shuffle) {
+				// nextUp = (int) (Math.random() * library.getPlaylist(playlistPlaying).size());
+				nextUp = playlistPlayingSorter.viewIndex(library.shuffleIndexToModel(library.modelIndexToShuffle(playlistPlayingSorter.modelIndex(rowPlaying)) - 1));
+			} else if (rowPlaying == 0) {
 				Stop();
 				return;
-			}
-			if (repeatone) {
-				nextUp = rowPlaying;
 			} else {
-				if (library.hasQueue()) {
-					nextUp = GetPrevInQueue();
-				} else if (shuffle) {
-					// nextUp = (int) (Math.random() * library.getPlaylist(playlistPlaying).size());
-					nextUp = playlistPlayingSorter.viewIndex(library.shuffleIndexToModel(library.modelIndexToShuffle(playlistPlayingSorter.modelIndex(rowPlaying)) - 1));
-				} else if (rowPlaying == 0) {
-					Stop();
-					return;
-				} else {
-					nextUp = rowPlaying - 1;
-				}
+				nextUp = rowPlaying - 1;
 			}
+			//}
 			/*
 			 * if (rowPlaying == 0) { Stop(); return; }
 			 */
@@ -2674,7 +2850,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			if (r >= 0 && r <= playlistPlayingSorter.getRowCount() - 1) {
 				// int row = ((TableSorter) tabMain.getModel()).modelIndex(r);
 				int row = playlistPlayingSorter.modelIndex(r);
-				String loc = library.getPlaylist(playlistPlaying).get(row).getLocation(); // library.get(row).getLocation();
+				String loc = library.getPlaylists().get(searching && playlistSearching==playlistPlaying ? 0 : (Library.MAIN_PLAYLIST+playlistPlaying)).get(row).getLocation(); // library.get(row).getLocation();
 
 				if (loc != null && !loc.equals("") && new File(loc).exists()) {
 					if (player != null && !player.isStopped() && !player.isPaused())
@@ -2702,6 +2878,14 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					btnFwd.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/fwd.png")));
 					btnBack.setPressedIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/back_down.png")));
 					btnFwd.setPressedIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/fwd_down.png")));
+					
+					if (searching && playlistSearching==playlistPlaying) {
+						playingInSearch = true;
+						library.playingInSearch = true;
+					}
+					UpdateSmartModeEnabled();
+					RefreshUpNext();
+					
 					previousTrack = currentTrack;
 					rowPlaying = r;
 					trackPlaying = playlistPlayingSorter.modelIndex(rowPlaying);
@@ -2718,7 +2902,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 						
 					RefreshMainList();
 					UpdateTrackDisplay();
-				} else {
+				} else if(! (searching && playlistSearching==playlistPlaying)) {
 					Song s = library.getPlaylist(playlistPlaying).get(row);
 					Stop();
 					Logger.log("Stopped due to file error", LogType.USAGE_LOG);
@@ -2747,6 +2931,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				Logger.log("Stopped due to invalid row input to play() function", LogType.USAGE_LOG);
 			}
 		} catch (Exception e) {
+			Stop();
 			Logger.log(e, LogType.ERROR_LOG);
 		}
 
@@ -2888,6 +3073,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		library.setViewPos(((JViewport) tabMain.getParent()).getViewPosition());
 		library.setSort(((TableSorter) tabMain.getModel()).getFullSortingStatus());
 
+		library.updateStat(Statistics.Searches, 1);
+		
 		// perform CancelSearch
 		searching = false;
 		// btnCancelSearch.setVisible(false);
@@ -2896,15 +3083,15 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		// txtSearch.setColumns(txtSearch.getColumns() + 2);
 		library.cancelSearch(listPlaylists.getSelectedIndex());
 		// DisplayLibrary();
-		if (playlistPlaying == playlistSearching && playingInSearch) {
+		//if (playlistPlaying == playlistSearching && playingInSearch) {
 			playingInSearch = false;
-			trackPlaying = library.getTrackIndex(library.getPlaylists().get(0).get(trackPlaying), playlistPlaying);
+			/*trackPlaying = library.getTrackIndex(library.getPlaylists().get(0).get(trackPlaying), playlistPlaying);
 			try {
 				rowPlaying = playlistPlayingSorter.viewIndex(trackPlaying);
 			} catch (ArrayIndexOutOfBoundsException e) {
 				rowPlaying = -1;
-			}
-		}
+			}*/
+		//}
 		// playlistSearching = -1;
 		// if(shuffle)
 		// library.shuffle(playlistPlaying);
@@ -2922,26 +3109,36 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}
 
 		int oldTrackPlaying = -1;
-		if (playlistPlaying == listPlaylists.getSelectedIndex())
+		if(playlistPlaying == playlistSearching)
 			oldTrackPlaying = trackPlaying;
-		int newTrackPlaying = library.search(query, listPlaylists.getSelectedIndex(), oldTrackPlaying);
-		if (newTrackPlaying > -1) {
+		else
+			oldTrackPlaying = -1;
+		int newTrackPlaying = library.search(query, playlistSearching, oldTrackPlaying);
+		if(newTrackPlaying > -1) {
 			trackPlaying = newTrackPlaying;
 			playingInSearch = true;
 		}
-		
-		UpdateSmartModeEnabled();
 
-		// playlistplaying, rowplaying, trackplaying
 		DisplayLibrary();
-		try {
-			rowPlaying = playlistPlayingSorter.viewIndex(trackPlaying);
-		} catch (Exception e) {
+		
+		if(newTrackPlaying > -1){
+			playlistPlayingSorter = (TableSorter) tabMain.getModel();
+			try {
+				rowPlaying = playlistPlayingSorter.viewIndex(trackPlaying);
+			} catch (Exception e) {
+				rowPlaying = -1;
+			}
+		}else{
 			rowPlaying = -1;
+			playingInSearch = false;
 		}
-
+		
 		if (shuffle)
 			library.shuffle(playlistPlaying);
+		
+		RefreshMainList();
+		
+		UpdateSmartModeEnabled();
 
 	}
 
@@ -2972,7 +3169,22 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 	private void UpdatePlayCount() {
 		try {
-			if (((double) seconds + ((player.isWav ? 0 : timing_offset) / 1000.0)) > (double) library.getPlaylist(playlistPlaying).get(playlistPlayingSorter.modelIndex(rowPlaying)).getLengthS() - UPDATE_PLAY_COUNT_WINDOW) {
+			if(searching && playlistSearching == playlistPlaying){
+				if(playingInSearch){
+					if (((double) seconds + ((player.isWav ? 0 : timing_offset) / 1000.0)) > (double) library.getPlaylist(playlistPlaying).get(playlistPlayingSorter.modelIndex(rowPlaying)).getLengthS() - Constants.UPDATE_PLAY_COUNT_WINDOW)
+						library.getPlaylist(playlistPlaying).get(playlistPlayingSorter.modelIndex(rowPlaying)).incrementPlayCount();
+					// guaranteed to be viewing this playlist
+					int[] sel = tabMain.getSelectedRows();
+					tabMain.setValueAt(library.getPlaylist(playlistPlaying).get(playlistPlayingSorter.modelIndex(rowPlaying)).getPlayCount(), rowPlaying, 7);
+					RefreshMainList();
+					SetSelectedRows(sel);
+				}else{
+					// don't need to update table live
+					if (((double) seconds + ((player.isWav ? 0 : timing_offset) / 1000.0)) > (double) library.getPlaylist(playlistPlaying).get(trackPlaying).getLengthS() - Constants.UPDATE_PLAY_COUNT_WINDOW)
+						library.getPlaylist(playlistPlaying).get(trackPlaying).incrementPlayCount();
+				}
+			}
+			else if (((double) seconds + ((player.isWav ? 0 : timing_offset) / 1000.0)) > (double) library.getPlaylist(playlistPlaying).get(playlistPlayingSorter.modelIndex(rowPlaying)).getLengthS() - Constants.UPDATE_PLAY_COUNT_WINDOW) {
 				library.getPlaylist(playlistPlaying).get(playlistPlayingSorter.modelIndex(rowPlaying)).incrementPlayCount();
 				if (playlistPlaying == listPlaylists.getSelectedIndex()) {
 					int[] sel = tabMain.getSelectedRows();
@@ -3009,9 +3221,12 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			// if(!stopped){
 			// UpdatePlayCount();
 			// }
-			if (playlistPlaying < 0 || rowPlaying < 0)
+			if (playlistPlaying < 0 || rowPlaying < 0){
+				if(searching)
+					playNext();
 				return;
-
+			}
+			
 			if (!playbackEvent.path.equals(library.getPlaylist(playlistPlaying).get(playlistPlayingSorter.modelIndex(rowPlaying)).getLocation())) {
 				// user changed song before this one finished
 				return;
@@ -3036,21 +3251,34 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}
 
 		@Override
-		public void frameDecoded(JLayerPlayerPausable.DecodeEvent event) {
+		public void frameDecoded(final JLayerPlayerPausable.DecodeEvent event) {
 			if(player == null)
 				return;
 			
-			if (!event.path.equals(library.getPlaylist(playlistPlaying).get(trackPlaying).getLocation()) && !(searching && !playingInSearch && event.path.equals(library.getPlaylist(playlistPlaying).get(trackPlaying).getLocation()))) {
+			if (! event.path.equals(currentTrack.getLocation()) && !(searching && !playingInSearch && event.path.equals(currentTrack.getLocation())) && !(event.source.isClosed() || event.source.isPaused() || event.source.isComplete() || event.source.isStopped())){
+			//if (!event.path.equals(library.getPlaylist(playlistPlaying).get(trackPlaying).getLocation()) && !(searching && !playingInSearch && event.path.equals(library.getPlaylist(playlistPlaying).get(trackPlaying).getLocation()))) {
 				// This is not the current track: stop it
 				// System.out.println("!");
-				try {
-					event.source.pause();
-				} catch (Exception e) {
-				}
-				try {
-					event.source.close();
-				} catch (Exception e) {
-				}
+				(new Thread(){
+					@Override public void run(){
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e1) {
+						
+						}
+						if (! event.path.equals(currentTrack.getLocation()) && !(searching && !playingInSearch && event.path.equals(currentTrack.getLocation())) && !(event.source.isClosed() || event.source.isPaused() || event.source.isComplete() || event.source.isStopped())){
+							try {
+								event.source.pause();
+							} catch (Exception e) {
+							}
+							try {
+								event.source.close();
+							} catch (Exception e) {
+							}
+						}
+					}
+				}).start();
+				
 			} else {
 				milliseconds = event.position;
 				// if(s > seconds){
@@ -4153,10 +4381,23 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			library.getClusters().ResetLearning();
 		}
 	}
+	private class MntmPrintPrefsActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			printPrefs(library.getClusters());
+		}
+	}
 	private class MntmPrintCentroidsActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
 			printCentroids(library.getClusters());
 		}
+	}
+	private void printPrefs(SongCluster cs){
+		System.out.println("Level "+cs.getLevel());
+		if(cs.getLevel() > 0)
+			printArray(cs.getPrefs());
+		for(AbstractCluster c : cs.getChildren())
+			if(c instanceof SongCluster)
+				printPrefs((SongCluster) c);
 	}
 	private void printCentroids(SongCluster cs){
 		System.out.println("Level "+cs.getLevel());
@@ -4186,6 +4427,20 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private class MntmLearnPlaylistsActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
 			LearnAllPlaylists();
+		}
+	}
+	private class MntmClearStatsActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			library.resetStats();
+		}
+	}
+	private class MntmOutputStatsActionListener implements ActionListener {
+		public void actionPerformed(ActionEvent arg0) {
+			try{
+				Logger.backupStats(Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays(), library.getStats());
+			}catch(Exception e){
+				Logger.log(e, LogType.ERROR_LOG);
+			}
 		}
 	}
 	private class MntmUploadDataNowActionListener implements ActionListener {
@@ -4346,7 +4601,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				}
 
 				public Object getElementAt(int index) {
-					return (index < 1 ? "Tracks added to the play queue will appear here" : null);
+					return (index < 1 ? " Tracks added to the play queue will appear here" : null);
 				}
 			});
 			listUpNext.invalidate();

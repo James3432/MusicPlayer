@@ -22,6 +22,7 @@ import javax.swing.JRadioButton;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileFilter;
 
+import jk509.player.Constants;
 import jk509.player.MusicPlayer;
 import jk509.player.core.Library;
 import jk509.player.core.Playlist;
@@ -230,13 +231,15 @@ public class AddPlaylistDialog extends JDialog {
 				}
 			} break;
 			case UserAction.PLAYLIST_SHARED: {
-				for(int i=0; i<pl.size(); ++i){
-					for(int j=i+1; j<pl.size(); ++j){
-						Song a = pl.get(i);
-						Song b = pl.get(j);
-						// Both directions
-						library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., a, b, null));
-						library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., b, a, null));
+				if(pl.size() <= Constants.MAX_PLAYLIST_UPDATE_SIZE){
+					for(int i=0; i<pl.size(); ++i){
+						for(int j=i+1; j<pl.size(); ++j){
+							Song a = pl.get(i);
+							Song b = pl.get(j);
+							// Both directions
+							library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., a, b, null));
+							library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., b, a, null));
+						}
 					}
 				}
 			} break;

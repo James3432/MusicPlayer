@@ -120,6 +120,8 @@ public class KMeansClusterer extends AbstractClusterer {
 			assignments = kmeans.getAssignments();
 
 			clusters = new ArrayList<ArrayList<Song>>();
+			
+			List<Song> newtracklist = new ArrayList<Song>();
 
 			for (int i = 0, j=0; i < tracks.size(); ++i) {
 				if (!featurelessTracks[i]) {
@@ -129,11 +131,13 @@ public class KMeansClusterer extends AbstractClusterer {
 						clusters.add(new ArrayList<Song>());
 					// add track instance to cluster
 					clusters.get(clusterNum).add(tracks.get(i));
+					newtracklist.add(tracks.get(i));
 					// System.out.printf("Instance %d -> Cluster %d", i, clusterNum);
 					// System.out.println();
 					j++;
 				}
 			}
+			tracks = newtracklist;
 			if (Constants.DEBUG_SAVE_CLUSTERS) {
 				System.out.println("Saving to disk...");
 				saveClusters();

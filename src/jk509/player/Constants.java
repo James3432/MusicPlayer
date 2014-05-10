@@ -28,6 +28,7 @@ public interface Constants {
 	public static final double REWARD_TRACK_SKIPPED_MIN = -0.8;        // track skipped straight away
 	public static final double REWARD_TRACK_CHOSEN_MAX = 0.8;          // track changed after full play
 	public static final double REWARD_TRACK_CHOSEN_MIN = 0.0;          // track changed straight away
+	public static final double REWARD_TRACK_QUEUED = 0.6;              // track queued
 	public static final double REWARD_TRACK_PLAYLIST = 0.4;            // tracks share a playlist
 	public static final double REWARD_TRACK_PLAYLIST_ADJ = 0.8;        // tracks adajcent in playlist
 	
@@ -54,6 +55,9 @@ public interface Constants {
 	//public static final double HISTORY_WEIGHT_MAX = 1.0;
 	public static final double HISTORY_WEIGHT_STEP = 0.01;   // ie. 1/this is how long it takes to forget we played a track
 	public static final int HISTORY_NONREPEAT = 5; // number of tracks back in history we should never repeat
+	public static final int IGNORE_SKIP_TIME = 15; // Time (s) in which if user skips, we keep the "previous track" value, and so nextUp choice is based on last good song rather than current
+	public static final int MAX_PLAYLIST_UPDATE_SIZE = 20;   // Max size of playlist before we stop creating PLAYLIST_SHARED updates, due to n^2 complexity
+	public static int UPDATE_PLAY_COUNT_WINDOW = 20;       // no. seconds off end of song within which a skip will still cause the play count to be incremented
 	
 	// ------------------------------------------------------------------
 	
@@ -75,6 +79,8 @@ public interface Constants {
 	public static final boolean DEBUG_PRINT_CLUSTERS = true;       // print clusters after clustering
 	public static final boolean DEBUG_SHOWDEVMENU = true;         // whether to include Developer menu
 	public static final boolean ALT_SERIALNO_CODE = true;          // LEAVE AS TRUE (mobo serial # grabber)
+	public static final boolean USE_RAND_IDENTIFIER = true;         // whether to generate ID per user instead of motherboard# thing
+	public static final int USER_ID_LENGTH = 10;                   // length of user_id string
 	
 	// ------------------------------------------------------------------
 	
@@ -87,7 +93,7 @@ public interface Constants {
 	public static final String featureXMLLocation = StaticMethods.getSettingsDir()+"features.xml";
 	public static final int TEMP_FILE_NAME_LENGTH = 10;
 	public static final String UPLOAD_URL = "http://www.james.eu.org/upload.php";
-	public static final String SETTINGS_PATH = StaticMethods.getSettingsDir() + (DEBUG_SETTINGS ? "library_debug.ser" : "library.ser");
+	public static final String SETTINGS_PATH = StaticMethods.getSettingsDir() + (DEBUG_SETTINGS ? "library_debug2.ser" : "library.ser");
 	public static final String BACKUP_PATH = StaticMethods.getSettingsDir() + "library_backup.ser";
 	public static final String PATH_TO_LAME = StaticMethods.getSettingsDir() + "lame.exe";
 	public static final boolean USERNAME_AS_ID = false; // Whether to capture current username as part of data upload ID string (cf. ethics agreement)

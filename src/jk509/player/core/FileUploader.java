@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import jk509.player.Constants;
 import jk509.player.logging.Logger;
@@ -29,11 +28,11 @@ public class FileUploader {
 	/*
 	 * TODO; handle errors, set file list from Constants
 	 */
-	public static void upload() throws Exception {
+	public static void upload(String anon_id) throws Exception {
 		CloseableHttpClient httpclient = null;
 		try{
-			String uniqueString = GenerateString(10);
-			String anon_id = Security.getSerialNumber(Constants.USERNAME_AS_ID);
+			String uniqueString = StaticMethods.generateString(10);
+			
 			int date = Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays();
 			/*File[] files = new File[] { 
 					new File(StaticMethods.getSettingsDir() + "features.txt"),
@@ -98,14 +97,6 @@ public class FileUploader {
 		
 	}
 
-	private static String GenerateString(int n) {
-		String s = "";
-		for (int i = 0; i < n; ++i) {
-			Random r = new Random();
-			char c = (char) (r.nextInt(26) + 'a');
-			s = s + c;
-		}
-		return s;
-	}
+	
 
 }
