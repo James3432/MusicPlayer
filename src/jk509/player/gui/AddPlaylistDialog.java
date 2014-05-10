@@ -1,6 +1,7 @@
 package jk509.player.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Toolkit;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.ButtonGroup;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
@@ -59,11 +61,13 @@ public class AddPlaylistDialog extends JDialog {
 	private JButton button;
 	private JButton btnBrowse;
 	private JLabel lblFoundN;
+	private JLabel lblLoadIcon;
 
 	/**
 	 * Create the dialog.
 	 */
 	public AddPlaylistDialog(Library library) {
+		setBackground(Color.WHITE);
 		this.library = library;
 		playlistpaths = new ArrayList<String>();
 		setTitle("Import library files");
@@ -74,6 +78,7 @@ public class AddPlaylistDialog extends JDialog {
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		setBounds(100, 100, 530, 214);
 		getContentPane().setLayout(new BorderLayout());
+		contentPanel.setBackground(Color.WHITE);
 		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
 		contentPanel.setLayout(null);
@@ -86,6 +91,7 @@ public class AddPlaylistDialog extends JDialog {
 		}
 		{
 			btnBrowse = new JButton("Choose XML file");
+			btnBrowse.setBackground(Color.WHITE);
 			btnBrowse.setEnabled(false);
 			btnBrowse.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 			btnBrowse.addActionListener(new BtnBrowseActionListener());
@@ -94,6 +100,7 @@ public class AddPlaylistDialog extends JDialog {
 		}
 		
 		lblFoundOk = new JLabel("Found OK");
+		lblFoundOk.setBackground(Color.WHITE);
 		lblFoundOk.setFocusable(false);
 		lblFoundOk.setVisible(false);
 		lblFoundOk.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -107,6 +114,7 @@ public class AddPlaylistDialog extends JDialog {
 		contentPanel.add(lblSupportedFormatsItunes);
 		
 		rdbtnItunes = new JRadioButton("iTunes");
+		rdbtnItunes.setBackground(Color.WHITE);
 		rdbtnItunes.setFocusable(false);
 		rdbtnItunes.addActionListener(new RdbtnItunesActionListener());
 		rdbtnItunes.setFont(new Font("Segoe UI", Font.PLAIN, 11));
@@ -114,6 +122,7 @@ public class AddPlaylistDialog extends JDialog {
 		contentPanel.add(rdbtnItunes);
 		
 		rdbtnOther = new JRadioButton("Other");
+		rdbtnOther.setBackground(Color.WHITE);
 		rdbtnOther.setFocusable(false);
 		rdbtnOther.addActionListener(new RdbtnOtherActionListener());
 		rdbtnOther.setFont(new Font("Segoe UI", Font.PLAIN, 11));
@@ -126,17 +135,26 @@ public class AddPlaylistDialog extends JDialog {
 		rdbtns.add(rdbtnOther);
 		
 		button = new JButton("Choose files");
+		button.setBackground(Color.WHITE);
 		button.addActionListener(new ButtonActionListener());
 		button.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 		button.setBounds(87, 90, 123, 24);
 		contentPanel.add(button);
 		
 		lblFoundN = new JLabel("Found 0 playlists");
+		lblFoundN.setBackground(Color.WHITE);
 		lblFoundN.setFocusable(false);
 		lblFoundN.setVisible(false);
 		lblFoundN.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 		lblFoundN.setBounds(87, 126, 130, 14);
 		contentPanel.add(lblFoundN);
+		
+		lblLoadIcon = new JLabel();
+		lblLoadIcon.setBounds(466, 92, 48, 48);
+		contentPanel.add(lblLoadIcon);
+		lblLoadIcon.setDoubleBuffered(true);
+		lblLoadIcon.setVisible(false);
+		lblLoadIcon.setIcon(new ImageIcon(AddPlaylistDialog.class.getResource("/jk509/player/res/loading.gif")));
 		{
 			JPanel buttonPane = new JPanel();
 			buttonPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
@@ -198,16 +216,22 @@ public class AddPlaylistDialog extends JDialog {
 	}
 	private class OkButtonActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent e) {
-			playlists = new ArrayList<Playlist>();
-			if(rdbtnOther.isSelected()){
-				processPlaylists();
-			}else{
-				ImportItunesPlaylists(itunespath);
-			}
-			library.addPlaylists(playlists);
-			LearnPlaylists(playlists);
-			Logger.log(playlists.size()+" playlists imported.", LogType.USAGE_LOG);
-			dispose();
+			lblLoadIcon.setVisible(true);
+			
+			(new Thread(){
+				@Override public void run(){
+					playlists = new ArrayList<Playlist>();
+					if(rdbtnOther.isSelected()){
+						processPlaylists();
+					}else{
+						ImportItunesPlaylists(itunespath);
+					}
+					library.addPlaylists(playlists);
+					LearnPlaylists(playlists);
+					Logger.log(playlists.size()+" playlists imported.", LogType.USAGE_LOG);
+					dispose();
+				}
+			}).start();
 		}
 	}
 	private void LearnPlaylists(List<Playlist> playlists){

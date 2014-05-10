@@ -54,6 +54,20 @@ public class StaticMethods {
 		return result;
 	}
 	
+	/*
+	 * Clone a list
+	 */
+	// Deprecated
+	public static List<Song> clone(List<Song> tracks){
+		List<Song> out = new ArrayList<Song>();
+		for(Song s : tracks)
+			out.add(s);
+		return out;
+	}
+	
+	/*
+	 * Find the index of the largest value in an array
+	 */
 	public static int maxArrayIndex(double[] arr){
 		double max = 0.;
 		int ind = 0;

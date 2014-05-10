@@ -30,7 +30,7 @@ public class ProgressFrame extends JDialog {
 	 *
 	 */
 	
-	public ProgressFrame(JFrame mainForm) {
+	public ProgressFrame(JFrame mainForm, boolean displayfileprogress) {
 		super(mainForm);
 		setTitle("Progress");
 		setResizable(false);
@@ -43,6 +43,7 @@ public class ProgressFrame extends JDialog {
 		fileProgressBar.setStringPainted(true);
 		overallProgressBar = new JProgressBar();
 		overallProgressBar.setStringPainted(true);
+		overallProgressBar.setVisible(displayfileprogress);
 		setLayout(new GridLayout(4, 1, 6, 11));
 		JLabel tmp = new JLabel("File Progress");
 		tmp.setHorizontalAlignment(SwingConstants.CENTER);
@@ -50,6 +51,7 @@ public class ProgressFrame extends JDialog {
 		add(fileProgressBar);
 		tmp = new JLabel("Overall Progress");
 		tmp.setHorizontalAlignment(SwingConstants.CENTER);
+		tmp.setVisible(displayfileprogress);
 		add(tmp);
 		add(overallProgressBar);
 		pack();

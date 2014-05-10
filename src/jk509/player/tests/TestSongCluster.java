@@ -94,7 +94,7 @@ public class TestSongCluster {
 		history.add(library.get(23));
 		history.add(library.get(58));
 		history.add(library.get(1));
-		Song s = cluster.next(history, null);
+		Song s = cluster.next(history, null, 0.5);
 		System.out.println(s);
 	}
 	@Test
@@ -107,7 +107,7 @@ public class TestSongCluster {
 		history.add(library.get(1));
 		Song seed = library.get(42);
 		cluster.setPlayingCluster(seed);
-		Song s = cluster.next(history, null);
+		Song s = cluster.next(history, null, 0.5);
 		System.out.println(s);
 	}
 

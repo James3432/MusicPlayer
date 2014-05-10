@@ -9,29 +9,22 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Enumeration;
 import java.util.Scanner;
 
-import jk509.player.Constants;
 import jk509.player.logging.Logger;
 import jk509.player.logging.Logger.LogType;
-
-import com.jacob.activeX.ActiveXComponent;
-import com.jacob.com.ComThread;
-import com.jacob.com.EnumVariant;
-import com.jacob.com.Variant;
 
 public class Security {
 	// Get the serial number of the machine's mother board. Supports 3 major OS's
 	public static final String getSerialNumber(boolean withUsername) {
 
-		if(Constants.ALT_SERIALNO_CODE){
+		/*if(Constants.ALT_SERIALNO_CODE){
 			String m = getMobo();
 			if(m == null || m.equals("") || m.length() < 4 || m.equals("System"))
 				return getMobo2();
 			else
 				return m;
-		}
+		}*/
 		
 		String details = "";
 		if(withUsername){
@@ -65,7 +58,7 @@ public class Security {
 		return null;
 	}
 
-	private static final String getMobo(){
+	/*private static final String getMobo(){
 		String output = "";
 		ComThread.InitMTA();
 	    try {
@@ -82,7 +75,7 @@ public class Security {
 	        ComThread.Release();
 	    }
 	    return output;
-	}
+	}*/
 	
 	public static String getMobo2() {
 		String result = "";

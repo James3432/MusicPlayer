@@ -30,11 +30,6 @@
 			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="MusicPlayer"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="jacob.jar">
-		<attributes>
-			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="MusicPlayer"/>
-		</attributes>
-	</classpathentry>
 	<classpathentry kind="lib" path="lizzy.jar"/>
 	<classpathentry kind="lib" path="castor-core.jar"/>
 	<classpathentry kind="lib" path="castor-xml.jar"/>

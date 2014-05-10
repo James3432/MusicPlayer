@@ -1550,12 +1550,12 @@ public class Setup extends JDialog {
 
 		parser.run();
 
+		List<Song> toimport = library.getAllNotContained(parser.getTracks());
 		library.clearViews();
-		library.setPlaylist(Library.MAIN_PLAYLIST, parser.getTracks());
+		library.setPlaylist(Library.MAIN_PLAYLIST, toimport);
 
 		return true;
 
-		// TODO: import playlists
 	}
 
 	private boolean AddToLibrary(LibraryParser parser) {

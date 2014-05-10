@@ -35,7 +35,7 @@ public interface Constants {
 	// Clustering
 	public static final int MAX_CLUSTERS = 6;      //TODO  // DEFAULT: 10
 	public static final int KMEANS_SEED = 10;        // seed value for k-means algorithm
-	public static final double SAME_CLUSTER_DIST_THRESHOLD = 0.0; // If new song is this close to exiting cluster, put it there even if there's space to add a new leaf
+	public static final double SAME_CLUSTER_DIST_THRESHOLD = 0.000000001; // If new song is this close to exiting cluster, put it there even if there's space to add a new leaf
 	
 	// Feature extraction
 	public static final int SAMPLING_RATE = 16;      // kHz
@@ -77,9 +77,9 @@ public interface Constants {
 	public static final boolean DEBUG_SHOW_SETUP = false;         // show setup screen always, for testing
 	public static final boolean DEBUG_IGNORE_SETUP = false;        // ignore result of setup screen, load prog anyway
 	public static final boolean DEBUG_PRINT_CLUSTERS = true;       // print clusters after clustering
-	public static final boolean DEBUG_SHOWDEVMENU = true;         // whether to include Developer menu
-	public static final boolean ALT_SERIALNO_CODE = true;          // LEAVE AS TRUE (mobo serial # grabber)
-	public static final boolean USE_RAND_IDENTIFIER = true;         // whether to generate ID per user instead of motherboard# thing
+	public static final boolean DEBUG_SHOWDEVMENU = false;         // whether to include Developer menu
+	public static final boolean ALT_SERIALNO_CODE = true;          //  (mobo serial # grabber) WARNING: won't work now Jacob library removed
+	public static final boolean USE_RAND_IDENTIFIER = true;         // LEAVE AS TRUE whether to generate ID per user instead of motherboard# thing 
 	public static final int USER_ID_LENGTH = 10;                   // length of user_id string
 	
 	// ------------------------------------------------------------------
@@ -93,7 +93,7 @@ public interface Constants {
 	public static final String featureXMLLocation = StaticMethods.getSettingsDir()+"features.xml";
 	public static final int TEMP_FILE_NAME_LENGTH = 10;
 	public static final String UPLOAD_URL = "http://www.james.eu.org/upload.php";
-	public static final String SETTINGS_PATH = StaticMethods.getSettingsDir() + (DEBUG_SETTINGS ? "library_debug2.ser" : "library.ser");
+	public static final String SETTINGS_PATH = StaticMethods.getSettingsDir() + (DEBUG_SETTINGS ? "library_debug.ser" : "library.ser");
 	public static final String BACKUP_PATH = StaticMethods.getSettingsDir() + "library_backup.ser";
 	public static final String PATH_TO_LAME = StaticMethods.getSettingsDir() + "lame.exe";
 	public static final boolean USERNAME_AS_ID = false; // Whether to capture current username as part of data upload ID string (cf. ethics agreement)
@@ -107,6 +107,6 @@ public interface Constants {
 	public static final int MIN_LIBRARY_SIZE = 2 * MAX_CLUSTERS;  // # tracks a user must add to use the player
 	public static final String[] UPLOAD_FILE_LIST = { /*SETTINGS_PATH, */ERROR_LOG, STATS_LOG, USAGE_LOG, LEARNING_LOG, STAT_DATA, CLUSTERS_LOG }; 
 
-	public static final DateTime STUDY_START_DATE = new DateTime(2014, 5, 1, 12, 0, 0, 0);
+	public static final DateTime STUDY_START_DATE = new DateTime(2014, 5, 10, 12, 0, 0, 0);
 	
 }

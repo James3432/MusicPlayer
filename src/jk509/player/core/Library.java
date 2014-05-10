@@ -27,6 +27,7 @@ public class Library implements Serializable, Cloneable {
 	//private Map<String, BufferedImage> artwork;
 	private HashSet<String> songset;
 	private HashSet<String> coverage;
+	private HashSet<String> oldcoverage;
 	private int currentPlaylist = 2; // currently viewing, not currently playing, playlist.
 	private int volume = 100; // 0-100
 	private int[] colWidths;
@@ -40,6 +41,8 @@ public class Library implements Serializable, Cloneable {
 	private SongQueue queue;
 	private SongCluster clusters;
 	private String user_id;
+	private double randomness = Constants.RANDOMNESS_MAX; // from RAND_MIN ~ 0 (not random - exploitation) to RAND_MAX ~ 1 (fully random - exploration)
+	private double user_randomness = 0.;   
 	
 	private Statistics stats;
 	
@@ -124,6 +127,8 @@ public class Library implements Serializable, Cloneable {
 			Initialise();
 		}
 		playlists.get(index).setList(songs);
+		if(index == MAIN_PLAYLIST)
+			rebuildSet();
 	}
 
 	public Playlist getPlaylist(int i) {
@@ -141,6 +146,7 @@ public class Library implements Serializable, Cloneable {
 			Initialise();
 		}
 		playlists.get(index).append(songs);
+		addToSet(songs);
 	}
 
 	public void setCurrentPlaylist(int index) {
@@ -183,12 +189,14 @@ public class Library implements Serializable, Cloneable {
 	public void remove(int i) {
 		// tracks.remove(i);
 		getClusters().RemoveTrack(playlists.get(currentPlaylist).get(i));
+		removeFromSet(playlists.get(currentPlaylist).get(i));
 		playlists.get(currentPlaylist).remove(i);
 	}
 
 	public void addTrack(Song s) {
 		// tracks.add(s);
 		playlists.get(currentPlaylist).add(s);
+		addToSet(s);
 	}
 
 	// append is used instead now
@@ -433,6 +441,15 @@ public class Library implements Serializable, Cloneable {
 			rebuildSet();
 		songset.add(s.getLocation().toLowerCase().replace("/", "\\"));
 	}
+	public void addToSet(List<Song> ls){
+		for(Song s : ls)
+			addToSet(s);
+	}
+	public void removeFromSet(Song s){
+		if(songset == null)
+			rebuildSet();
+		songset.remove(s.getLocation().toLowerCase().replace("/", "\\"));
+	}
 	
 	public void rebuildSet(){
 		List<Song> ls = getMainList();
@@ -442,6 +459,26 @@ public class Library implements Serializable, Cloneable {
 			songset.clear();
 		for(Song s : ls)
 			addToSet(s);
+	}
+	
+	public double getRandomness() {
+		return randomness;
+	}
+	
+	public double getUserRandomness() {
+		return user_randomness;
+	}
+
+	public double getNetRandomness(){
+		return StaticMethods.getRandomness(randomness, user_randomness);
+	}
+	
+	public void setRandomness(double r) {
+		randomness = r;
+	}
+	
+	public void setUserRandom(double r){
+		user_randomness = r;
 	}
 	
 	public void addCoverage(Song s){
@@ -454,10 +491,27 @@ public class Library implements Serializable, Cloneable {
 			coverage = new HashSet<String>();
 		return coverage.size();
 	}
+	public int coverageDiff(){
+		if(oldcoverage == null)
+			return 0;
+		if(coverage == null)
+			coverage = new HashSet<String>();
+		oldcoverage.retainAll(coverage); // oldcoverage now holds the intersection
+		return oldcoverage.size();
+	}
+	public double coverageProp(){
+		if(coverage == null)
+			coverage = new HashSet<String>();
+		return (double)coverage() / (double)songset.size();
+	}
 	public HashSet<String> getCoverageSet(){
 		if(coverage == null)
 			coverage = new HashSet<String>();
 		return coverage;
+	}
+	public void resetCoverage(){
+		oldcoverage = coverage;
+		coverage = new HashSet<String>();
 	}
 	
 	public List<Song> getAllNotContained(List<Song> songs){

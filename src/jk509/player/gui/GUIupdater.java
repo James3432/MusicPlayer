@@ -44,7 +44,7 @@ public class GUIupdater implements Updater {
 	 * @param of
 	 *            Link to outerframe of the gui. Used to disable the main frame to prevent race conditions in the feature settings.
 	 */
-	public GUIupdater(JFrame frmMain) {
+	public GUIupdater(JFrame frmMain, boolean displayfileprogress) {
 
 		suspendGUI = new Runnable() {
 			public void run() {
@@ -64,7 +64,7 @@ public class GUIupdater implements Updater {
 
 		this.mainForm = frmMain;
 		// c.dm_.setUpdater(this);
-		progressFrame = new ProgressFrame(mainForm);
+		progressFrame = new ProgressFrame(mainForm, displayfileprogress);
 		progressFrame.setLocationRelativeTo(mainForm);
 		announceUpdate(0, 0);
 		//progressFrame.setVisible(true);

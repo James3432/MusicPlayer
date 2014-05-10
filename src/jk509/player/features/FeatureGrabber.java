@@ -191,7 +191,8 @@ public class FeatureGrabber implements Constants {
 				threadPool.shutdown();
 				threadPool.awaitTermination(Integer.MAX_VALUE, TimeUnit.HOURS); // wait as long as it takes...
 				
-				updater.resume();
+				//updater.resume();
+				
 				//return res;
 				//if(Constants.NORMALISE_FEATURES)
 				//	results = Normalise(res);
@@ -241,7 +242,8 @@ public class FeatureGrabber implements Constants {
 					temp.delete();
 				}catch(Exception e){ }
 				
-				updater.resume();
+				//updater.resume();
+				
 				//return res;
 				//if(Constants.NORMALISE_FEATURES)
 				//	results = Normalise(res);

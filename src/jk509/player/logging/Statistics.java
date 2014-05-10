@@ -14,8 +14,8 @@ public class Statistics implements Serializable {
 			"Tot tracks",              // Tracks listened to == number of listens
 			"Stored tracks", 		   // Tracks in library
 			"Stored time", 			   // Total time of tracks in library
-			"Smart time",              // Listening time in smart mode
-			"Smart tracks",            // Tracks listened to in smart mode
+			"Smart time",              // Listening time in smart mode (see note below)
+			"Smart tracks",            // Tracks listened to in smart mode, including playing through playlists (so technically should subtract these times)
 			"Shuffle time",            // Time spent in shuffle mode
 			"Shuffle tracks",          // Track listens in shuffle mode
 			"Auto playlists",		   // Number of auto playlists
@@ -25,7 +25,7 @@ public class Statistics implements Serializable {
 			"Manual playlist tracks",  // Number of listens in playlists
 			"Auto playlist tracks",    // Same for auto playlists
 			"Coverage",			       // Number of distinct songs listened to. So coverage % = (this / tot tracks) % 
-			"Coverage diff",           // Number of distinct songs listened to which are not in previous set 
+			"Coverage diff",           // OPPOSITE: it's actually size of the intersection. [Number of distinct songs listened to which are not in previous set]
 			"Skips",                   // Number of skips, leading to skips/listens and skips/time
 			"Early skips",             // Number of those in first 'IGNORE_SKIP_TIME' seconds (15ish) 
 			"Jumps",			       // Number of track changes
@@ -47,8 +47,8 @@ public class Statistics implements Serializable {
 	public static final int Auto_playlist_time = 11;
 	public static final int Manual_playlist_tracks = 12;
 	public static final int Auto_playlist_tracks = 13;
-	public static final int Coverage = 14;
-	public static final int Coverage_diff = 15; 
+	public static final int Coverage = 14;//
+	public static final int Coverage_diff = 15;// 
 	public static final int Skips = 16;//
 	public static final int Early_skips = 17;//
 	public static final int Jumps = 18;//

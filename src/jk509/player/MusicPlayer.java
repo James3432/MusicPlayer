@@ -800,7 +800,12 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 																						// right
 
 			public Component prepareRenderer(TableCellRenderer renderer, int row, int column) {
-				Component c = super.prepareRenderer(renderer, row, column);
+				Component c = null;
+				try{
+					c = super.prepareRenderer(renderer, row, column);
+				}catch(NullPointerException e){
+					Logger.log("Error rendering table at row "+row+" column "+column, LogType.ERROR_LOG);
+				}
 
 				// custom rendering
 				if (!c.getBackground().equals(new Color(139, 167, 201))) {
@@ -967,7 +972,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					sliderRand.setValue(value);
 					sliderRand.repaint();
 					double prop = (double)value/(double)sliderRand.getMaximum();
-					library.getClusters().setUserRandom(prop);
+					library.setUserRandom(prop);
 				}
 			}
 
@@ -994,7 +999,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					int value = uiRand.valueForXPosition(p.x);
 					sliderRand.setValue(value);
 					double prop = (double)value/(double)sliderRand.getMaximum();
-					library.getClusters().setUserRandom(prop);
+					library.setUserRandom(prop);
 				}
 			}
 
@@ -1552,7 +1557,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				if (library.getVolume() < 0)
 					library.setVolume(100);
 				SetVolume((float) library.getVolume() / 100f);
-				sliderRand.setValue((int) (sliderRand.getMaximum() * library.getClusters().getUserRandomness()));
+				sliderRand.setValue((int) (sliderRand.getMaximum() * library.getUserRandomness()));
 				//if(library.smartPlay != Constants.SMART_PLAY_DEFAULT){
 				if(library.smartPlay){
 					btnSmart.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/brain_down.png")));
@@ -1677,6 +1682,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				LearnAllPlaylists();
 				UpdateLibrary();
 				SaveBackupLibrary();
+				UpdateSmartModeEnabled();
 				DisplayLibrary();
 				RefreshPlaylists();
 				Logger.backupP(library.getClusters());
@@ -1719,7 +1725,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		// Then set randomness
 		double stage = Math.min(1.0, daysPassed / Constants.RANDOMNESS_SHIFT_TIME);
 		double randomness = Constants.RANDOMNESS_MAX - stage * (Constants.RANDOMNESS_MAX - Constants.RANDOMNESS_MIN);
-		library.getClusters().setRandomness(randomness);
+		library.setRandomness(randomness);
 		
 		CheckAnalysesComplete();
 		
@@ -1738,7 +1744,16 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				int n = JOptionPane.showConfirmDialog(frmMusicPlayer, params, "Missing features", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);  
 				library.ignoreFeatureless(checkbox.isSelected());  
 				if(n == JOptionPane.YES_OPTION)
-					library.getClusters().ResetClusters(new GUIupdater(frmMusicPlayer));
+					(new Thread() {
+						@Override
+						public void run() {
+							SongCluster clusters = new SongCluster(library.getMainList(), new GUIupdater(frmMusicPlayer, true));
+							library.setClusters(clusters);
+							if(Constants.DEBUG_PRINT_CLUSTERS)
+								PrintClusters(clusters, "");
+							UpdateLibrary();
+						}
+					}).start();
 			}else{
 				library.ignoreFeatureless(true);
 			}
@@ -1894,6 +1909,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		library.setStat(Statistics.Stored_time, totalTime(library.getMainList()));
 		library.setStat(Statistics.Auto_playlists, countAutoPlaylists());
 		library.setStat(Statistics.Manual_playlists, countManualPlaylists());
+		library.setStat(Statistics.Coverage, library.coverage());
+		library.setStat(Statistics.Coverage_diff, library.coverageDiff());
+		library.resetCoverage();
 	}
 
 	private int totalTime(List<Song> tracks){
@@ -1946,38 +1964,46 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 		parser.run();
 		
-		List<Song> toimport = library.getAllNotContained(parser.getTracks());
+		final List<Song> toimport = library.getAllNotContained(parser.getTracks());
+		final boolean[] result = new boolean[1];
 		library.addToPlaylist(Library.MAIN_PLAYLIST, toimport);
-		boolean result = library.getClusters().AddTracks(toimport, frmMusicPlayer);
-		if(!result){
-			Object[] options = {"OK"};
-			if(toimport.size() > 1)
-				JOptionPane.showOptionDialog(frmMusicPlayer,
-		    		"Sorry, there was an error processing one or more of these files.\nAll songs will be added to your library, but some may not be compatible with Smart Play mode.",
-		    		"Analysis error",
-		    		JOptionPane.PLAIN_MESSAGE,
-		    		JOptionPane.ERROR_MESSAGE,                null,                 options,                  options[0]);
-			else
-				JOptionPane.showOptionDialog(frmMusicPlayer,
-			    		"Sorry, there was an error processing this file.\nIt will be added to your library, but may not be compatible with Smart Play mode.",
-			    		"Analysis error",
-			    		JOptionPane.PLAIN_MESSAGE,
-			    		JOptionPane.ERROR_MESSAGE,                 null,                options,              options[0]);
-		}
-		// library.addToPlaylist(1, parser.getTracks());
-		// library.addToPlaylist(2, parser.getTracks());
 		
-		Logger.log(toimport.size()+" files imported."+(result ? "" : " One or more errors occurred."), LogType.USAGE_LOG);
-
-		library.setSelection(tabMain.getSelectedRows());
-		library.setViewPos(((JViewport) tabMain.getParent()).getViewPosition());
-		library.setSort(((TableSorter) tabMain.getModel()).getFullSortingStatus());
-
-		DisplayLibrary();
-
-		UpdateLibrary();
-
-		RefreshPlaylists();
+		(new Thread(){
+			@Override public void run(){
+				result[0] = library.getClusters().AddTracks(toimport, frmMusicPlayer);
+				if(!result[0]){
+					Object[] options = {"OK"};
+					if(toimport.size() > 1)
+						JOptionPane.showOptionDialog(frmMusicPlayer,
+				    		"Sorry, there was an error processing one or more of these files.\nAll songs will be added to your library, but some may not be compatible with Smart Play mode.",
+				    		"Analysis error",
+				    		JOptionPane.PLAIN_MESSAGE,
+				    		JOptionPane.ERROR_MESSAGE,                null,                 options,                  options[0]);
+					else
+						JOptionPane.showOptionDialog(frmMusicPlayer,
+					    		"Sorry, there was an error processing this file.\nIt will be added to your library, but may not be compatible with Smart Play mode.",
+					    		"Analysis error",
+					    		JOptionPane.PLAIN_MESSAGE,
+					    		JOptionPane.ERROR_MESSAGE,                 null,                options,              options[0]);
+				}
+				
+				Logger.log(toimport.size()+" files imported."+(result[0] ? "" : " One or more errors occurred."), LogType.USAGE_LOG);
+				library.setSelection(tabMain.getSelectedRows());
+				library.setViewPos(((JViewport) tabMain.getParent()).getViewPosition());
+				library.setSort(((TableSorter) tabMain.getModel()).getFullSortingStatus());
+				UpdateLibrary();
+				
+				SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						DisplayLibrary();
+						RefreshPlaylists();
+					}
+				});
+				
+			}
+		}).start();
+		
 	}
 
 	private void Import(LibraryParser parser) {
@@ -1989,8 +2015,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 		Stop();
 
+		final List<Song> toimport = library.getAllNotContained(parser.getTracks());
 		library.clearViews();
-		library.setPlaylist(Library.MAIN_PLAYLIST, parser.getTracks());
+		library.setPlaylist(Library.MAIN_PLAYLIST, toimport);
 		// library.setPlaylist(1, parser.getTracks());
 		// library.setPlaylist(2, parser.getTracks());
 		// library.addTracks(parser.getTracks());
@@ -1998,17 +2025,21 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		(new Thread() {
 			@Override
 			public void run() {
-				SongCluster clusters = new SongCluster(library.getMainList(), new GUIupdater(frmMusicPlayer));
+				SongCluster clusters = new SongCluster(library.getMainList(), new GUIupdater(frmMusicPlayer, true));
 				library.setClusters(clusters);
 				if(Constants.DEBUG_PRINT_CLUSTERS)
 					PrintClusters(clusters, "");
 				UpdateLibrary();
+				
+				SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						DisplayLibrary();
+						RefreshPlaylists();
+					}
+				});
 			}
 		}).start();
-
-		DisplayLibrary();
-
-		RefreshPlaylists();
 
 	}
 
@@ -2287,7 +2318,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 
 	private void AddSelectionToPlaylist(int pl) {
 		for (int i = 0; i < tabMain.getSelectedRowCount(); ++i){
-			Song a = library.getPlaylists().get(pl).getList().get(library.getPlaylists().get(pl).size()-1);
+			Song a = null;
+			if(library.getPlaylists().get(pl).size() > 0)
+				a = library.getPlaylists().get(pl).getList().get(library.getPlaylists().get(pl).size()-1);
 			Song b = library.get(ViewToModel(tabMain.getSelectedRows()[i]));
 			library.getPlaylists().get(pl).add(b);
 			SendPlaylistUserActionSingle(a, b);
@@ -2505,6 +2538,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		// rowPlaying = ((TableSorter)
 		// tabMain.getModel()).modelIndex(tabMain.getSelectedRow());
 		UpdatePlayCount();
+		UpdateStats();
 		
 		SendUserAction(UserAction.TRACK_CHANGED);
 		library.updateStat(Statistics.Jumps, 1);
@@ -2560,7 +2594,6 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	
 	private void SendUserAction(final int ac){
 		try{
-			
 		
 			if(previousTrack == null || currentTrack == null || playlistPlaying < 0 || trackPlaying < 0)
 				return;
@@ -2642,9 +2675,11 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 	
 	private void SendPlaylistUserActionSingle(Song a, Song b){
-		library.getClusters().Update(new UserAction(UserAction.PLAYLIST_ADJACENT, 0., a, b, null));
-		library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., a, b, null));
-		library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., b, a, null));
+		if(a != null && b != null){
+			library.getClusters().Update(new UserAction(UserAction.PLAYLIST_ADJACENT, 0., a, b, null));
+			library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., a, b, null));
+			library.getClusters().Update(new UserAction(UserAction.PLAYLIST_SHARED, 0., b, a, null));
+		}
 	}
 
 	private int GetViewIndexOf(Song s){
@@ -2663,11 +2698,49 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 	
 	private void UpdateStats(){
-		if (((double) seconds + ((player.isWav ? 0 : timing_offset) / 1000.0)) < Constants.IGNORE_SKIP_TIME){
-			library.updateStat(Statistics.Early_skips, 1);
-		}
-		if (currentTrack != null && (((double) seconds + ((player.isWav ? 0 : timing_offset) / 1000.0)) < currentTrack.getLengthS() - Constants.UPDATE_PLAY_COUNT_WINDOW)){
-			library.updateStat(Statistics.Skips, 1);
+		if(player == null){
+			// haven't just played anything
+			return;
+		}else{
+			double timePlayedS = (double) seconds + ((player.isWav ? 0 : timing_offset) / 1000.0);
+			if (timePlayedS < Constants.IGNORE_SKIP_TIME){
+				library.updateStat(Statistics.Early_skips, 1);
+			}
+			if (currentTrack != null && (timePlayedS < currentTrack.getLengthS() - Constants.UPDATE_PLAY_COUNT_WINDOW)){
+				library.updateStat(Statistics.Skips, 1);
+			}
+			
+			// overall
+			library.updateStat(Statistics.Tot_tracks, 1);
+			library.updateStat(Statistics.Tot_time, timePlayedS);
+			
+			// smart
+			if(library.smartPlay){
+				library.updateStat(Statistics.Smart_tracks, 1);
+				library.updateStat(Statistics.Smart_time, timePlayedS);
+			}
+			
+			// shuffle
+			if(shuffle){
+				library.updateStat(Statistics.Shuffle_tracks, 1);
+				library.updateStat(Statistics.Shuffle_time, timePlayedS);
+			}
+			
+			Playlist p = (Playlist) listPlaylists.getSelectedValue();
+			int type = p.getType();
+			
+			// playlist-auto
+			if(type == Playlist.AUTO){
+				library.updateStat(Statistics.Auto_playlist_tracks, 1);
+				library.updateStat(Statistics.Auto_playlist_time, timePlayedS);
+			}
+			
+			// playlist-manual
+			if(type == Playlist.USER){
+				library.updateStat(Statistics.Manual_playlist_tracks, 1);
+				library.updateStat(Statistics.Manual_playlist_time, timePlayedS);
+			}
+		
 		}
 	}
 	
@@ -2689,6 +2762,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		}
 		
 		SendUserAction(UserAction.TRACK_SKIPPED);
+		
+		double timePlayedS = (double) seconds + ((player.isWav ? 0 : timing_offset) / 1000.0);
+		if (currentTrack != null && previousTrack != null && timePlayedS < Constants.IGNORE_SKIP_TIME)
+			currentTrack = previousTrack;
 
 		int nextUp;
 		// if (stopped)
@@ -2701,9 +2778,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			} else if (library.smartPlay && playlistPlaying==0 && !playingInSearch){
 				Song n = null;
 				if(currentTrack != null){
-					if (previousTrack != null && (timing_offset < 1000*Constants.IGNORE_SKIP_TIME || milliseconds < 1000*Constants.IGNORE_SKIP_TIME))
-						currentTrack = previousTrack;
-					n = GetSmartTrack(currentTrack);
+					n = GetSmartTrack(previousTrack);
 				}else
 					n = GetSmartSeedSong();
 				if(n != null){
@@ -2890,6 +2965,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					rowPlaying = r;
 					trackPlaying = playlistPlayingSorter.modelIndex(rowPlaying);
 					currentTrack = library.getPlaylist(playlistPlaying).get(trackPlaying);
+					library.addCoverage(currentTrack);
+					
 					if(history.size() == 0 || history.get(history.size()-1) != currentTrack){ // don't duplicate
 						history.remove(currentTrack); // only need to remove once since can't accumulate more than 1
 						history.add(currentTrack);
@@ -3452,7 +3529,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				btnPlay.setIcon(new ImageIcon(this.getClass().getResource("/jk509/player/res/pause.png")));
 				btnPlay.setPressedIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/pause_down.png")));
 			} else if (!player.isStopped()) {
-				player.pause();
+				try{
+					player.pause();
+				}catch(NullPointerException e){ }
 				btnPlay.setIcon(new ImageIcon(this.getClass().getResource("/jk509/player/res/play.png")));
 				btnPlay.setPressedIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/play_down.png")));
 			}
@@ -3624,17 +3703,17 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private Song GetSmartSeedSong(){
 		// just pick most likely track/cluster overall
 		library.getClusters().setPlayingCluster(null);
-		return library.getClusters().next(history, null);
+		return library.getClusters().next(history, null, library.getNetRandomness());
 	}
 	private Song GetSmartTrack(Song seed){
 		// choose next song from given seed
 		library.getClusters().setPlayingCluster(seed);
-		return library.getClusters().next(history, null);
+		return library.getClusters().next(history, null, library.getNetRandomness());
 	}
 	private Song GetSmartPlaylistSeed(){
 		// just pick most likely track/cluster overall
 		library.getClusters().setPlayingCluster(null);
-		return library.getClusters().next(null, null);
+		return library.getClusters().next(null, null, library.getNetRandomness());
 	}
 	private Song GetSmartPlaylistTrack(Song seed, List<Song> history){
 		// choose next song from given seed
@@ -3642,7 +3721,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		List<Double> weights = new ArrayList<Double>();
 		for(int i=0; i<history.size(); ++i)
 			weights.add(0.0); // don't allow any repeats in a playlist
-		return library.getClusters().next(history, weights);
+		return library.getClusters().next(history, weights, library.getNetRandomness());
 	}
 
 	private void LearnAllPlaylists(){
@@ -4346,7 +4425,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			(new Thread() {
 				@Override
 				public void run() {
-					SongCluster clusters = new SongCluster(library.getMainList(), new GUIupdater(frmMusicPlayer));
+					SongCluster clusters = new SongCluster(library.getMainList(), new GUIupdater(frmMusicPlayer, true));
 					library.setClusters(clusters);
 					if(Constants.DEBUG_PRINT_CLUSTERS)
 						PrintClusters(clusters, "");
@@ -4437,6 +4516,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private class MntmOutputStatsActionListener implements ActionListener {
 		public void actionPerformed(ActionEvent arg0) {
 			try{
+				SetFixedStats();
 				Logger.backupStats(Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays(), library.getStats());
 			}catch(Exception e){
 				Logger.log(e, LogType.ERROR_LOG);
@@ -4498,9 +4578,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				if (library.getVolume() < 0)
 					library.setVolume(100);
 				SetVolume((float) library.getVolume() / 100f);
-				sliderRand.setValue((int) (sliderRand.getMaximum() * library.getClusters().getUserRandomness()));
+				sliderRand.setValue((int) (sliderRand.getMaximum() * library.getUserRandomness()));
 				//if(library.smartPlay != Constants.SMART_PLAY_DEFAULT){
-				if(library.smartPlay){
+				/*if(library.smartPlay){
 					btnSmart.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/brain_down.png")));
 					btnSmart.setPressedIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/brain_down_press.png")));
 					lblSmartMode.setText("Smart mode on");
@@ -4512,7 +4592,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					lblSmartMode.setText("Smart mode off");
 					lblRandomness.setEnabled(false);
 					sliderRand.setEnabled(false);
-				}
+				}*/
+				UpdateSmartModeEnabled();
 				
 				Logger.backupP(library.getClusters());
 				Logger.backupAllFeatures(library.getMainList());
@@ -4848,7 +4929,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		if (index < 1) {
 			// do nothing: can't insert into default playlists
 		} else {
-			Song a = library.getPlaylists().get(index + Library.HIDDEN_PLAYLISTS).getList().get(library.getPlaylists().get(index + Library.HIDDEN_PLAYLISTS).size()-1);
+			Song a = null;
+			if(library.getPlaylists().get(index + Library.HIDDEN_PLAYLISTS).size() > 0)
+				a = library.getPlaylists().get(index + Library.HIDDEN_PLAYLISTS).getList().get(library.getPlaylists().get(index + Library.HIDDEN_PLAYLISTS).size()-1);
 			library.getPlaylists().get(index + Library.HIDDEN_PLAYLISTS).append(data);
 			SendPlaylistUserActionSingle(a, data);
 		}
