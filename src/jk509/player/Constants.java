@@ -17,7 +17,7 @@ public interface Constants {
 	public static final int HISTORY_SIZE = 20;
 	public static final boolean BACK_UPDATES = true;                   // whether to update in reverse direction too
 	public static final double BACK_UPDATE_SCALAR = 0.25;               // multiple to apply to reward for update in opposite direction
-	public static final double RANDOMNESS_MIN = 0.2;                   // overall min value for randomness, taken at time=RANDOMNESS_SHIFT_TIME. User settings can't go below this.
+	public static final double RANDOMNESS_MIN = 0.1;                   // overall min value for randomness, taken at time=RANDOMNESS_SHIFT_TIME. User settings can't go below this.
 	public static final double RANDOMNESS_MAX = 0.8;                   // overall max value for randomness, taken at time=0. User settings can't exceed this.
 	public static final int RANDOMNESS_SHIFT_TIME = 10;                // number of days (or ops - I havn't decided) over which 'randomness' changes from exploration -> exploitation
 	public static final double RANDOMNESS_USER_CONTROL = 0.4;          // range over which user can adjust randomness
@@ -93,9 +93,9 @@ public interface Constants {
 	public static final String featureXMLLocation = StaticMethods.getSettingsDir()+"features.xml";
 	public static final int TEMP_FILE_NAME_LENGTH = 10;
 	public static final String UPLOAD_URL = "http://www.james.eu.org/upload.php";
-	public static final String SETTINGS_PATH = StaticMethods.getSettingsDir() + (DEBUG_SETTINGS ? "library_debug.ser" : "library.ser");
+	public static final String SETTINGS_PATH = StaticMethods.getSettingsDir() + (DEBUG_SETTINGS ? "library_debug2.ser" : "library.ser");
 	public static final String BACKUP_PATH = StaticMethods.getSettingsDir() + "library_backup.ser";
-	public static final String PATH_TO_LAME = StaticMethods.getSettingsDir() + "lame.exe";
+	public static final String PATH_TO_LAME = StaticMethods.getSettingsDir() + "lame";
 	public static final boolean USERNAME_AS_ID = false; // Whether to capture current username as part of data upload ID string (cf. ethics agreement)
 	public static final String ERROR_LOG = StaticMethods.getSettingsDir()+"errorlog.txt";  // errors
 	public static final String STATS_LOG = StaticMethods.getSettingsDir()+"statslog.txt";  // matrices
@@ -108,5 +108,7 @@ public interface Constants {
 	public static final String[] UPLOAD_FILE_LIST = { /*SETTINGS_PATH, */ERROR_LOG, STATS_LOG, USAGE_LOG, LEARNING_LOG, STAT_DATA, CLUSTERS_LOG }; 
 
 	public static final DateTime STUDY_START_DATE = new DateTime(2014, 5, 10, 12, 0, 0, 0);
+	
+	public static final boolean STUDY_CONTROL_SHUFFLE = false; // Whether this is a control, with smartplay just performing a shuffle
 	
 }

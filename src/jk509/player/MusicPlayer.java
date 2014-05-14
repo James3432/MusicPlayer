@@ -605,6 +605,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		pnlTrackTime.add(spacerL);
 
 		lbl_time = new JLabel("0:00");
+		lbl_time.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lbl_time.setVisible(false);
 		lbl_time.setAlignmentX(Component.CENTER_ALIGNMENT);
 		pnlTrackTime.add(lbl_time);
@@ -628,6 +629,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		MouseMotionListener[] mmls = slider.getMouseMotionListeners();
 
 		lbl_endtime = new JLabel("0:00");
+		lbl_endtime.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lbl_endtime.setVisible(false);
 		lbl_endtime.setAlignmentX(Component.CENTER_ALIGNMENT);
 		pnlTrackTime.add(lbl_endtime);
@@ -738,6 +740,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		pnlSearch.add(pnlSearchTxt, gbc_pnlSearchTxt);
 		pnlSearchTxt.setLayout(new BorderLayout(0, 0));
 		txtSearch = new JTextField();
+		txtSearch.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		txtSearch.setToolTipText(" Search (Ctrl+F)");
 		pnlSearchTxt.add(txtSearch, BorderLayout.CENTER);
 		txtSearch.addKeyListener(new TxtSearchKeyListener());
@@ -750,7 +753,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		txtSearch.setColumns(15);
 
 		btnCancelSearch = new JButton();
-		btnCancelSearch.setToolTipText("Cancel search");
+		btnCancelSearch.setToolTipText("Cancel (Esc)");
 		btnCancelSearch.setPreferredSize(new Dimension(16, 10));
 		btnCancelSearch.setMinimumSize(new Dimension(11, 10));
 		btnCancelSearch.setMaximumSize(new Dimension(11, 10));
@@ -1433,6 +1436,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				library.lastUpdateDay = -1;
+				library.lastStatsDay = -1;
 			}
 		});
 		
@@ -1634,9 +1638,6 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					int previousUpload = library.lastUpdateDay;
 					final int targetUploads = (daysPassed / Constants.UPLOAD_FREQUENCY) * Constants.UPLOAD_FREQUENCY;
 					
-					if(library.autoupload && targetUploads > previousUpload)
-						UploadUsageData();
-					
 					int previousStats = 0;
 					try{
 						 previousStats = library.lastStatsDay;
@@ -1652,6 +1653,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 							Logger.log(e, LogType.ERROR_LOG);
 						}		
 					}
+					
+					if(library.autoupload && targetUploads > previousUpload)
+						UploadUsageData();
+					
 				}
 			}
 		}).start();
@@ -1686,6 +1691,15 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				DisplayLibrary();
 				RefreshPlaylists();
 				Logger.backupP(library.getClusters());
+				library.lastStatsDay = 0;
+				SetFixedStats();
+				try{
+					int daysPassed = Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays();
+					Logger.backupStats(daysPassed, library.getStats());
+					library.lastStatsDay = daysPassed;
+				} catch (Exception e) {
+					Logger.log(e, LogType.ERROR_LOG);
+				}		
 				if(library.autoupload)
 					UploadUsageData();
 			}else{
@@ -1703,9 +1717,6 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		int previousUpload = library.lastUpdateDay;
 		final int targetUploads = (daysPassed / Constants.UPLOAD_FREQUENCY) * Constants.UPLOAD_FREQUENCY;
 		
-		if(library.autoupload && targetUploads > previousUpload)
-			UploadUsageData();
-		
 		int previousStats = 0;
 		try{
 			 previousStats = library.lastStatsDay;
@@ -1721,6 +1732,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				Logger.log(e, LogType.ERROR_LOG);
 			}		
 		}
+		
+		if(library.autoupload && targetUploads > previousUpload)
+			UploadUsageData();
 		
 		// Then set randomness
 		double stage = Math.min(1.0, daysPassed / Constants.RANDOMNESS_SHIFT_TIME);
@@ -2847,7 +2861,6 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	}
 
 	private void playPrev() {
-		//TODO: if(smartplay && history!=empty), play from history.  Do a similar thing in playNext too??
 
 		if (player == null)
 			return;
@@ -2874,6 +2887,17 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			//} else {
 			if (library.hasQueue()) {
 				nextUp = GetPrevInQueue();
+			} else if (library.smartPlay && history != null && history.size() > 0 && playlistPlaying==0 && !playingInSearch && history.indexOf(currentTrack) != 0){
+				int h = history.indexOf(currentTrack);
+				Song next;
+				if(h < 0){
+					next = history.get(history.size() - 1);
+				}else{
+					next = history.get(h - 1);
+				}
+				int ind = library.getMainList().indexOf(next);
+				nextUp = playlistPlayingSorter.viewIndex(ind);
+						// what about previousTrack? and affect on history later on...
 			} else if (shuffle) {
 				// nextUp = (int) (Math.random() * library.getPlaylist(playlistPlaying).size());
 				nextUp = playlistPlayingSorter.viewIndex(library.shuffleIndexToModel(library.modelIndexToShuffle(playlistPlayingSorter.modelIndex(rowPlaying)) - 1));
@@ -3701,21 +3725,37 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	 * The machine learning methods
 	 */
 	private Song GetSmartSeedSong(){
+		if(Constants.STUDY_CONTROL_SHUFFLE){
+			return getRandomSong(null, history);
+		}
+		
 		// just pick most likely track/cluster overall
 		library.getClusters().setPlayingCluster(null);
 		return library.getClusters().next(history, null, library.getNetRandomness());
 	}
 	private Song GetSmartTrack(Song seed){
+		if(Constants.STUDY_CONTROL_SHUFFLE){
+			return getRandomSong(seed, history);
+		}
+		
 		// choose next song from given seed
 		library.getClusters().setPlayingCluster(seed);
 		return library.getClusters().next(history, null, library.getNetRandomness());
 	}
 	private Song GetSmartPlaylistSeed(){
+		if(Constants.STUDY_CONTROL_SHUFFLE){
+			return getRandomSong(null, history);
+		}
+		
 		// just pick most likely track/cluster overall
 		library.getClusters().setPlayingCluster(null);
 		return library.getClusters().next(null, null, library.getNetRandomness());
 	}
 	private Song GetSmartPlaylistTrack(Song seed, List<Song> history){
+		if(Constants.STUDY_CONTROL_SHUFFLE){
+			return getRandomSong(seed, history);
+		}
+		
 		// choose next song from given seed
 		library.getClusters().setPlayingCluster(seed);
 		List<Double> weights = new ArrayList<Double>();
@@ -3724,6 +3764,28 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		return library.getClusters().next(history, weights, library.getNetRandomness());
 	}
 
+	private Song getRandomSong(Song seed, List<Song> history){
+		List<Song> ls = library.getMainList();
+		if(ls.size() > history.size()){
+			List<Song> candidates = new ArrayList<Song>(ls);
+			candidates.removeAll(history);
+			int index = 0 + (int)(Math.random() * candidates.size());
+			return candidates.get(index);
+		}else{
+			if(ls.size() > Constants.HISTORY_NONREPEAT){
+				// pick something played a whle ago
+				if(history != null && history.size() > 0)
+					return history.get(0);
+				else
+					return null;
+			}else{
+				// something's wrong
+				return null;
+			}
+		}
+		
+	}
+	
 	private void LearnAllPlaylists(){
 		for(int i=Library.MAIN_PLAYLIST+1; i<listPlaylists.getModel().getSize()+Library.MAIN_PLAYLIST; ++i){
 			List<Song> pl = library.getPlaylists().get(i).getList();
@@ -3866,6 +3928,10 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					rowNew = tabMain.getRowCount() - 1;
 				tabMain.getSelectionModel().setSelectionInterval(rowNew, rowNew);
 				tabMain.scrollRectToVisible(tabMain.getCellRect(rowNew, 0, true));
+				break;
+			case KeyEvent.VK_ESCAPE:
+				if(searching)
+					CancelSearch();
 				break;
 			}
 		}

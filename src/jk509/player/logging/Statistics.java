@@ -35,25 +35,25 @@ public class Statistics implements Serializable {
 	
 	public static final int Tot_time = 0;
 	public static final int Tot_tracks = 1;
-	public static final int Stored_tracks = 2;//
-	public static final int Stored_time = 3;//
+	public static final int Stored_tracks = 2;
+	public static final int Stored_time = 3;
 	public static final int Smart_time = 4;
 	public static final int Smart_tracks = 5;
 	public static final int Shuffle_time = 6;
 	public static final int Shuffle_tracks = 7;
-	public static final int Auto_playlists	= 8;//
-	public static final int Manual_playlists = 9;//
+	public static final int Auto_playlists	= 8;
+	public static final int Manual_playlists = 9;
 	public static final int Manual_playlist_time = 10;
 	public static final int Auto_playlist_time = 11;
 	public static final int Manual_playlist_tracks = 12;
 	public static final int Auto_playlist_tracks = 13;
-	public static final int Coverage = 14;//
-	public static final int Coverage_diff = 15;// 
-	public static final int Skips = 16;//
-	public static final int Early_skips = 17;//
-	public static final int Jumps = 18;//
-	public static final int Queues = 19;//
-	public static final int Searches = 20;//
+	public static final int Coverage = 14;
+	public static final int Coverage_diff = 15;
+	public static final int Skips = 16;
+	public static final int Early_skips = 17;
+	public static final int Jumps = 18;
+	public static final int Queues = 19;
+	public static final int Searches = 20;
 	private static final int size = 21;
 	
 	public double[] values = new double[descriptors.length];

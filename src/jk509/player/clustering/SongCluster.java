@@ -767,9 +767,45 @@ public class SongCluster extends AbstractCluster {
 		if(choice == null){
 			System.out.println("Couldn't choose next track");
 			Logger.log("Couldn't choose next track in SongCluster line 767", LogType.ERROR_LOG);
+			
+			choice = chooseRandom(startcluster, history);
 		}
 		
 		return choice;
+	}
+	
+	private Song chooseRandom(SongCluster cluster, List<Song> history){
+		if(cluster.tracks.size() > history.size()){
+			// just pick from cluster 
+			List<Song> selection = new ArrayList<Song>(cluster.tracks);
+			selection.removeAll(history);
+			// now pick at random
+			int index = 0 + (int)(Math.random() * selection.size());
+			return selection.get(index);
+		}else{
+			SongCluster root = cluster;
+			while(root.getParent() != null)
+				root = root.getParent();
+			if(root.tracks.size() > history.size()){
+				// just pick from root
+				List<Song> selection = new ArrayList<Song>(root.tracks);
+				selection.removeAll(history);
+				// now pick at random
+				int index = 0 + (int)(Math.random() * selection.size());
+				return selection.get(index);
+			}else{
+				if(root.tracks.size() > Constants.HISTORY_NONREPEAT){
+					// pick something played a whle ago
+					if(history != null && history.size() > 0)
+						return history.get(0);
+					else
+						return null;
+				}else{
+					// something's wrong
+					return null;
+				}
+			}
+		}
 	}
 	
 	private double[] Normalise(double[] in){
@@ -1033,12 +1069,24 @@ public class SongCluster extends AbstractCluster {
 		preferred[toI] = Math.max(0., preferred[toI] + reward);
 		// And add it to every parent
 		SongCluster c = this;
+		int ind = 0;
 		try{
-		while(c.getParent() != null){
-			int ind = c.getParent().getChildren().indexOf((AbstractCluster) c);
-			c = c.getParent();
-			c.preferred[ind] = Math.max(0., preferred[ind] + reward);
-		}
+			while(c.getParent() != null){
+				ind = c.getParent().getChildren().indexOf((AbstractCluster) c);
+				c = c.getParent();
+				c.preferred[ind] = Math.max(0., preferred[ind] + reward);
+			}
+		}catch(ArrayIndexOutOfBoundsException e){
+			Logger.log("Error whilst updating matrix of preferred tracks:", LogType.ERROR_LOG);
+			Logger.log(e, LogType.ERROR_LOG);
+			try{
+				while(c.preferred.length <= ind)
+					c.preferred = arrayAppend(c.preferred, 0.);
+				c.preferred[ind] = Math.max(0., preferred[ind] + reward);
+			}catch(Exception e2){
+				Logger.log("Error whilst updating matrix of preferred tracks:", LogType.ERROR_LOG);
+				Logger.log(e2, LogType.ERROR_LOG);
+			}
 		}catch(Exception e){
 			Logger.log("Error whilst updating matrix of preferred tracks:", LogType.ERROR_LOG);
 			Logger.log(e, LogType.ERROR_LOG);

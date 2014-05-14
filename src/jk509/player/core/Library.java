@@ -42,7 +42,7 @@ public class Library implements Serializable, Cloneable {
 	private SongCluster clusters;
 	private String user_id;
 	private double randomness = Constants.RANDOMNESS_MAX; // from RAND_MIN ~ 0 (not random - exploitation) to RAND_MAX ~ 1 (fully random - exploration)
-	private double user_randomness = 0.;   
+	private double user_randomness = 0.5;   
 	
 	private Statistics stats;
 	

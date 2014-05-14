@@ -85,8 +85,8 @@ public class AddPlaylistDialog extends JDialog {
 		{
 			JLabel lblItunesMusicLibrary = new JLabel("Select one or more playlist files:");
 			lblItunesMusicLibrary.setFocusable(false);
-			lblItunesMusicLibrary.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-			lblItunesMusicLibrary.setBounds(21, 48, 196, 20);
+			lblItunesMusicLibrary.setFont(new Font("SansSerif", Font.BOLD, 12));
+			lblItunesMusicLibrary.setBounds(10, 38, 287, 20);
 			contentPanel.add(lblItunesMusicLibrary);
 		}
 		{
@@ -95,7 +95,7 @@ public class AddPlaylistDialog extends JDialog {
 			btnBrowse.setEnabled(false);
 			btnBrowse.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 			btnBrowse.addActionListener(new BtnBrowseActionListener());
-			btnBrowse.setBounds(329, 91, 123, 24);
+			btnBrowse.setBounds(10, 91, 123, 24);
 			contentPanel.add(btnBrowse);
 		}
 		
@@ -104,7 +104,7 @@ public class AddPlaylistDialog extends JDialog {
 		lblFoundOk.setFocusable(false);
 		lblFoundOk.setVisible(false);
 		lblFoundOk.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-		lblFoundOk.setBounds(329, 126, 103, 14);
+		lblFoundOk.setBounds(10, 126, 103, 14);
 		contentPanel.add(lblFoundOk);
 		
 		lblSupportedFormatsItunes = new JLabel("Supported formats: iTunes, PLIST, XML, WPL (Windows Media Player), M3U, ASX, RSS, and more...");
@@ -118,7 +118,7 @@ public class AddPlaylistDialog extends JDialog {
 		rdbtnItunes.setFocusable(false);
 		rdbtnItunes.addActionListener(new RdbtnItunesActionListener());
 		rdbtnItunes.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-		rdbtnItunes.setBounds(262, 92, 63, 23);
+		rdbtnItunes.setBounds(10, 65, 123, 23);
 		contentPanel.add(rdbtnItunes);
 		
 		rdbtnOther = new JRadioButton("Other");
@@ -127,7 +127,7 @@ public class AddPlaylistDialog extends JDialog {
 		rdbtnOther.addActionListener(new RdbtnOtherActionListener());
 		rdbtnOther.setFont(new Font("Segoe UI", Font.PLAIN, 11));
 		rdbtnOther.setSelected(true);
-		rdbtnOther.setBounds(21, 91, 63, 23);
+		rdbtnOther.setBounds(210, 65, 110, 23);
 		contentPanel.add(rdbtnOther);
 		
 		ButtonGroup rdbtns = new ButtonGroup();
@@ -138,7 +138,7 @@ public class AddPlaylistDialog extends JDialog {
 		button.setBackground(Color.WHITE);
 		button.addActionListener(new ButtonActionListener());
 		button.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-		button.setBounds(87, 90, 123, 24);
+		button.setBounds(210, 91, 123, 24);
 		contentPanel.add(button);
 		
 		lblFoundN = new JLabel("Found 0 playlists");
@@ -146,7 +146,7 @@ public class AddPlaylistDialog extends JDialog {
 		lblFoundN.setFocusable(false);
 		lblFoundN.setVisible(false);
 		lblFoundN.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-		lblFoundN.setBounds(87, 126, 130, 14);
+		lblFoundN.setBounds(210, 126, 130, 14);
 		contentPanel.add(lblFoundN);
 		
 		lblLoadIcon = new JLabel();

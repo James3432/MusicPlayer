@@ -44,6 +44,8 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileFilter;
 
 import jk509.player.clustering.SongCluster;
@@ -209,7 +211,7 @@ public class Setup extends JDialog {
 	private JLabel lblLoadIcon;
 	private JLabel lblLoadIcon1;
 	private JButton btnImportPlaylistFiles;
-	private JLabel label_1;
+	private JLabel lblOtherPlaylists;
 	private JScrollPane scrollPane_2;
 	private JList listPlaylistsDisk;
 	private JLabel lblFoundCount;
@@ -545,21 +547,35 @@ public class Setup extends JDialog {
 		panel_31.add(lblLoadIcon1);
 
 		lblNoAudioFiles = new JLabel("(Audio files will not be copied)");
+		lblNoAudioFiles.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblNoAudioFiles.setBounds(208, 154, 191, 14);
 		panel_31.add(lblNoAudioFiles);
 
 		txtMusicItunes = new JTextField();
+		txtMusicItunes.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		txtMusicItunes.setBounds(60, 120, 414, 21);
 		txtMusicItunes.setText(StaticMethods.getHomeDir() + "\\Music\\iTunes");
+		
 		panel_31.add(txtMusicItunes);
 		txtMusicItunes.setColumns(10);
 
-		lblItunesLocate = new JLabel("Please locate your iTunes folder:");
-		lblItunesLocate.setBounds(60, 100, 170, 14);
+		lblItunesLocate = new JLabel("Please locate your iTunes library file:");
+		lblItunesLocate.setFont(new Font("Tahoma", Font.PLAIN, 11));
+		lblItunesLocate.setBounds(60, 100, 250, 14);
 		panel_31.add(lblItunesLocate);
+		
+		btnImportItunes = new JButton("Import Music");
+		btnImportItunes.setEnabled(false);
+		btnImportItunes.setBackground(Color.WHITE);
+		btnImportItunes.setForeground(new Color(0, 128, 0));
+		btnImportItunes.setBounds(60, 145, 138, 30);
+		btnImportItunes.addActionListener(new BtnImportItunesActionListener());
+		btnImportItunes.setFont(new Font("Tahoma", Font.BOLD, 14));
+		panel_31.add(btnImportItunes);
 
 		String path = StaticMethods.getHomeDir() + "\\Music\\iTunes\\iTunes Music Library.xml";
 		lblFoundItunesLibrary = new JLabel("Couldn't find an iTunes library automatically.");
+		lblFoundItunesLibrary.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblFoundItunesLibrary.setBounds(60, 75, 500, 14);
 		txtMusicItunes.setText(StaticMethods.getHomeDir());
 		if ((new File(path)).exists()) {
@@ -568,22 +584,16 @@ public class Setup extends JDialog {
 			lblFoundItunesLibrary.setForeground(new Color(0, 128, 0));
 			txtMusicItunes.setText(path);
 			lblItunesLocate.setVisible(false);
+			btnImportItunes.setEnabled(true);
 		}
 		panel_31.add(lblFoundItunesLibrary);
 
 		btnBrowseItunes = new JButton("Browse...");
+		btnBrowseItunes.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		btnBrowseItunes.addActionListener(new BtnBrowseItunesActionListener());
 		btnBrowseItunes.setBackground(Color.WHITE);
 		btnBrowseItunes.setBounds(481, 119, 79, 23);
 		panel_31.add(btnBrowseItunes);
-
-		btnImportItunes = new JButton("Import Music");
-		btnImportItunes.setBackground(Color.WHITE);
-		btnImportItunes.setForeground(new Color(0, 128, 0));
-		btnImportItunes.setBounds(60, 145, 138, 30);
-		btnImportItunes.addActionListener(new BtnImportItunesActionListener());
-		btnImportItunes.setFont(new Font("Tahoma", Font.BOLD, 14));
-		panel_31.add(btnImportItunes);
 
 		scrlItunesTable = new JScrollPane();
 		scrlItunesTable.setToolTipText("Select one or more tracks and press delete to remove them");
@@ -592,6 +602,7 @@ public class Setup extends JDialog {
 		panel_31.add(scrlItunesTable);
 
 		listTracks = new JList();
+		listTracks.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		listTracks.setToolTipText("Select one or more tracks and press delete to remove them");
 		scrlItunesTable.setViewportView(listTracks);
 
@@ -602,6 +613,7 @@ public class Setup extends JDialog {
 		panel_31.add(scrollPane_1);
 
 		listPlaylists = new JList();
+		listPlaylists.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		listPlaylists.addKeyListener(new ListPlaylistsKeyListener());
 		listPlaylists.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		listPlaylists.setToolTipText("Press delete to remove a playlist");
@@ -611,6 +623,8 @@ public class Setup extends JDialog {
 		 */
 
 		chckbxImportPlaylists = new JCheckBox("Import playlists");
+		chckbxImportPlaylists.setFont(new Font("Tahoma", Font.PLAIN, 11));
+		chckbxImportPlaylists.setEnabled(false);
 		chckbxImportPlaylists.setSelected(true);
 		chckbxImportPlaylists.setBackground(Color.WHITE);
 		chckbxImportPlaylists.setBounds(417, 506, 143, 23);
@@ -622,6 +636,7 @@ public class Setup extends JDialog {
 		panel_31.add(lblPressDeleteTo);
 
 		lblLoadMoreItunes = new JLabel("You can import additional tracks from disk later if needed.");
+		lblLoadMoreItunes.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblLoadMoreItunes.setBounds(61, 510, 289, 14);
 		panel_31.add(lblLoadMoreItunes);
 
@@ -631,7 +646,7 @@ public class Setup extends JDialog {
 		lblImportFromItunes_2.setBounds(60, 20, 335, 48);
 		panel_31.add(lblImportFromItunes_2);
 
-		lblPlaylists = new JLabel("Playlists");
+		lblPlaylists = new JLabel("iTunes Playlists");
 		lblPlaylists.setFont(new Font("Trebuchet MS", Font.BOLD, 12));
 		lblPlaylists.setBounds(417, 225, 153, 23);
 		panel_31.add(lblPlaylists);
@@ -650,6 +665,7 @@ public class Setup extends JDialog {
 		panel_32.setLayout(new BorderLayout(0, 0));
 
 		btnPrevious3 = new JButton("Previous");
+		btnPrevious3.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		btnPrevious3.setBackground(Color.WHITE);
 		btnPrevious3.addActionListener(new BtnPrevActionListener());
 		btnPrevious3.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/larrow.png")));
@@ -657,7 +673,7 @@ public class Setup extends JDialog {
 		btnPrevious3.setMaximumSize(new Dimension(73, 20));
 		panel_32.add(btnPrevious3, BorderLayout.WEST);
 
-		btnNext3 = new JButton("Next");
+		btnNext3 = new JButton("Skip");
 		btnNext3.setBackground(Color.WHITE);
 		btnNext3.setFont(new Font("Tahoma", Font.BOLD, 11));
 		btnNext3.addActionListener(new BtnNextActionListener());
@@ -684,20 +700,24 @@ public class Setup extends JDialog {
 		panel_41.add(lblLoadIcon);
 
 		lblIfYouUse = new JLabel("If you use another player such as Windows Media Player, your music may be stored in \"My Music\".");
+		lblIfYouUse.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblIfYouUse.setBounds(60, 75, 517, 14);
 		panel_41.add(lblIfYouUse);
 
 		lblYouCanAlso = new JLabel("You can also select any location where music is stored on your computer.");
+		lblYouCanAlso.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblYouCanAlso.setBounds(60, 95, 350, 14);
 		panel_41.add(lblYouCanAlso);
 
 		txtMusicRoot = new JTextField();
+		txtMusicRoot.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		txtMusicRoot.setBounds(60, 120, 414, 21);
 		txtMusicRoot.setText(StaticMethods.getHomeDir() + "\\Music");
 		panel_41.add(txtMusicRoot);
 		txtMusicRoot.setColumns(10);
 
 		btnBrowseMusic = new JButton("Browse...");
+		btnBrowseMusic.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		btnBrowseMusic.addActionListener(new BtnBrowseMusicActionListener());
 		btnBrowseMusic.setBackground(Color.WHITE);
 		btnBrowseMusic.setBounds(481, 119, 79, 23);
@@ -729,10 +749,12 @@ public class Setup extends JDialog {
 		panel_41.add(label_4);
 
 		lblYouCanImport = new JLabel("This shows all tracks including iTunes imports. You can import multiple folders from disk.");
+		lblYouCanImport.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblYouCanImport.setBounds(60, 510, 500, 14);
 		panel_41.add(lblYouCanImport);
 
 		label_6 = new JLabel("(Audio files will not be copied)");
+		label_6.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		label_6.setBounds(208, 154, 191, 14);
 		panel_41.add(label_6);
 
@@ -741,6 +763,7 @@ public class Setup extends JDialog {
 		panel_41.add(scrollPane);
 
 		listTracksDisk = new JList();
+		listTracksDisk.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		scrollPane.setViewportView(listTracksDisk);
 		listTracksDisk.setToolTipText("Select one or more tracks and press delete to remove them");
 
@@ -750,10 +773,10 @@ public class Setup extends JDialog {
 		btnImportPlaylistFiles.setBounds(417, 477, 143, 27);
 		panel_41.add(btnImportPlaylistFiles);
 		
-		label_1 = new JLabel("Playlists");
-		label_1.setFont(new Font("Trebuchet MS", Font.BOLD, 12));
-		label_1.setBounds(417, 225, 153, 23);
-		panel_41.add(label_1);
+		lblOtherPlaylists = new JLabel("Other Playlists");
+		lblOtherPlaylists.setFont(new Font("Trebuchet MS", Font.BOLD, 12));
+		lblOtherPlaylists.setBounds(417, 225, 153, 23);
+		panel_41.add(lblOtherPlaylists);
 		
 		scrollPane_2 = new JScrollPane();
 		scrollPane_2.setToolTipText("Press delete to remove a playlist");
@@ -762,6 +785,7 @@ public class Setup extends JDialog {
 		panel_41.add(scrollPane_2);
 		
 		listPlaylistsDisk = new JList();
+		listPlaylistsDisk.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		listPlaylistsDisk.addKeyListener(new ListPlaylistsKeyListener());
 		listPlaylistsDisk.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		listPlaylistsDisk.setToolTipText("Press delete to remove a playlist");
@@ -782,6 +806,7 @@ public class Setup extends JDialog {
 		panel_42.setLayout(new BorderLayout(0, 0));
 
 		btnPrevious4 = new JButton("Previous");
+		btnPrevious4.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		btnPrevious4.setBackground(Color.WHITE);
 		btnPrevious4.addActionListener(new BtnPrevActionListener());
 		btnPrevious4.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/larrow.png")));
@@ -834,6 +859,7 @@ public class Setup extends JDialog {
 		panel_51.add(progressBar);
 
 		lblSong = new JLabel("Processing track");
+		lblSong.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblSong.setBounds(60, 413, 78, 14);
 		panel_51.add(lblSong);
 
@@ -844,34 +870,42 @@ public class Setup extends JDialog {
 		panel_51.add(lblAudioAnalyses);
 
 		lblProcessingStart = new JLabel("0");
+		lblProcessingStart.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblProcessingStart.setBounds(148, 413, 38, 14);
 		panel_51.add(lblProcessingStart);
 
 		lblOf = new JLabel("of");
+		lblOf.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblOf.setBounds(190, 413, 23, 14);
 		panel_51.add(lblOf);
 
 		lblProcessingCount = new JLabel("0");
+		lblProcessingCount.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblProcessingCount.setBounds(223, 413, 46, 14);
 		panel_51.add(lblProcessingCount);
 
 		lblProcessingName = new JLabel("");
+		lblProcessingName.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblProcessingName.setBounds(60, 438, 503, 23);
 		panel_51.add(lblProcessingName);
 
 		lblTimeTaken = new JLabel("Time taken:");
+		lblTimeTaken.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblTimeTaken.setBounds(60, 473, 67, 14);
 		panel_51.add(lblTimeTaken);
 
 		lblTimeRemaining = new JLabel("Time remaining:");
+		lblTimeRemaining.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblTimeRemaining.setBounds(231, 473, 99, 14);
 		panel_51.add(lblTimeRemaining);
 
 		lblProcessingTime = new JLabel("0h 0m 0s");
+		lblProcessingTime.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblProcessingTime.setBounds(129, 473, 84, 14);
 		panel_51.add(lblProcessingTime);
 
 		lblProcessingTimeLeft = new JLabel("0h 0m 0s");
+		lblProcessingTimeLeft.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblProcessingTimeLeft.setBounds(318, 473, 78, 14);
 		panel_51.add(lblProcessingTimeLeft);
 
@@ -897,6 +931,7 @@ public class Setup extends JDialog {
 
 		int threadCount = StaticMethods.getThreadCount();
 		lblCores = new JLabel("Using " + threadCount + " processor core" + (threadCount > 1 ? "s" : ""));
+		lblCores.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		lblCores.setForeground(Color.GRAY);
 		lblCores.setBounds(60, 503, 153, 14);
 		panel_51.add(lblCores);
@@ -909,6 +944,7 @@ public class Setup extends JDialog {
 		panel_52.setLayout(new BorderLayout(0, 0));
 
 		btnPrevious5 = new JButton("Previous");
+		btnPrevious5.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		btnPrevious5.setBackground(Color.WHITE);
 		btnPrevious5.addActionListener(new BtnPrevActionListener());
 		btnPrevious5.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/larrow.png")));
@@ -1022,6 +1058,32 @@ public class Setup extends JDialog {
 		btnFinish.setIcon(new ImageIcon(Setup.class.getResource("/jk509/player/res/tick.png")));
 		btnFinish.setPreferredSize(new Dimension(110, 25));
 		panel_62.add(btnFinish, BorderLayout.EAST);
+		
+		txtMusicItunes.getDocument().addDocumentListener(new DocumentListener() {
+			@Override
+			public void removeUpdate(DocumentEvent arg0) {
+				if(txtMusicItunes != null && btnImportItunes != null){
+					String txt = txtMusicItunes.getText();
+					if((new File(txt)).exists())
+						btnImportItunes.setEnabled(true);
+					else
+						btnImportItunes.setEnabled(false);
+				}
+			}
+			@Override
+			public void insertUpdate(DocumentEvent arg0) {
+				if(txtMusicItunes != null && btnImportItunes != null){
+					String txt = txtMusicItunes.getText();
+					if((new File(txt)).exists())
+						btnImportItunes.setEnabled(true);
+					else
+						btnImportItunes.setEnabled(false);
+				}
+			}
+			@Override
+			public void changedUpdate(DocumentEvent arg0) {
+			}
+		});
 
 	}
 
@@ -1215,7 +1277,6 @@ public class Setup extends JDialog {
 
 			} else {
 				btnNext5.setEnabled(true);
-				// TODO maybe skip this page. need to make sure clusters will get built when user does add some songs, though
 			}
 		}
 	}
@@ -1268,7 +1329,6 @@ public class Setup extends JDialog {
 							@Override public void run(){ try {
 								Thread.sleep(1000);
 							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
 								Logger.log(e, LogType.ERROR_LOG);
 							} 
 							btnImportMusic.setEnabled(true); 
@@ -1302,14 +1362,14 @@ public class Setup extends JDialog {
 					parser.setPath(loc);
 					parser.setValid(true);
 					if (Import(parser)) {
+						ImportItunesPlaylists();
 						btnImportItunes.setEnabled(false);
+						btnNext3.setText("Next");
 						btnNext3.setEnabled(true);
+						chckbxImportPlaylists.setEnabled(true);
+						UpdateTrackDisplay();
 					}
-
-					ImportItunesPlaylists();
-
-					//UpdatePlaylistDisplay();
-					UpdateTrackDisplay();
+					
 					lblLoadIcon1.setVisible(false);
 					btnPrevious3.setEnabled(true);
 				}
@@ -1328,35 +1388,40 @@ public class Setup extends JDialog {
 
 	@SuppressWarnings("unchecked")
 	private void ImportItunesPlaylists() {
-		ItunesLibrary ituneslibrary = ItunesLibraryParser.parseLibrary(txtMusicItunes.getText());
-		List<ItunesPlaylist> playlists = ituneslibrary.getPlaylists();
-		//outerloop:
-		for (int i = 1; i < playlists.size(); ++i) { // skip 1 as it's all tracks
-			ItunesPlaylist playlist = (ItunesPlaylist) playlists.get(i);
-			String t = playlist.getName().toLowerCase();
-			if(t.equals("library") || t.equals("music") || t.equals("films") || t.equals("tv programmes") || t.equals("music videos"))
-				continue;
-			//System.out.println(playlist.getName());
-			Playlist pl = new Playlist(playlist.getName(), Playlist.USER);
-			List<ItunesTrack> tracks = playlist.getPlaylistItems();
-			for (int j = 0; j < tracks.size(); ++j) {
-				try{
-					ItunesTrack track = (ItunesTrack) tracks.get(j);
-					String loc = track.getLocation().replaceAll("file://localhost/", "");
-					try {
-						loc = loc.replaceAll("\\+", "%2b");
-						loc = URLDecoder.decode(loc, "UTF-8");
-					} catch (UnsupportedEncodingException e) {
-						Logger.log(e, LogType.ERROR_LOG);
-					}
-					Song s = StaticMethods.GetSongByLoc(loc, library.getMainList());
-					if(s != null)
-						//continue outerloop;
-						pl.add(s);
-				}catch(NullPointerException e){}
+		try{
+			ItunesLibrary ituneslibrary = ItunesLibraryParser.parseLibrary(txtMusicItunes.getText());
+		
+			List<ItunesPlaylist> playlists = ituneslibrary.getPlaylists();
+			//outerloop:
+			for (int i = 1; i < playlists.size(); ++i) { // skip 1 as it's all tracks
+				ItunesPlaylist playlist = (ItunesPlaylist) playlists.get(i);
+				String t = playlist.getName().toLowerCase();
+				if(t.equals("library") || t.equals("music") || t.equals("films") || t.equals("tv programmes") || t.equals("music videos"))
+					continue;
+				//System.out.println(playlist.getName());
+				Playlist pl = new Playlist(playlist.getName(), Playlist.USER);
+				List<ItunesTrack> tracks = playlist.getPlaylistItems();
+				for (int j = 0; j < tracks.size(); ++j) {
+					try{
+						ItunesTrack track = (ItunesTrack) tracks.get(j);
+						String loc = track.getLocation().replaceAll("file://localhost/", "");
+						try {
+							loc = loc.replaceAll("\\+", "%2b");
+							loc = URLDecoder.decode(loc, "UTF-8");
+						} catch (UnsupportedEncodingException e) {
+							Logger.log(e, LogType.ERROR_LOG);
+						}
+						Song s = StaticMethods.GetSongByLoc(loc, library.getMainList());
+						if(s != null)
+							//continue outerloop;
+							pl.add(s);
+					}catch(NullPointerException e){}
+				}
+				if(pl.size() > 0)
+					itunesPlaylists.add(pl);
 			}
-			if(pl.size() > 0)
-				itunesPlaylists.add(pl);
+		}catch(RuntimeException e){ 
+			
 		}
 	}
 
@@ -1551,10 +1616,15 @@ public class Setup extends JDialog {
 		parser.run();
 
 		List<Song> toimport = library.getAllNotContained(parser.getTracks());
-		library.clearViews();
-		library.setPlaylist(Library.MAIN_PLAYLIST, toimport);
-
-		return true;
+		
+		if(toimport.size() > 0){
+			library.clearViews();
+			library.setPlaylist(Library.MAIN_PLAYLIST, toimport);
+	
+			return true;
+		}else
+			library.setPlaylist(Library.MAIN_PLAYLIST, new ArrayList<Song>());
+			return false;
 
 	}
 

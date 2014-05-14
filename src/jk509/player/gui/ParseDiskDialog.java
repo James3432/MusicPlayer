@@ -80,6 +80,7 @@ public class ParseDiskDialog extends JDialog {
 		}
 		{
 			JButton btnBrowse = new JButton("Browse...");
+			btnBrowse.setFont(new Font("Tahoma", Font.PLAIN, 11));
 			btnBrowse.addActionListener(new BtnBrowseActionListener());
 			btnBrowse.setBounds(406, 72, 79, 23);
 			contentPanel.add(btnBrowse);
