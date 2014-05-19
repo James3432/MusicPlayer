@@ -1780,7 +1780,11 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			@Override public void run(){
 				SwingUtilities.invokeLater(new Thread(){
 					@Override public void run(){
+						statusPnl.setBackground(new Color(204, 255, 204));
 						statusPnl.setVisible(true);
+						lblStatus.setFont(new Font("Segoe UI Semibold", Font.PLAIN, 11));
+						lblStatusProg.setVisible(true);
+						statusBar.setVisible(true);
 						lblStatus.setText("Uploading usage data: ");
 						lblStatusProg.setText("0%");
 						statusBar.setValue(0);
@@ -1814,39 +1818,60 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 					// Only if upload succeeded:
 					library.lastUpdateDay = Days.daysBetween(Constants.STUDY_START_DATE, new DateTime()).getDays();
 					
-				} catch (Exception e) {
-					Logger.log(e, LogType.ERROR_LOG);
-				}				
-				
-				while(statusBar.getValue() < 100){
-					SwingUtilities.invokeLater(new Thread(){
-						@Override public void run(){
-							if(statusBar.getValue() < 100){
-								lblStatusProg.setText((statusBar.getValue()+1)+"%");
-								statusBar.setValue(statusBar.getValue()+1);
+					while(statusBar.getValue() < 100){
+						SwingUtilities.invokeLater(new Thread(){
+							@Override public void run(){
+								if(statusBar.getValue() < 100){
+									lblStatusProg.setText((statusBar.getValue()+1)+"%");
+									statusBar.setValue(statusBar.getValue()+1);
+								}
 							}
-						}
-					});
-					try {
-						Thread.sleep(20);
-					} catch (InterruptedException e) {
-						Logger.log(e, LogType.ERROR_LOG);
-					}
-				}
-				
-				SwingUtilities.invokeLater(new Thread(){
-					@Override public void run(){
-						lblStatus.setText("Uploading usage data: ");
-						lblStatusProg.setText("100%");
-						statusBar.setValue(100);
+						});
 						try {
-							Thread.sleep(2000);
+							Thread.sleep(20);
 						} catch (InterruptedException e) {
 							Logger.log(e, LogType.ERROR_LOG);
 						}
-						statusPnl.setVisible(false);
 					}
-				});
+					
+					SwingUtilities.invokeLater(new Thread(){
+						@Override public void run(){
+							lblStatus.setText("Uploading usage data: ");
+							lblStatusProg.setText("100%");
+							statusBar.setValue(100);
+							try {
+								Thread.sleep(2000);
+							} catch (InterruptedException e) {
+								Logger.log(e, LogType.ERROR_LOG);
+							}
+							statusPnl.setVisible(false);
+						}
+					});
+					
+				} catch (Exception e) {
+					Logger.log(e, LogType.ERROR_LOG);
+					SwingUtilities.invokeLater(new Thread(){
+						@Override public void run(){
+							statusPnl.setBackground(new Color(250, 200, 200));
+							lblStatus.setFont(new Font("Segoe UI", Font.BOLD, 11));
+							lblStatus.setText("There was an error uploading the data! ");
+							lblStatusProg.setVisible(false);
+							statusBar.setVisible(false);
+						}
+					});
+					
+					try {
+						Thread.sleep(5000);
+					} catch (InterruptedException e2) {
+					}
+					
+					SwingUtilities.invokeLater(new Thread(){
+						@Override public void run(){
+							statusPnl.setVisible(false);
+						}
+					});
+				}				
+				
 			}
 		}).start();
 	}

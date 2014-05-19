@@ -98,8 +98,17 @@ public class TableSorter extends AbstractTableModel {
 
 	private static Directive EMPTY_DIRECTIVE = new Directive(-1, NOT_SORTED);
 
-	public static final Comparator COMPARABLE_COMAPRATOR = new Comparator() {
+	public static final Comparator COMPARABLE_COMPARATOR = new Comparator() {
 		public int compare(Object o1, Object o2) {
+			if(o1 instanceof String && o2 instanceof String){
+				String s1 = ((String) o1).toLowerCase().trim();
+				String s2 = ((String) o2).toLowerCase().trim();
+				if(s1.startsWith("the "))
+					s1 = s1.substring(4);
+				if(s2.startsWith("the "))
+					s2 = s2.substring(4);
+				return s1.compareTo(s2);
+			}
 			return ((Comparable) o1).compareTo(o2);
 		}
 	};
@@ -276,7 +285,7 @@ public class TableSorter extends AbstractTableModel {
 			return comparator;
 		}
 		if (Comparable.class.isAssignableFrom(columnType)) {
-			return COMPARABLE_COMAPRATOR;
+			return COMPARABLE_COMPARATOR;
 		}
 		return LEXICAL_COMPARATOR;
 	}
