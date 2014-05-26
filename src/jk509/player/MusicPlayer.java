@@ -12,6 +12,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Image;
 import java.awt.Insets;
 import java.awt.Point;
@@ -261,7 +262,6 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private Song previousTrack;
 	private Song currentTrack;
 
-	// DEBUG FLAGS
 	private JButton btnBack;
 	private JButton btnFwd;
 	private JLabel lbl_time;
@@ -341,6 +341,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 	private JLabel lblStatusProg;
 	private JMenuItem mntmImportPlaylists;
 	private JMenuItem mntmRestore;
+	private JPanel pnlBtnClear;
 
 	/**
 	 * Create the application.
@@ -777,9 +778,49 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		lblSearch.setOpaque(false);
 		lblSearch.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/search.png")));
 		
-		splitPlaylists = new JSplitPane();
-		frmMusicPlayer.getContentPane().add(splitPlaylists, BorderLayout.CENTER);
+		splitPlaylists = new JSplitPane(){
+			private static final long serialVersionUID = 1L;
+			@Override
+			public void setDividerLocation(int requested) { 
+				int currentLoc = getDividerLocation(); 
+				if (currentLoc == requested) { 
+					super.setDividerLocation(requested); 
+					return; 
+				} 
+				boolean growing = requested > currentLoc; 
+				Component maxComp = growing ? getLeftComponent() : 
+				getRightComponent(); 
+				if (maxComp == null) { 
+					super.setDividerLocation(requested); 
+					return; 
+				} 
+				Dimension maxDim = maxComp.getMaximumSize(); 
+				if (maxDim == null) { 
+					super.setDividerLocation(requested); 
+					return; 
+				} 
+
+				int maxCompSize = maxDim.width; 
+
+				if (growing) { 
+					if (requested > maxCompSize) { 
+						super.setDividerLocation(maxCompSize); 
+						return; 
+					} 
+				} else { 
+					int totalSize = getSize().width; 
+					int minPos = totalSize - maxCompSize - getDividerSize(); 
+					if (requested < minPos) { 
+						super.setDividerLocation(minPos); 
+						return; 
+					} 
+				} 
+
+				super.setDividerLocation(requested); 
+			} 
+		};
 		splitPlaylists.setContinuousLayout(true);
+		frmMusicPlayer.getContentPane().add(splitPlaylists, BorderLayout.CENTER);
 		splitPlaylists.setBorder(null);
 
 		scrlMain = new JScrollPane();
@@ -888,12 +929,13 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		GridBagLayout gbl_pnlSmart = new GridBagLayout();
 		gbl_pnlSmart.columnWidths = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 		gbl_pnlSmart.rowHeights = new int[] { 0 };
-		gbl_pnlSmart.columnWeights = new double[] { 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, 1 };
-		gbl_pnlSmart.rowWeights = new double[] { 0.0 };
+		gbl_pnlSmart.columnWeights = new double[] { 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, 1.0 };
+		gbl_pnlSmart.rowWeights = new double[] { 1.0 };
 		pnlSmart.setLayout(gbl_pnlSmart);
 
 		btnSmart = new JButton();
 		GridBagConstraints gbc_btnSmart = new GridBagConstraints();
+		gbc_btnSmart.insets = new Insets(0, 0, 0, 5);
 		gbc_btnSmart.gridx = 0;
 		gbc_btnSmart.gridy = 0;
 		pnlSmart.add(btnSmart, gbc_btnSmart);
@@ -916,13 +958,16 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 			lblSmartMode = new JLabel("Smart mode on");
 		else
 			lblSmartMode = new JLabel("Smart mode off");*/
-		lblSmartMode = new JLabel("");
+		lblSmartMode = new JLabel((String) null);
+		lblSmartMode.setMaximumSize(new Dimension(120, 14));
+		lblSmartMode.setMinimumSize(new Dimension(120, 14));
+		lblSmartMode.setPreferredSize(new Dimension(120, 14));
 		lblSmartMode.setFocusable(false);
 		lblSmartMode.setFont(new Font("Segoe UI", Font.BOLD, 14));
 		lblSmartMode.setForeground(Color.DARK_GRAY);
 		lblSmartMode.addMouseListener(new SmartModeTextClickedListener());
 		GridBagConstraints gbc_lblSmartMode = new GridBagConstraints();
-		gbc_lblSmartMode.insets = new Insets(0, 0, 3, 0);
+		gbc_lblSmartMode.insets = new Insets(0, 0, 3, 5);
 		gbc_lblSmartMode.anchor = GridBagConstraints.WEST;
 		gbc_lblSmartMode.gridx = 1;
 		gbc_lblSmartMode.gridy = 0;
@@ -1015,7 +1060,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		sliderRand.addMouseListener(tl3);
 		sliderRand.addMouseMotionListener(mml3);
 		GridBagConstraints gbc_sliderRand = new GridBagConstraints();
-		gbc_sliderRand.insets = new Insets(2, 0, 0, 0);
+		gbc_sliderRand.insets = new Insets(2, 0, 0, 5);
 		gbc_sliderRand.gridx = 6;
 		gbc_sliderRand.gridy = 0;
 		pnlSmart.add(sliderRand, gbc_sliderRand);
@@ -1046,7 +1091,8 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		GridBagConstraints gbc_scrollPane = new GridBagConstraints();
-		gbc_scrollPane.insets = new Insets(5, 5, 5, 0);
+		gbc_scrollPane.fill = GridBagConstraints.HORIZONTAL;
+		gbc_scrollPane.insets = new Insets(5, 5, 4, 0);
 		gbc_scrollPane.gridx = 11;
 		gbc_scrollPane.gridy = 0;
 		pnlSmart.add(scrollPane, gbc_scrollPane);
@@ -1061,30 +1107,39 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		MouseMotionListener[] mmls4 = listUpNext.getMouseMotionListeners();
 		// TrackListener
 		scrollPane.setViewportView(listUpNext);
-
-		btnClear = new JButton();
-		btnClear.addActionListener(new BtnClearActionListener());
-		btnClear.setToolTipText("Clear \"Up Next\"");
-		btnClear.setPreferredSize(new Dimension(16, 10));
-		btnClear.setMinimumSize(new Dimension(11, 10));
-		btnClear.setMaximumSize(new Dimension(11, 10));
-		btnClear.setMargin(new Insets(0, 2, 0, 0));
-		btnClear.setBounds(new Rectangle(0, 0, 11, 10));
-		btnClear.setVisible(false);
-		btnClear.setFocusable(false);
-		btnClear.setOpaque(false);
-		btnClear.setContentAreaFilled(false);
-		btnClear.setBorderPainted(false);
-		btnClear.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/search_cancel.png")));
-		btnClear.setRolloverEnabled(true);
-		btnClear.setRolloverIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/search_cancel_hover.png")));
-
-		GridBagConstraints gbc_btnClear = new GridBagConstraints();
-		gbc_btnClear.insets = new Insets(0, 5, 0, 0);
-		gbc_btnClear.anchor = GridBagConstraints.WEST;
-		gbc_btnClear.gridx = 12;
-		gbc_btnClear.gridy = 0;
-		pnlSmart.add(btnClear, gbc_btnClear);
+		
+		pnlBtnClear = new JPanel();
+		pnlBtnClear.setMaximumSize(new Dimension(15, 10));
+		pnlBtnClear.setMinimumSize(new Dimension(15, 10));
+		pnlBtnClear.setPreferredSize(new Dimension(15, 10));
+		pnlBtnClear.setFocusable(false);
+		pnlBtnClear.setOpaque(false);
+		pnlBtnClear.setAlignmentX(Component.LEFT_ALIGNMENT);
+		GridBagConstraints gbc_pnlBtnClear = new GridBagConstraints();
+		gbc_pnlBtnClear.insets = new Insets(0, 5, 0, 5);
+		gbc_pnlBtnClear.anchor = GridBagConstraints.WEST;
+		gbc_pnlBtnClear.gridx = 12;
+		gbc_pnlBtnClear.gridy = 0;
+		pnlBtnClear.setLayout(new GridLayout(1, 1));
+		pnlSmart.add(pnlBtnClear, gbc_pnlBtnClear);
+		
+				btnClear = new JButton();
+				pnlBtnClear.add(btnClear);
+				btnClear.addActionListener(new BtnClearActionListener());
+				btnClear.setToolTipText("Clear \"Up Next\"");
+				btnClear.setPreferredSize(new Dimension(16, 10));
+				btnClear.setMinimumSize(new Dimension(11, 10));
+				btnClear.setMaximumSize(new Dimension(11, 10));
+				btnClear.setMargin(new Insets(0, 2, 0, 0));
+				btnClear.setBounds(new Rectangle(0, 0, 11, 10));
+				btnClear.setVisible(false);
+				btnClear.setFocusable(false);
+				btnClear.setOpaque(false);
+				btnClear.setContentAreaFilled(false);
+				btnClear.setBorderPainted(false);
+				btnClear.setIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/search_cancel.png")));
+				btnClear.setRolloverEnabled(true);
+				btnClear.setRolloverIcon(new ImageIcon(MusicPlayer.class.getResource("/jk509/player/res/search_cancel_hover.png")));
 
 		for (MouseListener l : listeners4)
 			listUpNext.removeMouseListener(l); // remove UI-installed
@@ -1131,7 +1186,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		pnlPlaylistCtrls.setBackground(new Color(213, 219, 226));
 
 		pnlListControls = new JPanel();
-		pnlListControls.setMaximumSize(new Dimension(500, 32767));
+		pnlListControls.setMaximumSize(new Dimension(400, 32767));
 		splitPlaylists.setLeftComponent(pnlListControls);
 		pnlListControls.setLayout(new BorderLayout(0, 0));
 		pnlListControls.add(scrlPlaylists);
@@ -2803,8 +2858,11 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		SendUserAction(UserAction.TRACK_SKIPPED);
 		
 		double timePlayedS = (double) seconds + ((player.isWav ? 0 : timing_offset) / 1000.0);
-		if (currentTrack != null && previousTrack != null && timePlayedS < Constants.IGNORE_SKIP_TIME)
+		if (currentTrack != null && previousTrack != null && timePlayedS < Constants.IGNORE_SKIP_TIME){
+			// track skipped quickly
+			library.getClusters().wasSkipped(currentTrack);
 			currentTrack = previousTrack;
+		}
 
 		int nextUp;
 		// if (stopped)
@@ -3758,6 +3816,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		library.getClusters().setPlayingCluster(null);
 		return library.getClusters().next(history, null, library.getNetRandomness());
 	}
+	
 	private Song GetSmartTrack(Song seed){
 		if(Constants.STUDY_CONTROL_SHUFFLE){
 			return getRandomSong(seed, history);
@@ -3767,6 +3826,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		library.getClusters().setPlayingCluster(seed);
 		return library.getClusters().next(history, null, library.getNetRandomness());
 	}
+	
 	private Song GetSmartPlaylistSeed(){
 		if(Constants.STUDY_CONTROL_SHUFFLE){
 			return getRandomSong(null, history);
@@ -3774,8 +3834,9 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		
 		// just pick most likely track/cluster overall
 		library.getClusters().setPlayingCluster(null);
-		return library.getClusters().next(null, null, library.getNetRandomness());
+		return library.getClusters().next(null, null, Constants.SMART_PLAYLIST_RANDOMNESS/* library.getNetRandomness()*/);
 	}
+	
 	private Song GetSmartPlaylistTrack(Song seed, List<Song> history){
 		if(Constants.STUDY_CONTROL_SHUFFLE){
 			return getRandomSong(seed, history);
@@ -3786,7 +3847,7 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 		List<Double> weights = new ArrayList<Double>();
 		for(int i=0; i<history.size(); ++i)
 			weights.add(0.0); // don't allow any repeats in a playlist
-		return library.getClusters().next(history, weights, library.getNetRandomness());
+		return library.getClusters().next(history, weights, Constants.SMART_PLAYLIST_RANDOMNESS /*library.getNetRandomness()*/);
 	}
 
 	private Song getRandomSong(Song seed, List<Song> history){
@@ -4165,46 +4226,58 @@ public class MusicPlayer implements MouseListener, MouseMotionListener {
 				// smart playlist
 				SmartPlaylistDialog dl = new SmartPlaylistDialog(library.getPlaylists().get(Library.MAIN_PLAYLIST).size());
 				dl.setLocationRelativeTo(frmMusicPlayer);
-				SmartPlaylistResult res = dl.showDialog();
-				String name = res.name;
-				int size = res.size; // 'size' means total including the user-selected tracks
+				final SmartPlaylistResult res = dl.showDialog();
+				final String name = res.name;
 
 				if (name != null && !name.equals("")) {
-					Playlist pl = new Playlist(name, Playlist.AUTO);
-					library.addPlaylist(pl);
-					RefreshPlaylists();
-					Song seed = null;
-					if (type == 2) {
-						// smart playlist from selection
-						for (int i = 0; i < tabMain.getSelectedRowCount(); ++i)
-							pl.add(library.get(ViewToModel(tabMain.getSelectedRows()[i])));
-						seed = library.get(ViewToModel(tabMain.getSelectedRows()[tabMain.getSelectedRowCount()-1]));
-						
-						size = size - tabMain.getSelectedRowCount();
-						Logger.log("New Smart playlist \""+pl.getName()+"\" added (from "+tabMain.getSelectedRowCount()+" track selection). Target size: "+(size+tabMain.getSelectedRowCount()), LogType.USAGE_LOG);
-					}else{
-						// smart playlist from all
-						seed = GetSmartPlaylistSeed();
-						if(seed != null){
-							pl.add(seed);
-							size--;
-							Logger.log("Playlist track "+library.getClusters().getIndexList(seed), LogType.LEARNING_LOG);
+					final GUIupdater updater = new GUIupdater(frmMusicPlayer, false);
+					(new Thread(){
+						@Override public void run(){
+							updater.suspend();
+							updater.setFileLength(res.size);
+							
+							int size = res.size; // 'size' means total including the user-selected tracks
+							Playlist pl = new Playlist(name, Playlist.AUTO);
+							library.addPlaylist(pl);
+							RefreshPlaylists();
+							Song seed = null;
+							if (type == 2) {
+								// smart playlist from selection
+								for (int i = 0; i < tabMain.getSelectedRowCount(); ++i)
+									pl.add(library.get(ViewToModel(tabMain.getSelectedRows()[i])));
+								seed = library.get(ViewToModel(tabMain.getSelectedRows()[tabMain.getSelectedRowCount()-1]));
+								
+								size = size - tabMain.getSelectedRowCount();
+								Logger.log("New Smart playlist \""+pl.getName()+"\" added (from "+tabMain.getSelectedRowCount()+" track selection). Target size: "+(size+tabMain.getSelectedRowCount()), LogType.USAGE_LOG);
+							}else{
+								// smart playlist from all
+								seed = GetSmartPlaylistSeed();
+								if(seed != null){
+									pl.add(seed);
+									size--;
+									Logger.log("Playlist track "+library.getClusters().getIndexList(seed), LogType.LEARNING_LOG);
+								}
+								updater.announceUpdate(1);
+								Logger.log("New Smart playlist \""+pl.getName()+"\" added. Target size: "+(size+1), LogType.USAGE_LOG);
+							}
+							List<Song> inSoFar = new ArrayList<Song>();
+							if(seed != null)
+								inSoFar.add(seed);
+							for(int i=0; i<size; ++i){
+								Song next = GetSmartPlaylistTrack(seed, inSoFar);
+								if(next != null){
+									pl.add(next);
+									inSoFar.add(next);
+									seed = next;
+									Logger.log("Playlist track "+library.getClusters().getIndexList(next), LogType.LEARNING_LOG);
+									updater.announceUpdate(pl.size());
+								}else
+									break;
+							}
+							
+							updater.resume();
 						}
-						Logger.log("New Smart playlist \""+pl.getName()+"\" added. Target size: "+(size+1), LogType.USAGE_LOG);
-					}
-					List<Song> inSoFar = new ArrayList<Song>();
-					if(seed != null)
-						inSoFar.add(seed);
-					for(int i=0; i<size; ++i){
-						Song next = GetSmartPlaylistTrack(seed, inSoFar);
-						if(next != null){
-							pl.add(next);
-							inSoFar.add(next);
-							seed = next;
-							Logger.log("Playlist track "+library.getClusters().getIndexList(next), LogType.LEARNING_LOG);
-						}else
-							break;
-					}
+					}).start();
 				}
 			}
 		}

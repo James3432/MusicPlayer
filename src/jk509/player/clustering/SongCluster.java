@@ -86,7 +86,6 @@ public class SongCluster extends AbstractCluster {
 		
 		clusters = new ArrayList<AbstractCluster>();
 		
-		// TODO could be a bug here, as tracks features won't be analysed!
 		if(tracks.size() <= Constants.MAX_CLUSTERS){
 			assignments = new int[tracks.size()];
 			preferred = new double[tracks.size()];
@@ -310,7 +309,7 @@ public class SongCluster extends AbstractCluster {
 				current.tracks.add(s);
 				addClusterHere = (current instanceof SongCluster && ((SongCluster) current).getChildren().size() < Constants.MAX_CLUSTERS);  // NOTE this requires max_clusters to match library!!
 				int closest = StaticMethods.nearestCluster(((SongCluster) current).getChildren(), s);
-				if(StaticMethods.computeDistance(((SongCluster) current).getChildren().get(closest).getCentroid(), s.getAudioFeatures()) < Constants.SAME_CLUSTER_DIST_THRESHOLD)
+				if(StaticMethods.computeDistance(Normalise(((SongCluster) current).getChildren().get(closest).getCentroid()), Normalise(s.getAudioFeatures())) < Constants.SAME_CLUSTER_DIST_THRESHOLD)
 					addClusterHere = false;
 				if(!addClusterHere){
 					((SongCluster) current).assignments = arrayAppend(((SongCluster) current).assignments, closest);
@@ -719,9 +718,14 @@ public class SongCluster extends AbstractCluster {
 				}
 				
 				//double[] prefs = normTo(cluster.preferred, Constants.MAX_PREFERRED_EFFECT);
+				double[] prefs_ordered = getOrderedPrefs(cluster.preferred);
 				for(int i=0; i<songs.size(); ++i){
-					int clust = cluster.getClusterIndex(songs.get(i));
-					votes[i] *= cluster.preferred[clust];
+					try{
+						int clust = cluster.getClusterIndex(songs.get(i));
+						votes[i] *= prefs_ordered[clust];
+					}catch(Exception e){
+						Logger.log(e, LogType.ERROR_LOG);
+					}
 				}
 			}
 			
@@ -774,6 +778,26 @@ public class SongCluster extends AbstractCluster {
 		return choice;
 	}
 	
+	/*
+	 * This function is dbl[] -> dbl[] and should preserve index order
+	 * 
+	 * It takes an array like [0.2, 300, 1.52, 0, 24] and returns [2, 5, 3, 1, 4] where numbers range from 1 to preference_weighting
+	 */
+	private double[] getOrderedPrefs(final double[] prefs){
+		Integer[] indices = new Integer[prefs.length];
+		for (int i=0; i<indices.length; ++i)
+			indices[i] = i;
+		Arrays.sort(indices, new Comparator<Integer>() {
+		    @Override public int compare(final Integer o1, final Integer o2) {
+		        return Double.compare(prefs[o1], prefs[o2]);
+		    }
+		});
+		double[] res = new double[prefs.length];
+		for(int i=0; i<indices.length; i++)
+			res[indices[i]] = 1 + (Constants.PREFERENCE_WEIGHTING - 1)*i/(prefs.length-1);
+		return res;
+	}
+	
 	private Song chooseRandom(SongCluster cluster, List<Song> history){
 		if(cluster.tracks.size() > history.size()){
 			// just pick from cluster 
@@ -810,6 +834,10 @@ public class SongCluster extends AbstractCluster {
 	
 	private double[] Normalise(double[] in){
 		double[] out = new double[in.length];
+		for(int i=0; i<in.length; ++i){
+			if(Double.isNaN(in[i]) || Double.isInfinite(in[i]))
+				in[i] = 0;
+		}
 		out[0] = in[0] / 22.;
 		out[1] = in[1] / 0.15;
 		out[2] = in[2] / 0.002;
@@ -863,6 +891,32 @@ public class SongCluster extends AbstractCluster {
 		for(int i=0; i<arr.length; ++i)
 			out[i] = arr[i] * scale;
 		return out;
+	}
+	
+	/*
+	 * Lower the preferred rating for the given song
+	 */
+	public void wasSkipped(Song s){
+		AbstractCluster next = this;
+		try{
+			List<Integer> path = this.getIndexList(s);
+			int levels = path.size();
+			int l = 0;
+			while(! (next instanceof LeafCluster)){
+				SongCluster curr = (SongCluster) next;
+				int ind = path.get(l);
+				//int tracks = curr.getTracks().size();
+				double ln2 = 0.6931471805599453094172321214581765680755001343602552;
+				double x = (levels - l - 1);
+				double scalar = - Math.pow(Math.E, -(x + (ln2))) + 1;
+				scalar = Math.max(0.0, Math.min(1.0, scalar));
+				curr.preferred[ind] *= scalar;
+				next = curr.getChildren().get(ind);
+				l++;
+			}
+		}catch(Exception e){
+			Logger.log(e, LogType.ERROR_LOG);
+		}
 	}
 	
 	/*
@@ -1068,13 +1122,14 @@ public class SongCluster extends AbstractCluster {
 		// This is the only place 'preferred' gets updated
 		preferred[toI] = Math.max(0., preferred[toI] + reward);
 		// And add it to every parent
-		SongCluster c = this;
+		// NO! because this function gets called at every level already, so this would be doubling up
+		/*SongCluster c = this;
 		int ind = 0;
 		try{
 			while(c.getParent() != null){
 				ind = c.getParent().getChildren().indexOf((AbstractCluster) c);
 				c = c.getParent();
-				c.preferred[ind] = Math.max(0., preferred[ind] + reward);
+				c.preferred[ind] = Math.max(0., c.preferred[ind] + reward);
 			}
 		}catch(ArrayIndexOutOfBoundsException e){
 			Logger.log("Error whilst updating matrix of preferred tracks:", LogType.ERROR_LOG);
@@ -1082,7 +1137,7 @@ public class SongCluster extends AbstractCluster {
 			try{
 				while(c.preferred.length <= ind)
 					c.preferred = arrayAppend(c.preferred, 0.);
-				c.preferred[ind] = Math.max(0., preferred[ind] + reward);
+				c.preferred[ind] = Math.max(0., c.preferred[ind] + reward);
 			}catch(Exception e2){
 				Logger.log("Error whilst updating matrix of preferred tracks:", LogType.ERROR_LOG);
 				Logger.log(e2, LogType.ERROR_LOG);
@@ -1090,7 +1145,7 @@ public class SongCluster extends AbstractCluster {
 		}catch(Exception e){
 			Logger.log("Error whilst updating matrix of preferred tracks:", LogType.ERROR_LOG);
 			Logger.log(e, LogType.ERROR_LOG);
-		}
+		}*/
 	}
 	
 	/*

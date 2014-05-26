@@ -21,6 +21,8 @@ public interface Constants {
 	public static final double RANDOMNESS_MAX = 0.8;                   // overall max value for randomness, taken at time=0. User settings can't exceed this.
 	public static final int RANDOMNESS_SHIFT_TIME = 10;                // number of days (or ops - I havn't decided) over which 'randomness' changes from exploration -> exploitation
 	public static final double RANDOMNESS_USER_CONTROL = 0.4;          // range over which user can adjust randomness
+	public static final double SMART_PLAYLIST_RANDOMNESS = 0.1;        // randomness used when generating auto playlists
+	public static final double SKIPPED_TRACK_DISLIKE = 0.5;            // multiplier for 'preferred' value of a quickly skipped track
 	
 	// Rewards:
 	public static final double REWARD_TRACK_FINISHED = 0.5;            // track played all way through
@@ -55,6 +57,7 @@ public interface Constants {
 	//public static final double HISTORY_WEIGHT_MAX = 1.0;
 	public static final double HISTORY_WEIGHT_STEP = 0.01;   // ie. 1/this is how long it takes to forget we played a track
 	public static final int HISTORY_NONREPEAT = 5; // number of tracks back in history we should never repeat
+	public static final double PREFERENCE_WEIGHTING = 3; // ie. preference weights range from 1 to this number
 	public static final int IGNORE_SKIP_TIME = 15; // Time (s) in which if user skips, we keep the "previous track" value, and so nextUp choice is based on last good song rather than current
 	public static final int MAX_PLAYLIST_UPDATE_SIZE = 20;   // Max size of playlist before we stop creating PLAYLIST_SHARED updates, due to n^2 complexity
 	public static int UPDATE_PLAY_COUNT_WINDOW = 20;       // no. seconds off end of song within which a skip will still cause the play count to be incremented
